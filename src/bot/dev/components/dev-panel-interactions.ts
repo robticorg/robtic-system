@@ -15,11 +15,12 @@ import {
     type APIMessageTopLevelComponent,
 } from "discord.js";
 import { ProjectShareRepository } from "@database/repositories";
+import { ProjectType } from "@database/models/ProjectShare";
 import { Logger } from "@core/libs";
 import { buildProjectContainer } from "./dev-project-reactions";
 import emoji from "@shared/emojis.json";
 
-type DevProjectType = "member" | "developer" | "system";
+type DevProjectType = ProjectType;
 
 interface BrowserState {
     type: DevProjectType;
@@ -69,7 +70,7 @@ function isValidHttpUrl(raw?: string): raw is string {
 }
 
 function getState(userId: string): BrowserState {
-    return browserState.get(userId) ?? { type: "member", page: 1, query: "" };
+    return browserState.get(userId) ?? { type: ProjectType.Member, page: 1, query: "" };
 }
 
 function setState(userId: string, next: BrowserState) {

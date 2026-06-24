@@ -24,7 +24,7 @@ export class StaffRepository {
     return StaffMember.find({ department, status: "active" });
   }
 
-  static async findAll(status?: string): Promise<IStaffMember[]> {
+  static async findAll(status?: IStaffMember["status"]): Promise<IStaffMember[]> {
     const query = status ? { status } : {};
     return StaffMember.find(query).sort({ department: 1, position: 1 });
   }

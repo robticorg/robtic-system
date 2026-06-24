@@ -1,12 +1,11 @@
 import { PendingProject, type IPendingProject } from "@database/models/PendingProjectShare";
-import { Project, type IProject } from "@database/models/ProjectShare";
+import { Project, type IProject, ProjectType } from "@database/models/ProjectShare";
 
-type ProjectRoleType = "member" | "developer" | "system";
 type ProjectKindType = "web" | "discord" | "other";
 
 interface PendingProjectCreateInput {
     userId: string;
-    type: ProjectRoleType;
+    type: ProjectType;
     projectId: string;
     projectType: ProjectKindType;
     projectTitle: string;
@@ -60,7 +59,7 @@ export class ProjectShareRepository {
     static async createPublishedFromPending(project: IPendingProject): Promise<IProject> {
         return this.createPublished({
             userId: project.userId,
-            type: project.type as ProjectRoleType,
+            type: project.type,
             projectId: project.projectId,
             projectType: project.projectType as ProjectKindType,
             projectTitle: project.projectTitle,
@@ -72,12 +71,12 @@ export class ProjectShareRepository {
         });
     }
 
-    static async findPublishedByType(type: ProjectRoleType, limit = 10): Promise<IProject[]> {
+    static async findPublishedByType(type: ProjectType, limit = 10): Promise<IProject[]> {
         return Project.find({ type }).sort({ createdAt: -1 }).limit(limit);
     }
 
     static async findPublishedPage(
-        type: ProjectRoleType,
+        type: ProjectType,
         page = 1,
         pageSize = 10,
         query = ""

@@ -19,11 +19,11 @@ export class PunishmentRepository {
         return Punishment.find({ userId, guildId, active: true });
     }
 
-    static async findByUserAndType(userId: string, guildId: string, type: string): Promise<IPunishment[]> {
+    static async findByUserAndType(userId: string, guildId: string, type: IPunishment["type"]): Promise<IPunishment[]> {
         return Punishment.find({ userId, guildId, type, active: true }).sort({ createdAt: -1 });
     }
 
-    static async findAllByUserAndType(userId: string, guildId: string, type: string): Promise<IPunishment[]> {
+    static async findAllByUserAndType(userId: string, guildId: string, type: IPunishment["type"]): Promise<IPunishment[]> {
         return Punishment.find({ userId, guildId, type }).sort({ createdAt: -1 });
     }
 

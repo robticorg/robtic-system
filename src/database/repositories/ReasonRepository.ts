@@ -9,7 +9,7 @@ export class ReasonRepository {
         return Reason.findOne({ key });
     }
 
-    static async findByType(type: string): Promise<IReason[]> {
+    static async findByType(type: IReason["type"]): Promise<IReason[]> {
         return Reason.find({ type }).sort({ createdAt: -1 });
     }
 

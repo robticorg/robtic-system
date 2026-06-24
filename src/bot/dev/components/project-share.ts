@@ -1,6 +1,7 @@
 import { Logger } from "@core/libs";
 import { MessageFlags, ModalSubmitInteraction, GuildMember, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } from "discord.js";
 import { ProjectShareRepository } from "@database/repositories";
+import { ProjectType } from "@database/models/ProjectShare";
 import { isOwner, hasFullPower, isInDepartment } from "@shared/utils/access";
 import { buildProjectContainer } from "@bot/dev/utils/project-flow";
 
@@ -36,13 +37,13 @@ let typeStr = "other";
             : "other";
 
         const member = interaction.member as GuildMember;
-        let pType: "member" | "developer" | "system" = "member";
+        let pType: ProjectType = ProjectType.Member;
         let isSystem = isOwner(member) || hasFullPower(member);
-        
+
         if (isSystem) {
-            pType = "system"; // Will ask in next step
+            pType = ProjectType.System;
         } else if (isInDepartment(member, "Dev")) {
-            pType = "developer";
+            pType = ProjectType.Developer;
         }
 
         const newPending = await ProjectShareRepository.createPending({
