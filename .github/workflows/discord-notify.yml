@@ -1,4 +1,4 @@
-name: Discord Notifications
+name: Discord Activity Notifications
 
 on:
   watch:
@@ -7,66 +7,11 @@ on:
 
 jobs:
   notify:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Send Discord notification
-        run: |
-          ACTOR="${{ github.actor }}"
-          REPO="${{ github.repository }}"
-          EVENT="${{ github.event_name }}"
-          AVATAR="https://github.com/${{ github.actor }}.png"
-          REPO_URL="${{ github.server_url }}/${{ github.repository }}"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          curl -H "Content-Type: application/json" \
-          -d "{
-            \"username\": \"Robtic GitHub\",
-            \"embeds\": [{
-              \"title\": \"⭐ Repository Interaction\",
-              \"url\": \"$REPO_URL\",
-              \"color\": 5814783,
-
-              \"author\": {
-                \"name\": \"$ACTOR\",
-                \"icon_url\": \"$AVATAR\",
-                \"url\": \"https://github.com/$ACTOR\"
-              },
-
-              \"description\": \"A new interaction occurred with the repository.\",
-
-              \"fields\": [
-                {
-                  \"name\": \"📦 Repository\",
-                  \"value\": \"[$REPO]($REPO_URL)\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"⚡ Event Type\",
-                  \"value\": \"$EVENT\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"👤 User\",
-                  \"value\": \"[$ACTOR](https://github.com/$ACTOR)\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"🔗 Open Repository\",
-                  \"value\": \"[View Repository]($REPO_URL)\",
-                  \"inline\": false
-                }
-              ],
-
-              \"thumbnail\": {
-                \"url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\"
-              },
-
-              \"footer\": {
-                \"text\": \"Robtic GitHub Activity\"
-              },
-
-              \"timestamp\": \"$TIMESTAMP\"
-            }]
-          }" \
-          ${{ secrets.DISCORD_WEBHOOK }}
+    name: Notify Discord
+    uses: robticorg/robtic-actions/.github/workflows/reusable-notify.yml@main
+    with:
+      notification_type: activity
+      username: 'Robtic GitHub'
+      footer_text: 'Robtic GitHub Activity'
+    secrets:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_ACTIVITY }}
