@@ -104,7 +104,18 @@ export function buildProjectContainer(project: IProject, viewerId: string, inter
             item => item.setURL("https://raw.githubusercontent.com/RoBo159/assets/refs/heads/main/utils/discord/line.png")
                 .setDescription("Project Separator"),
         )
-    );
+    )
+
+    if (interaction.user.id === project.userId) {
+        container.addSectionComponents(sc =>
+            sc.addTextDisplayComponents(
+                td => td.setContent(`this is your project! you can manage it by clicking the button below.`)
+            )
+                .setButtonAccessory(
+                    btn => btn.setCustomId(`dev_projects_config:${project.projectId}`).setLabel("Config").setStyle(ButtonStyle.Primary)
+                )
+        )
+    }
 
     container
         .addSeparatorComponents()

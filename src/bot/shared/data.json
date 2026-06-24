@@ -1,6 +1,6 @@
 {
     "guard_log_channel_id": "1479752688718708757",
-    "general_chat_channel_id": "1479233532592390315",
+    "general_chat_channel_id": ["1479233532592390315", "1515971805481799770"],
     "modmail_channel_id": "1479822844354629794",
     "modmail_log_channel_id": "1479908522102755552",
     "punishments_notice_channel_id": "1479445213301833738",

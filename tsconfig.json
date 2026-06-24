@@ -9,6 +9,7 @@
     // Bundler mode
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
+    "ignoreDeprecations": "6.0",
 
     // Best practices
     "strict": true,

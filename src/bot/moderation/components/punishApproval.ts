@@ -22,7 +22,7 @@ export default {
         const targetId = parts[3];
         const reasonKey = parts[4];
         const requesterId = parts[5];
-        const extra = parts[6]; // duration hours for mute, "perm"/days for ban
+        const extra = parts[6];
 
         const modMember = interaction.member as GuildMember;
         const modLevel = getMemberLevel(modMember);
