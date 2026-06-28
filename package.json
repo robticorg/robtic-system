@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --preload ./src/preload.ts --watch src/index.ts",
-    "build": "bun build ./src/index.ts --outfile ./dist/index.js",
+    "build": "bun build ./src/index.ts --outfile ./dist/index.js --target bun",
     "typecheck": "tsc --noEmit",
     "start": "NODE_ENV=production bun dist/index.js"
   },
