@@ -3,17 +3,49 @@ name: Deploy Bot
 on:
   push:
     branches: [ main ]
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
   deploy:
-    runs-on: 
+    needs: build
+    runs-on:
       - self-hosted
-      - linux
-      - x64
-      - robtic-prod
+      - robtic-deploy
 
     environment:
       name: Robtic Server
-      url: https://core.robtic.org
+      url: https://robtic.org
 
     steps:
       - name: Notify Deployment Start
@@ -50,16 +82,19 @@ jobs:
           }" \
           "${{ secrets.DISCORD_WEBHOOK_DEPLOY }}"
 
-      - name: Deploy locally on self-hosted runner
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy with Docker Compose
         run: |
-          flock -n /tmp/robtic-deploy.lock bash -c '
-            cd /home/robtic/robtic-system
-            git fetch origin
-            git reset --hard origin/main
-            git pull origin main
-            chmod +x ./scripts/deploy.sh
-            ./scripts/deploy.sh
-          '
+          docker compose -p robtic-system --env-file /home/robtic/.env pull
+          docker compose -p robtic-system --env-file /home/robtic/.env up -d
 
       - name: Notify Deployment Success
         if: success()

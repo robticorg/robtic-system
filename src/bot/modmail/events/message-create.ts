@@ -16,6 +16,11 @@ export default {
     async execute(message: Message, client: BotClient) {
         if (message.author.bot) return;
 
+        const guild = client.guilds.cache.get(process.env.MainGuild!);
+        const user = guild?.members.cache.get(message.author.id);
+
+        if(!user) return message.reply("test");
+
         if (!message.guild) {
             handleModMailDM(message, client);
             return;

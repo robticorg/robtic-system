@@ -1,0 +1,7 @@
+services:
+  robtic-system:
+    image: ghcr.io/robticorg/robtic-system:latest
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
