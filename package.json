@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "bun --preload ./src/preload.ts --watch src/index.ts",
-    "build": "bun build ./src/index.ts --outfile ./dist/index.js --target node",
+    "build": "bun build ./src/index.ts --outfile ./dist/index.js",
     "typecheck": "tsc --noEmit",
-    "start": "NODE_ENV=production node dist/index.js"
+    "start": "NODE_ENV=production bun dist/index.js"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -17,14 +17,12 @@
     "@typescript-eslint/eslint-plugin": "^8.62.0",
     "@typescript-eslint/parser": "^8.62.0",
     "eslint": "^10.5.0",
-    "groq-sdk": "^0.37.0",
-    "nodemon": "^3.1.14"
+    "groq-sdk": "^0.37.0"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
   },
   "engines": {
-    "node": ">=20",
     "bun": ">=1.1.0"
   },
   "dependencies": {

@@ -1,12 +1,11 @@
 import chalk from "chalk";
-import fs from "fs";
-import path from "path";
+import { existsSync, mkdirSync, appendFile } from "fs";
 
-const LOGS_DIR = path.join(process.cwd(), "logs");
+const LOGS_DIR = `${process.cwd()}/logs`;
 
-if (!fs.existsSync(LOGS_DIR)) {
+if (!existsSync(LOGS_DIR)) {
     try {
-        fs.mkdirSync(LOGS_DIR, { recursive: true });
+        mkdirSync(LOGS_DIR, { recursive: true });
     } catch (error) {
         console.error("Failed to create logs directory:", error);
     }
@@ -16,8 +15,8 @@ const timestamp = () => new Date().toISOString();
 const dateStamp = () => new Date().toISOString().split("T")[0];
 
 function writeLog(type: string, content: string) {
-    const filePath = path.join(LOGS_DIR, `${type}.${dateStamp()}.log`);
-    fs.appendFile(filePath, content + "\n", (err) => {
+    const filePath = `${LOGS_DIR}/${type}.${dateStamp()}.log`;
+    appendFile(filePath, content + "\n", (err) => {
         if (err) console.error(`Failed to write to ${type} log file:`, err);
     });
 }

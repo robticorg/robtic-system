@@ -6,9 +6,6 @@ import { DiscordErrorHandler } from "@core/handlers";
 import { Logger } from "@core/libs";
 import { BOT_DEFINITIONS } from "@core/config";
 
-import path from "path";
-
-
 export class ClientManager {
     private clients = new Collection<BotName, BotClient>();
     private startTimes = new Collection<BotName, number>();
@@ -33,13 +30,13 @@ export class ClientManager {
         errorHandler.init();
 
         const loader = new ModuleLoader(client);
-        const botDir = path.join(import.meta.dir, "..", "bot", definition.name);
-        const sharedDir = path.join(import.meta.dir, "..", "bot", "shared");
+        const botDir = `${import.meta.dir}/../bot/${definition.name}`;
+        const sharedDir = `${import.meta.dir}/../bot/shared`;
 
-        await loader.loadCommands(path.join(botDir, "commands"));
-        await loader.loadEvents(path.join(botDir, "events"));
-        await loader.loadEvents(path.join(sharedDir, "events"));
-        await loader.loadComponents(path.join(botDir, "components"));
+        await loader.loadCommands(`${botDir}/commands`);
+        await loader.loadEvents(`${botDir}/events`);
+        await loader.loadEvents(`${sharedDir}/events`);
+        await loader.loadComponents(`${botDir}/components`);
 
         client.loadedModules.push(definition.name);
 
