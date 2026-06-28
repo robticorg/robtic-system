@@ -1,19 +1,16 @@
-FROM oven/bun:1.3.14 AS builder
+FROM oven/bun:1.3.14 AS deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
-COPY . .
-RUN bun build ./src/index.ts --outfile ./dist/index.js --target bun
-
-FROM oven/bun:1.3.14 AS runner
+FROM oven/bun:1.3.14
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json ./
+COPY src ./src
 
-CMD ["bun", "dist/index.js"]
+CMD ["bun", "--preload", "./src/preload.ts", "src/index.ts"]

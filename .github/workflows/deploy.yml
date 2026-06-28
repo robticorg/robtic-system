@@ -16,7 +16,7 @@ jobs:
       - name: Wait for ghcr.io
         run: |
           elapsed=0; interval=30
-          until curl -sf --connect-timeout 10 --max-time 15 https://ghcr.io/v2/ > /dev/null 2>&1; do
+          until curl -s --connect-timeout 10 --max-time 15 -o /dev/null -w "%{http_code}" https://ghcr.io/v2/ 2>/dev/null | grep -qE "^[234]"; do
             echo "ghcr.io unreachable — ${elapsed}s elapsed, retrying in ${interval}s..."
             sleep $interval
             elapsed=$((elapsed + interval))
