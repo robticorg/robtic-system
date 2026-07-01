@@ -356,7 +356,7 @@ export async function panelButtonHandler(interaction: ButtonInteraction) {
     const lang = getUserLang(member);
 
     const matched = panel.roles.find(r => member.roles.cache.has(r.roleId));
-    const container = panel.getContent(lang, matched?.label ?? null);
+    const container = panel.getContent(await lang, matched?.label ?? null);
 
     await interaction.reply({
         components: [container],

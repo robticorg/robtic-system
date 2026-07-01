@@ -16,6 +16,7 @@ import { PunishmentRepository, ReasonRepository } from "@database/repositories";
 import { errorEmbed } from "@core/utils";
 import { getMemberLevel } from "@shared/utils/access";
 import { getUserLang, t } from "@shared/utils/lang";
+import { getLogChannel } from "@shared/utils/getLogChannel";
 import data from "@shared/data.json";
 
 export async function executeMute(
@@ -67,7 +68,7 @@ export async function executeMute(
 
     const user = await client.users.fetch(targetId).catch(() => null);
     if (user) {
-        const lang = getUserLang(member);
+        const lang = await getUserLang(member);
         const localReason = lang === "ar" ? reasonAr : reason;
 
         const dmEmbed = new EmbedBuilder()
@@ -101,7 +102,7 @@ export async function executeMute(
         )
         .setTimestamp();
 
-    const noticeChannel = guild?.channels.cache.get(data.punishments_notice_channel_id) as TextChannel | undefined;
+    const noticeChannel = await getLogChannel(client, "punishments_notice") as TextChannel | null;
     if (noticeChannel) {
         await noticeChannel.send({ embeds: [logEmbed] }).catch(() => null);
     }
@@ -206,7 +207,7 @@ export default {
                         .setEmoji("❌"),
                 );
 
-                const approvalChannel = interaction.guild?.channels.cache.get(data.punishments_case_channel_id) as TextChannel | undefined;
+                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
                 if (approvalChannel) {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }

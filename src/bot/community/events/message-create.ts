@@ -125,11 +125,11 @@ async function handleSessionResolution(
     const qualityPts = resolved.quality === "professional" ? 2 : resolved.quality === "bad" ? -1 : resolved.quality === "normal" ? 1 : 0;
     const sentimentPts = resolved.sentiment === "negative" ? -1 : 0;
 
-    await logToChannel(message.guild!, "support_points", dynamicSupportPointsEmbed(
+    await logToChannel(client,"support_points", dynamicSupportPointsEmbed(
         resolved.staffId, resolved.points, speedPts, qualityPts, sentimentPts,
         resolved.quality, resolved.sentiment, responseMs,
     ));
-    await logToChannel(message.guild!, "support_points", supportSessionEmbed(
+    await logToChannel(client,"support_points", supportSessionEmbed(
         "resolved", session.userId, resolved.staffId, reason,
     ));
 
@@ -180,11 +180,11 @@ export default {
                         const { previousStaff, sessionUserId } = claimResult.takeover;
                         Logger.debug(`[activity:claim] Takeover in channelId=${channelId}: ${previousStaff} → ${member.id}`, client.botName);
 
-                        await logToChannel(message.guild!, "support_points", supportSessionEmbed(
+                        await logToChannel(client,"support_points", supportSessionEmbed(
                             "reassigned", sessionUserId, member.id,
                             `Previous staff: <@${previousStaff}> (inactive >10min, -1 point)`,
                         ));
-                        await logToChannel(message.guild!, "support_points", staffPenaltyEmbed(
+                        await logToChannel(client,"support_points", staffPenaltyEmbed(
                             previousStaff, -1, "Ignored user for 10+ minutes, session reassigned",
                         ));
 
@@ -218,7 +218,7 @@ export default {
                                 amount: -1,
                                 details: `Intruding on session claimed by ${claimResult.intruding.claimedBy} in ${channelId}`,
                             });
-                            await logToChannel(message.guild!, "support_points", staffPenaltyEmbed(
+                            await logToChannel(client,"support_points", staffPenaltyEmbed(
                                 member.id, -1, `Intruding on session claimed by <@${claimResult.intruding.claimedBy}>`,
                             ));
                         }
@@ -258,7 +258,7 @@ export default {
                                 amount: -1,
                                 details: "Continued staff-to-staff chatting after warning",
                             });
-                            await logToChannel(message.guild!, "support_points", staffPenaltyEmbed(
+                            await logToChannel(client,"support_points", staffPenaltyEmbed(
                                 member.id, -1, "Continued staff-to-staff chatting after warning",
                             ));
                         }
@@ -273,7 +273,7 @@ export default {
                         client.botName,
                     );
 
-                    await logToChannel(message.guild!, "ai", aiDecisionEmbed(
+                    await logToChannel(client,"ai", aiDecisionEmbed(
                         username, member.id,
                         analysis.classification.classification,
                         analysis.classification.confidence,
@@ -306,7 +306,7 @@ export default {
                     const hasRef = Boolean(message.reference?.messageId);
                     const analysis = await analyzeSupportMessage(normalizedContent, hasRef);
 
-                    await logToChannel(message.guild!, "ai", aiDecisionEmbed(
+                    await logToChannel(client,"ai", aiDecisionEmbed(
                         username, member.id,
                         analysis.classification.classification,
                         analysis.classification.confidence,
@@ -327,7 +327,7 @@ export default {
                     } else {
                         const created = await createSession(guildId, channelId, message.id, member.id);
                         if (created) {
-                            await logToChannel(message.guild!, "support_points", supportSessionEmbed(
+                            await logToChannel(client,"support_points", supportSessionEmbed(
                                 "created", member.id,
                             ));
                         }
@@ -344,7 +344,7 @@ export default {
                     const result = await grantXP(member.id, guildId, username, message.guild, content);
                     if (result) {
                         Logger.debug(`[activity] Granted ${result.xp} XP to ${username} (levelUp=${result.leveledUp}, level=${result.newLevel})`, client.botName);
-                        await logToChannel(message.guild, "xp_gain", xpGainEmbed(
+                        await logToChannel(client,"xp_gain", xpGainEmbed(
                             username, member.id, result.xp, result.leveledUp, result.newLevel,
                         ));
                     }
@@ -355,13 +355,13 @@ export default {
                 Logger.debug(`[activity] Staff member ${username}, tracking staff activity`, client.botName);
                 const staffResult = await trackStaffChat(member, guildId, channelId, username, content);
                 if (staffResult) {
-                    await logToChannel(message.guild, "staff_activity", staffActivityEmbed(
+                    await logToChannel(client,"staff_activity", staffActivityEmbed(
                         member.id, username, staffResult, "staff",
                     ));
                 } else if (isXPCh) {
                     const publicResult = await trackPublicChat(member, guildId, username, content);
                     if (publicResult) {
-                        await logToChannel(message.guild, "staff_activity", staffActivityEmbed(
+                        await logToChannel(client,"staff_activity", staffActivityEmbed(
                             member.id, username, publicResult, "public",
                         ));
                     }

@@ -13,7 +13,7 @@ import type { ComponentHandler } from "@core/config";
 import { Colors } from "@core/config";
 import { ReasonRepository } from "@database/repositories";
 import { getMemberLevel } from "@shared/utils/access";
-import data from "@shared/data.json";
+import { getLogChannel } from "@shared/utils/getLogChannel";
 import { executeWarn } from "../commands/warn";
 import { executeMute } from "../commands/mute";
 import { executeBan } from "../commands/ban";
@@ -81,7 +81,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                         .setEmoji("❌"),
                 );
 
-                const approvalChannel = interaction.guild?.channels.cache.get(data.punishments_case_channel_id) as TextChannel | undefined;
+                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
                 if (approvalChannel) {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }
@@ -129,7 +129,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                         .setEmoji("❌"),
                 );
 
-                const approvalChannel = interaction.guild?.channels.cache.get(data.punishments_case_channel_id) as TextChannel | undefined;
+                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
                 if (approvalChannel) {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }
@@ -176,7 +176,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                         .setEmoji("❌"),
                 );
 
-                const approvalChannel = interaction.guild?.channels.cache.get(data.punishments_case_channel_id) as TextChannel | undefined;
+                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
                 if (approvalChannel) {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }

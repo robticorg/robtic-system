@@ -9,7 +9,7 @@ import {
 import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
 import { Colors } from "@core/config";
-import data from "@shared/data.json";
+import { getLogChannel } from "@shared/utils/getLogChannel";
 import { t, type Lang } from "@shared/utils/lang";
 
 const reportSubmit: ComponentHandler<ModalSubmitInteraction> = {
@@ -24,8 +24,7 @@ const reportSubmit: ComponentHandler<ModalSubmitInteraction> = {
         const reason = interaction.fields.getTextInputValue("report_reason").trim();
         const evidence = interaction.fields.getTextInputValue("report_evidence")?.trim() || "N/A";
 
-        const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
-        const reportChannel = staffGuild?.channels.cache.get(data.report_channel_id) as TextChannel | undefined;
+        const reportChannel = await getLogChannel(client, "report") as TextChannel | null;
 
         const reportEmbed = new EmbedBuilder()
             .setTitle("🚨 User Report")

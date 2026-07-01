@@ -13,10 +13,19 @@ export interface IShortcut {
     trigger: string;
 }
 
+export interface IServerRoles {
+    en?: string;
+    ar?: string;
+    members?: string;
+    bots?: string;
+}
+
 export interface IServerConfig extends Document {
     guildId: string;
     sentPanels: ISentPanel[];
     shortcuts: IShortcut[];
+    roles: IServerRoles;
+    modmailChannelId?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -42,6 +51,16 @@ const serverConfigSchema = new Schema<IServerConfig>(
         guildId: { type: String, required: true, unique: true },
         sentPanels: { type: [sentPanelSchema], default: [] },
         shortcuts: { type: [shortcutSchema], default: [] },
+        roles: {
+            type: {
+                en: { type: String },
+                ar: { type: String },
+                members: { type: String },
+                bots: { type: String },
+            },
+            default: {},
+        },
+        modmailChannelId: { type: String },
     },
     { timestamps: true }
 );

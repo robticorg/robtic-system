@@ -15,7 +15,7 @@ import { ModMailRepository, PunishmentRepository } from "@database/repositories"
 import { NoteRepository } from "@database/repositories/NoteRepository";
 import { getMemberLevel } from "@shared/utils/access";
 import { t, type Lang } from "@shared/utils/lang";
-import data from "@shared/data.json";
+import { ServerConfigRepository } from "@database/repositories";
 import type { TextChannel } from "discord.js";
 
 export const appealDecision: ComponentHandler<ButtonInteraction> = {
@@ -54,7 +54,8 @@ export const appealDecision: ComponentHandler<ButtonInteraction> = {
             }
 
             const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
-            const staffChannel = staffGuild?.channels.cache.get(data.modmail_channel_id) as TextChannel | undefined;
+            const modmailChannelId = staffGuild ? await ServerConfigRepository.getModmailChannel(staffGuild.id) : null;
+            const staffChannel = modmailChannelId ? staffGuild?.channels.cache.get(modmailChannelId) as TextChannel | undefined : undefined;
 
             if (!staffGuild || !staffChannel) {
                 await interaction.reply({

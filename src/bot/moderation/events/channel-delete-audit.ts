@@ -2,6 +2,7 @@ import { AuditLogEvent, EmbedBuilder, Events, type GuildChannel } from "discord.
 import { Colors } from "@core/config";
 import { recordSecurityEvent, sendAuditLog } from "../utils/security";
 import type { BotClient } from "@core/BotClient";
+import { sendToServerLog } from "@shared/utils/sendToServerLog";
 
 export default {
     name: Events.ChannelDelete,
@@ -21,6 +22,7 @@ export default {
             .setTimestamp();
 
         await sendAuditLog(channel.guild, "channel_delete", embed);
+        await sendToServerLog(client, channel.guild.id, "channel-delete", embed);
 
         if (executorId) {
             await recordSecurityEvent({

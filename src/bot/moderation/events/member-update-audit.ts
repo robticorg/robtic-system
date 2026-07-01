@@ -1,6 +1,7 @@
 import { EmbedBuilder, Events, type GuildMember } from "discord.js";
 import { Colors } from "@core/config";
 import { detectRoleAuditEntry, recordSecurityEvent, sendAuditLog } from "../utils/security";
+import { sendToServerLog } from "@shared/utils/sendToServerLog";
 import type { BotClient } from "@core/BotClient";
 
 export default {
@@ -32,6 +33,7 @@ export default {
             .setTimestamp();
 
         await sendAuditLog(newMember.guild, "role_update", embed);
+        await sendToServerLog(client, newMember.guild.id, "member-role-update", embed);
 
         if (!audit?.executorId) return;
 

@@ -2,7 +2,7 @@ import { Logger } from "@core/libs";
 import { Colors } from "@core/config";
 import type { BotClient } from "@core/BotClient";
 import { EmbedBuilder, type Guild, type TextChannel } from "discord.js";
-import data from "@shared/data.json";
+import { getLogChannel } from "@shared/utils/getLogChannel";
 
 const allowedGuildIds = new Set<string>([
     ...(process.env.MainGuild ? [process.env.MainGuild.trim()] : []),
@@ -17,7 +17,7 @@ function isAllowedGuild(guildId: string): boolean {
 
 async function sendGuardLog(client: BotClient, guild: Guild, action: "left" | "blocked"): Promise<void> {
     try {
-        const channel = client.channels.cache.get(data.guard_log_channel_id) as TextChannel | undefined;
+        const channel = await getLogChannel(client, "guard_log") as TextChannel | undefined;
         if (!channel?.isTextBased()) return;
 
         const embed = new EmbedBuilder()

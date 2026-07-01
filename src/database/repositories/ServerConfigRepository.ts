@@ -1,12 +1,42 @@
-import { ServerConfig, type IServerConfig, type ISentPanel, type IShortcut } from "@database/models/ServerConfig";
+import { ServerConfig, type IServerConfig, type ISentPanel, type IShortcut, type IServerRoles } from "@database/models/ServerConfig";
 
 export class ServerConfigRepository {
+    static async find(guildId: string): Promise<IServerConfig | null> {
+        return ServerConfig.findOne({ guildId });
+    }
+
     static async findOrCreate(guildId: string): Promise<IServerConfig> {
         let config = await ServerConfig.findOne({ guildId });
         if (!config) {
             config = await ServerConfig.create({ guildId, sentPanels: [], shortcuts: [] });
         }
         return config;
+    }
+
+    static async setRole(guildId: string, type: keyof IServerRoles, roleId: string): Promise<IServerConfig> {
+        return ServerConfig.findOneAndUpdate(
+            { guildId },
+            { $set: { [`roles.${type}`]: roleId } },
+            { upsert: true, returnDocument: "after", new: true }
+        ) as Promise<IServerConfig>;
+    }
+
+    static async getRole(guildId: string, type: keyof IServerRoles): Promise<string | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.roles?.[type] ?? null;
+    }
+
+    static async setModmailChannel(guildId: string, channelId: string): Promise<IServerConfig> {
+        return ServerConfig.findOneAndUpdate(
+            { guildId },
+            { $set: { modmailChannelId: channelId } },
+            { upsert: true, returnDocument: "after", new: true }
+        ) as Promise<IServerConfig>;
+    }
+
+    static async getModmailChannel(guildId: string): Promise<string | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.modmailChannelId ?? null;
     }
 
     static async addShortcut(guildId: string, command: string, trigger: string): Promise<IServerConfig> {

@@ -2,6 +2,7 @@ import { AuditLogEvent, Events, type GuildChannel } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { getModerationSecurityConfig, resolveLogChannel, recordSecurityEvent } from "../utils/security";
 import { channelCreateEmbed } from "../utils/embed";
+import { sendToServerLog } from "@shared/utils/sendToServerLog";
 
 export default {
     name: Events.ChannelCreate,
@@ -19,6 +20,8 @@ export default {
                 await logChannel.send({ embeds: [channelCreateEmbed(channel, executorId ?? null)] }).catch(() => null);
             }
         }
+
+        await sendToServerLog(client, channel.guild.id, "channel-create", channelCreateEmbed(channel, executorId ?? null));
 
         if (executorId) {
             await recordSecurityEvent({

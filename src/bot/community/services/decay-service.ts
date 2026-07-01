@@ -5,15 +5,15 @@ import { DECAY_CONFIG } from "@core/config";
 import { calculateLevel, removeLevelRewards } from "./xp-service";
 import { Logger } from "@core/libs";
 import { logToChannel, decayEmbed } from "../utils/activity-logger";
-import type { Client, Guild } from "discord.js";
+import type { Client } from "discord.js";
 
 export async function runDecayCycle(client: Client): Promise<void> {
     for (const [, guild] of client.guilds.cache) {
-        await processGuildDecay(guild);
+        await processGuildDecay(client, guild);
     }
 }
 
-async function processGuildDecay(guild: Guild): Promise<void> {
+async function processGuildDecay(client: Client, guild: import("discord.js").Guild): Promise<void> {
     const settings = await XPSettingsRepository.get(guild.id);
     if (!settings?.decayEnabled) return;
 
@@ -61,7 +61,7 @@ async function processGuildDecay(guild: Guild): Promise<void> {
             "community"
         );
 
-        await logToChannel(guild, "decay", decayEmbed(
+        await logToChannel(client, "decay", decayEmbed(
             user.discordId, user.username, actualLoss, levelDown, user.level, newLevel,
         ));
     }

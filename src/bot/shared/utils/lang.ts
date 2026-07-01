@@ -1,12 +1,14 @@
 import type { GuildMember } from "discord.js";
-import data from "@shared/data.json";
+import { ServerConfig } from "@database/models/ServerConfig";
 import messages from "@shared/messages.json";
 
 export type Lang = "en" | "ar";
 
-export function getUserLang(member: GuildMember | null | undefined): Lang {
+export async function getUserLang(member: GuildMember | null | undefined): Promise<Lang> {
     if (!member) return "en";
-    if (member.roles.cache.has(data.ar_role_id)) return "ar";
+    const config = await ServerConfig.findOne({ guildId: member.guild.id });
+    const arRoleId = config?.roles?.ar;
+    if (arRoleId && member.roles.cache.has(arRoleId)) return "ar";
     return "en";
 }
 

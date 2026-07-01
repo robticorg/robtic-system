@@ -9,7 +9,7 @@ import {
 import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
 import { Colors } from "@core/config";
-import data from "@shared/data.json";
+import { getLogChannel } from "@shared/utils/getLogChannel";
 import { t, type Lang } from "@shared/utils/lang";
 import { PunishmentRepository } from "@database/repositories";
 
@@ -41,12 +41,11 @@ const appealSubmit: ComponentHandler<ModalSubmitInteraction> = {
             tempban: "🔨 Temporary Ban Appeal",
         };
 
-        const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
         const appealsChannel = (
-            staffGuild?.channels.cache.get(data.appeals_case_channel_id)
-            ?? staffGuild?.channels.cache.get(data.punishments_case_channel_id)
-            ?? staffGuild?.channels.cache.get(data.report_channel_id)
-        ) as TextChannel | undefined;
+            await getLogChannel(client, "appeals_case")
+            ?? await getLogChannel(client, "punishments_case")
+            ?? await getLogChannel(client, "report")
+        ) as TextChannel | null;
 
         if (!appealsChannel) {
             await interaction.reply({

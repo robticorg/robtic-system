@@ -12,11 +12,10 @@ import {
     StringSelectMenuBuilder,
 } from "discord.js";
 
-import { ModMailRepository } from "@database/repositories";
+import { ModMailRepository, ServerConfigRepository } from "@database/repositories";
 import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
 import { Colors } from "@core/config";
-import data from "@shared/data.json";
 import { pendingSessions } from "../utils/handleModMailDM";
 import messages from "../utils/messages.json";
 import { t, type Lang } from "@shared/utils/lang";
@@ -105,7 +104,8 @@ const modmailType: ComponentHandler<StringSelectMenuInteraction> = {
         }
 
         const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
-        const staffChannel = staffGuild?.channels.cache.get(data.modmail_channel_id) as TextChannel;
+        const modmailChannelId = staffGuild ? await ServerConfigRepository.getModmailChannel(staffGuild.id) : null;
+        const staffChannel = modmailChannelId ? staffGuild?.channels.cache.get(modmailChannelId) as TextChannel : null;
 
         if (!staffChannel) {
             await interaction.update({

@@ -1,7 +1,8 @@
-import { EmbedBuilder, type Guild, type TextChannel } from "discord.js";
+import { EmbedBuilder, type Client, type TextChannel } from "discord.js";
 import { Colors } from "@core/config";
 import { Logger } from "@core/libs";
-import data from "@shared/data.json";
+import { getLogChannel as fetchLogChannel } from "@shared/utils/getLogChannel";
+import type { LogKey } from "@shared/config/log-registry";
 
 const CTX = "activity:log";
 
@@ -13,29 +14,22 @@ type ActivityLogChannel =
     | "decay"
     | "ai";
 
-const CHANNEL_MAP: Record<ActivityLogChannel, string> = {
-    xp_gain: data.xp_gain_log_channel_id,
-    rewards: data.rewards_log_channel_id,
-    support_points: data.support_points_log_channel_id,
-    staff_activity: data.staff_activity_log_channel_id,
-    decay: data.decay_log_channel_id,
-    ai: data.ai_log_channel_id,
+const LOG_KEY_MAP: Record<ActivityLogChannel, LogKey> = {
+    xp_gain: "xp_gain_log",
+    rewards: "rewards_log",
+    support_points: "support_points_log",
+    staff_activity: "staff_activity_log",
+    decay: "decay_log",
+    ai: "ai_log",
 };
 
-function getLogChannel(guild: Guild, type: ActivityLogChannel): TextChannel | null {
-    const channelId = CHANNEL_MAP[type];
-    if (!channelId) return null;
-    const channel = guild.channels.cache.get(channelId) as TextChannel | undefined;
-    return channel ?? null;
-}
-
 export async function logToChannel(
-    guild: Guild,
+    client: Client,
     type: ActivityLogChannel,
     embed: EmbedBuilder,
 ): Promise<void> {
     try {
-        const channel = getLogChannel(guild, type);
+        const channel = await fetchLogChannel(client, LOG_KEY_MAP[type]) as TextChannel | null;
         if (!channel) return;
         await channel.send({ embeds: [embed] });
     } catch (err) {

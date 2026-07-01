@@ -11,8 +11,7 @@ import {
 import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
 import { Colors } from "@core/config";
-import { ModMailRepository } from "@database/repositories";
-import data from "@shared/data.json";
+import { ModMailRepository, ServerConfigRepository } from "@database/repositories";
 import { getMemberLevel, isInDepartment } from "@shared/utils/access";
 import messages from "../utils/messages.json";
 
@@ -56,7 +55,8 @@ const reportAction: ComponentHandler<ButtonInteraction> = {
 
         if (action === "investigate") {
             const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
-            const staffChannel = staffGuild?.channels.cache.get(data.modmail_channel_id) as TextChannel;
+            const modmailChannelId = staffGuild ? await ServerConfigRepository.getModmailChannel(staffGuild.id) : null;
+            const staffChannel = modmailChannelId ? staffGuild?.channels.cache.get(modmailChannelId) as TextChannel : null;
 
             if (!staffChannel) {
                 await interaction.reply({

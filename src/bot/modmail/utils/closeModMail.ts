@@ -7,7 +7,7 @@ import { ModMailRepository } from "@database/repositories";
 import type { BotClient } from "@core/BotClient";
 import type { IModMailThread } from "@database/models/ModMailThread";
 import { Colors, STAFF_TEAM_ROLE_ID } from "@core/config";
-import data from "@shared/data.json";
+import { getLogChannel } from "@shared/utils/getLogChannel";
 import messages from "./messages.json";
 import { t } from "@shared/utils/lang";
 
@@ -52,9 +52,7 @@ export async function closeModMail(
         )
         .setTimestamp();
 
-    const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
-    const logChannel = staffGuild?.channels.cache.get(data.modmail_log_channel_id) as TextChannel | undefined;
-
+    const logChannel = await getLogChannel(client, "modmail_log") as TextChannel | null;
     if (logChannel) {
         await logChannel.send({ embeds: [logEmbed] }).catch(() => null);
     }
