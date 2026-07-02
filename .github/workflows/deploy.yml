@@ -1,147 +1,19 @@
-name: Deploy Bot
+name: Deploy
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3.4.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5.7.0
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=
-
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
   deploy:
-    needs: build
-    runs-on:
-      - self-hosted
-      - robtic-deploy
-
-    environment:
-      name: Robtic Server
-      url: https://robtic.org
-
-    steps:
-      - name: Notify Deployment Start
-        run: |
-          ACTOR="${{ github.actor }}"
-          REPO="${{ github.repository }}"
-          BRANCH="${{ github.ref_name }}"
-          COMMIT="${{ github.event.head_commit.message }}"
-          AVATAR="https://github.com/${{ github.actor }}.png"
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          curl -H "Content-Type: application/json" \
-          -d "{
-            \"username\": \"Robtic Deploy\",
-            \"embeds\": [{
-              \"title\": \"🚀 Deployment Started\",
-              \"url\": \"$RUN_URL\",
-              \"color\": 16753920,
-              \"author\": {
-                \"name\": \"$ACTOR\",
-                \"icon_url\": \"$AVATAR\",
-                \"url\": \"https://github.com/$ACTOR\"
-              },
-              \"fields\": [
-                {\"name\": \"📦 Repository\", \"value\": \"$REPO\", \"inline\": true},
-                {\"name\": \"🌿 Branch\", \"value\": \"$BRANCH\", \"inline\": true},
-                {\"name\": \"🖥 Server\", \"value\": \"core.robtic.org\", \"inline\": true},
-                {\"name\": \"📝 Commit\", \"value\": \"$COMMIT\", \"inline\": false}
-              ],
-              \"footer\": {\"text\": \"Robtic Deployment Pipeline\"},
-              \"timestamp\": \"$TIMESTAMP\"
-            }]
-          }" \
-          "${{ secrets.DISCORD_WEBHOOK_DEPLOY }}"
-
-      - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3.4.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Deploy with Docker Compose
-        run: |
-          retry() {
-            local attempts=$1 delay=$2; shift 2
-            local i=1
-            until "$@"; do
-              [ $i -ge $attempts ] && { echo "All $attempts attempts failed"; return 1; }
-              echo "Attempt $i/$attempts failed — retrying in ${delay}s..."
-              sleep $delay
-              i=$((i + 1))
-            done
-          }
-          retry 3 15 docker compose -p robtic-system --env-file /home/robtic/.env pull
-          docker compose -p robtic-system --env-file /home/robtic/.env up -d
-
-      - name: Notify Deployment Success
-        if: success()
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          curl -H "Content-Type: application/json" \
-          -d "{
-            \"username\": \"Robtic Deploy\",
-            \"embeds\": [{
-              \"title\": \"🟢 Deployment Successful\",
-              \"url\": \"$RUN_URL\",
-              \"description\": \"The bot has been successfully deployed to **core.robtic.org**.\",
-              \"color\": 5763719,
-              \"footer\": {\"text\": \"Robtic Deployment Pipeline\"},
-              \"timestamp\": \"$TIMESTAMP\"
-            }]
-          }" \
-          "${{ secrets.DISCORD_WEBHOOK_DEPLOY }}"
-
-      - name: Notify Deployment Failure
-        if: failure()
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          curl -H "Content-Type: application/json" \
-          -d "{
-            \"username\": \"Robtic Deploy\",
-            \"embeds\": [{
-              \"title\": \"🔴 Deployment Failed\",
-              \"url\": \"$RUN_URL\",
-              \"description\": \"Deployment failed. Check the GitHub Actions logs.\",
-              \"color\": 15548997,
-              \"footer\": {\"text\": \"Robtic Deployment Pipeline\"},
-              \"timestamp\": \"$TIMESTAMP\"
-            }]
-          }" \
-          "${{ secrets.DISCORD_WEBHOOK_DEPLOY }}"
+    uses: robticorg/robtic-actions/.github/workflows/deploy.yml@main
+    with:
+      deploy-type: docker
+      runner-labels: '["self-hosted", "robtic-deploy"]'
+      environment-name: 'Robtic Server'
+      environment-url: 'https://robtic.org'
+      server-label: 'core.robtic.org'
+      compose-project-name: 'robtic-system'
+      compose-env-file: '/home/robtic/robtic-system/.env'
+    secrets:
+      DISCORD_WEBHOOK_DEPLOY: ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}

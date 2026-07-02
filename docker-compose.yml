@@ -4,4 +4,4 @@ services:
     build: .
     restart: unless-stopped
     env_file:
-      - /home/robtic/.env
+      - /home/robtic/robtic-system/.env
