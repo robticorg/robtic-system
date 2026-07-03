@@ -18,3 +18,4 @@ export * from "./LogConfigRepository";
 export * from "./GlobalConfigRepository";
 export * from "./ProjectsRepository";
 export * from "./ProjectShareRepository";
+export * from "./SubmitConfigRepository";

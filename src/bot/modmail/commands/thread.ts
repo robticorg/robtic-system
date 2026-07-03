@@ -210,16 +210,6 @@ export default {
             await thread.setArchived(false).catch(() => null);
             await thread.setLocked(false).catch(() => null);
 
-            const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
-            if (staffGuild) {
-                const parent = thread.parent;
-                if (parent) {
-                    await thread.send({
-                        content: messages.success.thread_reopened.replace("{userId}", interaction.user.id),
-                    });
-                }
-            }
-
             await interaction.reply({
                 content: messages.success.thread_reopened.replace("{userId}", interaction.user.id),
             });

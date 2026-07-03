@@ -7,14 +7,14 @@ import {
 
 import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
-import { pendingSessions } from "../utils/handleModMailDM";
+import { pendingSessions } from "../sessions/pendingSessions";
 import messages from "../utils/messages.json";
 import { t, type Lang } from "@shared/utils/lang";
 
 const modmailLang: ComponentHandler<StringSelectMenuInteraction> = {
     customId: /^modmail_lang_\d+$/,
 
-    async run(interaction: StringSelectMenuInteraction, client: BotClient) {
+    async run(interaction: StringSelectMenuInteraction, _client: BotClient) {
         const userId = interaction.customId.split("_")[2];
 
         if (interaction.user.id !== userId) {

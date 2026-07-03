@@ -8,16 +8,8 @@ import {
 import { ModMailRepository } from "@database/repositories";
 import type { BotClient } from "@core/BotClient.ts";
 import { ServerConfigRepository } from "@database/repositories";
+import { pendingSessions } from "../sessions/pendingSessions";
 import messages from "./messages.json";
-
-export interface PendingModMail {
-    userId: string;
-    content: string;
-    attachments: string[];
-    language?: "en" | "ar";
-}
-
-export const pendingSessions = new Map<string, PendingModMail>();
 
 export async function handleModMailDM(message: Message, client: BotClient) {
 

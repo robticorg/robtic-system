@@ -1,87 +1,178 @@
 import {
-  SlashCommandBuilder,
-  ChatInputCommandInteraction,
-  ButtonBuilder,
-  ButtonStyle,
-  ActionRowBuilder,
-  EmbedBuilder,
-  TextChannel,
-  MessageFlags
+    SlashCommandBuilder,
+    ChatInputCommandInteraction,
+    EmbedBuilder,
+    MessageFlags,
+    PermissionFlagsBits,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { StaffRepository } from "@database/repositories";
-
+import { Colors, ROLE_MAP } from "@core/config";
+import { StaffRepository, SubmitConfigRepository } from "@database/repositories";
 import { departments } from "../config/departments";
-import { getDepartmentEmbedConfig } from "../config/embeds";
+import { updatePanel } from "../utils/updatePanel";
+
+const DEPT_EMOJI: Record<string, string> = {
+    Dev: "💻",
+    Design: "🎨",
+    Moderation: "🛡️",
+    Community: "💬",
+    Events: "🎉",
+    Support: "🎫",
+    HR: "👥",
+};
+
+function getManagerRoleId(department: Department): string | null {
+    const entry = Object.entries(ROLE_MAP).find(
+        ([key, v]) => v.department === department && key.includes("Manager")
+    );
+    return entry?.[1].ids[0] ?? null;
+}
 
 export default {
-  data: new SlashCommandBuilder()
-    .setName("staff-submit")
-    .setDescription("staff-submit command")
-    .addSubcommand((sub) =>
-      sub
-        .setName("open")
-        .setDescription("Open staff submission")
-        .addStringOption((opt) =>
-          opt
-            .setName("department")
-            .setDescription("The department")
-            .setRequired(true)
-            .addChoices(
-              ...departments.map((d) => ({ name: d.name, value: d.name })),
-            ),
+    data: new SlashCommandBuilder()
+        .setName("staff-submit")
+        .setDescription("Manage staff submission fields")
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .addSubcommand(sub =>
+            sub
+                .setName("open")
+                .setDescription("Open a department for applications")
+                .addStringOption(opt =>
+                    opt
+                        .setName("department")
+                        .setDescription("Department to open")
+                        .setRequired(true)
+                        .addChoices(...departments.map(d => ({ name: d.name, value: d.name })))
+                )
+        )
+        .addSubcommand(sub =>
+            sub
+                .setName("close")
+                .setDescription("Close a department from accepting applications")
+                .addStringOption(opt =>
+                    opt
+                        .setName("department")
+                        .setDescription("Department to close")
+                        .setRequired(true)
+                        .addChoices(...departments.map(d => ({ name: d.name, value: d.name })))
+                )
+        )
+        .addSubcommand(sub =>
+            sub.setName("status").setDescription("Show all departments status and staff count")
         ),
-    ),
 
-  async run(interaction: ChatInputCommandInteraction, client: BotClient) {
-    const department = interaction.options.getString("department", true);
-    const selected = departments.find((d) => d.name === department)!;
-    const embedConfig = getDepartmentEmbedConfig(selected.name);
+    async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+        const sub = interaction.options.getSubcommand();
+        const guildId = interaction.guildId!;
 
-    const channel = interaction.guild?.channels.cache.get(selected.channelId) as TextChannel | undefined;
+        if (sub === "open") {
+            const department = interaction.options.getString("department", true) as Department;
 
-    if (!channel) {
-      return await interaction.reply({
-        content: "Channel not found",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
+            const config = await SubmitConfigRepository.get(guildId);
+            if (!config?.reviewChannelId) {
+                await interaction.reply({
+                    content: "❌ Set the review channel first with `/setup-submit channel`.",
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
 
-    await channel.permissionOverwrites.edit(interaction.guild!.roles.everyone, {
-      SendMessages: false,
-      ViewChannel: true,
-    });
+            if (config.openDepartments.includes(department)) {
+                await interaction.reply({
+                    content: `⚠️ **${department}** is already open.`,
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
 
-    const submitButton = new ButtonBuilder()
-      .setCustomId(`staff-start_${selected.name}`)
-      .setLabel("Submit")
-      .setStyle(ButtonStyle.Primary);
+            const updated = await SubmitConfigRepository.openDepartment(guildId, department);
+            if (updated) await updatePanel(client, updated);
 
-    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      submitButton,
-    );
+            await interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle(`${DEPT_EMOJI[department]} ${department} — Opened`)
+                        .setDescription(`Applications for **${department}** are now open. The panel has been updated.`)
+                        .setColor(Colors.success),
+                ],
+                flags: MessageFlags.Ephemeral,
+            });
+            return;
+        }
 
-    const openEmbed = new EmbedBuilder()
-      .setTitle(embedConfig.openTitle)
-      .setDescription(embedConfig.openDescription)
-      .setColor(embedConfig.openColor)
-      .setFooter({ text: "Click Submit to start your application" });
+        if (sub === "close") {
+            const department = interaction.options.getString("department", true) as Department;
 
-    const msg = await channel.send({
-      content: `<@&1362501792490983716>, You can submit now`,
-      embeds: [openEmbed],
-      components: [row],
-    });
+            const config = await SubmitConfigRepository.get(guildId);
+            if (!config?.openDepartments.includes(department)) {
+                await interaction.reply({
+                    content: `⚠️ **${department}** is already closed.`,
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
 
-    await StaffRepository.openSubmission({
-      messageId: msg.id,
-      channelId: msg.channelId,
-      department: selected.name,
-    });
+            const updated = await SubmitConfigRepository.closeDepartment(guildId, department);
+            if (updated) await updatePanel(client, updated);
 
-    await interaction.reply({
-      content: `:white_check_mark: | Submission for ${selected.name} department staff is now open `,
-      flags: MessageFlags.Ephemeral,
-    });
-  },
+            await interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle(`🔒 ${department} — Closed`)
+                        .setDescription(`Applications for **${department}** are now closed and removed from the panel.`)
+                        .setColor(Colors.error),
+                ],
+                flags: MessageFlags.Ephemeral,
+            });
+            return;
+        }
+
+        if (sub === "status") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+            const config = await SubmitConfigRepository.get(guildId);
+            const openDepts = config?.openDepartments ?? [];
+
+            const staffCounts = await Promise.all(
+                departments.map(async d => ({
+                    name: d.name,
+                    count: (await StaffRepository.findByDepartment(d.name)).length,
+                }))
+            );
+
+            const countMap = Object.fromEntries(staffCounts.map(s => [s.name, s.count]));
+
+            const fields = departments.map(d => {
+                const isOpen = openDepts.includes(d.name);
+                const managerRoleId = getManagerRoleId(d.name as Department);
+                const manager = managerRoleId ? `<@&${managerRoleId}>` : "—";
+                const staffCount = countMap[d.name] ?? 0;
+
+                return {
+                    name: `${DEPT_EMOJI[d.name] ?? "📋"} ${d.name}`,
+                    value: [
+                        `Status: ${isOpen ? "✅ Open" : "🔒 Closed"}`,
+                        `Staff: \`${staffCount}\``,
+                        `Manager: ${manager}`,
+                    ].join("\n"),
+                    inline: true,
+                };
+            });
+
+            const reviewChannelMention = config?.reviewChannelId ? `<#${config.reviewChannelId}>` : "Not set";
+            const panelChannelMention = config?.panelChannelId ? `<#${config.panelChannelId}>` : "Not set";
+
+            const embed = new EmbedBuilder()
+                .setTitle("📊 Submission System Status")
+                .addFields(fields)
+                .addFields(
+                    { name: "Review Channel", value: reviewChannelMention, inline: true },
+                    { name: "Panel Channel", value: panelChannelMention, inline: true },
+                )
+                .setColor(Colors.info)
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+        }
+    },
 };

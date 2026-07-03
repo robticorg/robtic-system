@@ -1,24 +1,19 @@
 import {
     ButtonInteraction,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
-    ActionRowBuilder,
     EmbedBuilder,
     MessageFlags,
     type GuildMember,
+    type TextChannel,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
 import { Colors, FULL_POWER_ROLE_ID, MembersPunishments, PunishmentsSystem } from "@core/config";
-import { ModMailRepository, PunishmentRepository } from "@database/repositories";
-import { NoteRepository } from "@database/repositories/NoteRepository";
+import { ModMailRepository, PunishmentRepository, ServerConfigRepository } from "@database/repositories";
 import { getMemberLevel } from "@shared/utils/access";
-import { t, type Lang } from "@shared/utils/lang";
-import { ServerConfigRepository } from "@database/repositories";
-import type { TextChannel } from "discord.js";
+import { type Lang } from "@shared/utils/lang";
+import { createModmailThread } from "../utils/createModmailThread";
 
-export const appealDecision: ComponentHandler<ButtonInteraction> = {
+const appealDecision: ComponentHandler<ButtonInteraction> = {
     customId: /^appeal_(approve|approvepoints|approvenopoints|deny|openchat)_[A-Za-z0-9-]+_\d+_(en|ar)$/,
 
     async run(interaction: ButtonInteraction, client: BotClient) {
@@ -27,15 +22,12 @@ export const appealDecision: ComponentHandler<ButtonInteraction> = {
         const customCaseId = parts[2];
         const userId = parts[3];
         const lang = (parts[4] === "ar" ? "ar" : "en") as Lang;
+
         const embedCaseId = interaction.message.embeds[0]?.fields.find(f => f.name === "Case ID")?.value;
         const caseId = (embedCaseId && embedCaseId !== "N/A") ? embedCaseId : customCaseId;
 
         const modMember = interaction.member as GuildMember;
-
-        const hasFullPower = modMember.roles.cache.has(FULL_POWER_ROLE_ID);
-        const modLevel = getMemberLevel(modMember);
-
-        if (!hasFullPower && modLevel.score < 80) {
+        if (!modMember.roles.cache.has(FULL_POWER_ROLE_ID) && getMemberLevel(modMember).score < 80) {
             await interaction.reply({
                 embeds: [new EmbedBuilder().setDescription("❌ Only Manager+ can handle appeals.").setColor(Colors.error)],
                 flags: MessageFlags.Ephemeral,
@@ -66,21 +58,14 @@ export const appealDecision: ComponentHandler<ButtonInteraction> = {
             }
 
             const targetUser = await client.users.fetch(userId).catch(() => null);
-            const thread = await staffChannel.threads.create({
+            const thread = await createModmailThread(client, staffGuild, staffChannel, {
                 name: `appeal-${targetUser?.username ?? userId}`,
-                autoArchiveDuration: 1440,
-                reason: `Appeal chat opened by ${interaction.user.tag} for case ${caseId}`,
-            });
-
-            await ModMailRepository.create({
                 userId,
-                threadId: thread.id,
-                guildId: staffGuild.id,
-                staffChannelId: staffChannel.id,
                 language: lang,
                 requestType: "appeal",
+                claimedBy: interaction.user.id,
+                reason: `Appeal chat opened by ${interaction.user.tag} for case ${caseId}`,
             });
-            await ModMailRepository.claim(thread.id, interaction.user.id);
 
             const infoEmbed = new EmbedBuilder()
                 .setTitle("📝 Appeal Chat Opened")
@@ -95,10 +80,10 @@ export const appealDecision: ComponentHandler<ButtonInteraction> = {
             await thread.send({ embeds: [infoEmbed] });
 
             if (targetUser) {
-                const openMsg = lang === "ar"
+                const msg = lang === "ar"
                     ? "💬 تم فتح محادثة استئناف مع فريق الإدارة. يمكنك الرد هنا مباشرة."
                     : "💬 An appeal chat has been opened with the moderation team. You can reply here directly.";
-                await targetUser.send({ content: openMsg }).catch(() => null);
+                await targetUser.send({ content: msg }).catch(() => null);
             }
 
             await interaction.reply({
@@ -210,51 +195,7 @@ export const appealDecision: ComponentHandler<ButtonInteraction> = {
                 : "✅ Your appeal has been approved.";
             await user.send({ content: msg }).catch(() => null);
         }
-        return;
     },
 };
 
-export const appealNote: ComponentHandler<ButtonInteraction> = {
-    customId: /^appeal_note_[A-Za-z0-9-]+_\d+$/,
-
-    async run(interaction: ButtonInteraction, client: BotClient) {
-        const parts = interaction.customId.split("_");
-        const caseId = parts[2];
-        const userId = parts[3];
-
-        const modal = new ModalBuilder()
-            .setCustomId(`appeal_note_submit_${caseId}_${userId}`)
-            .setTitle("Add Note");
-
-        modal.addComponents(
-            new ActionRowBuilder<TextInputBuilder>().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("note_content")
-                    .setLabel("Note")
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setRequired(true)
-                    .setMaxLength(1000)
-            ),
-        );
-
-        await interaction.showModal(modal);
-    },
-};
-
-export const appealNoteSubmit: ComponentHandler<import("discord.js").ModalSubmitInteraction> = {
-    customId: /^appeal_note_submit_[A-Za-z0-9-]+_\d+$/,
-
-    async run(interaction: import("discord.js").ModalSubmitInteraction, client: BotClient) {
-        const parts = interaction.customId.split("_");
-        const caseId = parts[3];
-        const userId = parts[4];
-        const content = interaction.fields.getTextInputValue("note_content").trim();
-
-        await NoteRepository.create(userId, `[Appeal ${caseId}] ${content}`, interaction.user.id);
-
-        await interaction.reply({
-            embeds: [new EmbedBuilder().setDescription(`📝 Note added for <@${userId}>.`).setColor(Colors.success)],
-            flags: MessageFlags.Ephemeral,
-        });
-    },
-};
+export default appealDecision;
