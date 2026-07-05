@@ -8,7 +8,7 @@ export async function startInterview(
   DM: DMChannel,
   userId: string,
   managerId: string,
-  dep: Department,
+  dep: string,
 ) {
   const timer = 300000;
 

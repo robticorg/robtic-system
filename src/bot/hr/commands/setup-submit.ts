@@ -10,7 +10,8 @@ import {
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { Colors } from "@core/config";
-import { SubmitConfigRepository } from "@database/repositories";
+import { SubmitConfigRepository, SubmissionTypeRepository } from "@database/repositories";
+import { updatePanel } from "../utils/updatePanel";
 
 export default {
     data: new SlashCommandBuilder()
@@ -67,7 +68,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle("📋 Staff Applications")
-                .setDescription("No departments are currently open for applications.\nCheck back later!")
+                .setDescription("No submission types are currently open for applications.\nCheck back later!")
                 .setColor(Colors.error)
                 .setTimestamp();
 
@@ -75,9 +76,9 @@ export default {
 
             await SubmitConfigRepository.setPanel(guildId, panelChannel.id, msg.id);
 
-            // If there are already open departments, update the panel immediately
-            if (config.openDepartments.length) {
-                const { updatePanel } = await import("../utils/updatePanel");
+            // If there are already open submission types, update the panel immediately
+            const types = await SubmissionTypeRepository.list(guildId);
+            if (types.some(t => t.isOpen)) {
                 const updated = await SubmitConfigRepository.get(guildId);
                 if (updated) await updatePanel(client, updated);
             }

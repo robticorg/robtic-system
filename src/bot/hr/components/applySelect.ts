@@ -7,19 +7,26 @@ import {
     MessageFlags,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { getQuestionsByDepartment } from "../config/questions";
-import { StaffRepository } from "@database/repositories";
+import { StaffRepository, SubmissionTypeRepository } from "@database/repositories";
 
 export default {
     customId: "staff-apply-select",
 
     async run(interaction: StringSelectMenuInteraction, client: BotClient) {
-        const dep = interaction.values[0] as Department;
-        const questions = getQuestionsByDepartment(dep);
+        const key = interaction.values[0];
+        const type = await SubmissionTypeRepository.get(interaction.guildId!, key);
 
-        if (!questions.length) {
+        if (!type || !type.isOpen) {
             await interaction.reply({
-                content: "❌ No questions configured for this department.",
+                content: "❌ This submission type is no longer open.",
+                flags: MessageFlags.Ephemeral,
+            });
+            return;
+        }
+
+        if (!type.questions.length) {
+            await interaction.reply({
+                content: "❌ No questions configured for this submission type yet.",
                 flags: MessageFlags.Ephemeral,
             });
             return;
@@ -35,14 +42,14 @@ export default {
         }
 
         const modal = new ModalBuilder()
-            .setCustomId(`staff-submit_${dep}`)
-            .setTitle(`${dep} Department Application`)
+            .setCustomId(`staff-submit_${type.key}`)
+            .setTitle(`${type.name} Application`.slice(0, 45))
             .addComponents(
-                questions.map(q =>
+                type.questions.map(q =>
                     new ActionRowBuilder<TextInputBuilder>().addComponents(
                         new TextInputBuilder()
                             .setCustomId(q.id)
-                            .setLabel(q.question)
+                            .setLabel(q.question.slice(0, 45))
                             .setStyle(TextInputStyle.Paragraph)
                             .setRequired(true)
                     )

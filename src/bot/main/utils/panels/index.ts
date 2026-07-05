@@ -1,3 +1,3 @@
-export { panelList, panelSend, panelDelete, panelButtonHandler, panelAutocompleteChoices, sentPanelAutocomplete } from "./panelsEmbed";
-export { PANELS, getPanel, getPanelKeys, registerPanel } from "./panelsData";
-export type { PanelDefinition } from "./panelsData";
+export { panelList, panelSend, panelDelete, panelButtonHandler, panelAutocompleteChoices, sentPanelAutocomplete } from "./actions";
+export { getPanel, listPanels, getPanelKeys, registerPanel, ensurePanelsLoaded } from "./registry";
+export type { PanelDefinition } from "./registry";

@@ -19,3 +19,6 @@ export * from "./GlobalConfigRepository";
 export * from "./ProjectsRepository";
 export * from "./ProjectShareRepository";
 export * from "./SubmitConfigRepository";
+export * from "./SubmissionTypeRepository";
+export * from "./AdsConfigRepository";
+export * from "./AdOrderRepository";

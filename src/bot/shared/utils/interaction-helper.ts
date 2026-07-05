@@ -10,6 +10,7 @@ export const HandlingComponent = async (interaction: Interaction, client: BotCli
     if (
         interaction.isButton() ||
         interaction.isStringSelectMenu() ||
+        interaction.isRoleSelectMenu() ||
         interaction.isModalSubmit()
     ) {
         const customId = interaction.customId;

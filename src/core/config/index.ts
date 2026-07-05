@@ -5,6 +5,7 @@ import type {
     AutocompleteInteraction,
     ButtonInteraction,
     StringSelectMenuInteraction,
+    RoleSelectMenuInteraction,
     ModalSubmitInteraction,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
@@ -22,7 +23,7 @@ interface CommandConfig {
     autocomplete?: (interaction: AutocompleteInteraction, client: BotClient) => Promise<void>;
 }
 
-type ComponentInteraction = ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction;
+type ComponentInteraction = ButtonInteraction | StringSelectMenuInteraction | RoleSelectMenuInteraction | ModalSubmitInteraction;
 
 interface ComponentHandler<T extends ComponentInteraction = ComponentInteraction> {
     customId: string | RegExp;

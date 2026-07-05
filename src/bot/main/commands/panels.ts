@@ -54,7 +54,7 @@ export default {
         const focused = interaction.options.getFocused();
 
         if (sub === "send") {
-            const choices = panelAutocompleteChoices(focused);
+            const choices = await panelAutocompleteChoices(focused);
             await interaction.respond(choices);
         } else if (sub === "delete") {
             const choices = await sentPanelAutocomplete(interaction.guildId!, focused);

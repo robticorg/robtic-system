@@ -8,36 +8,26 @@ import {
     type TextChannel,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { ROLE_MAP } from "@core/config";
-import { getQuestionsByDepartment } from "../config/questions";
-import { getDepartmentEmbedConfig } from "../config/embeds";
-import { StaffRepository, SubmitConfigRepository } from "@database/repositories";
-
-function getManagerRoleId(department: Department): string | null {
-    const entry = Object.entries(ROLE_MAP).find(
-        ([key, v]) => v.department === department && key.includes("Manager")
-    );
-    return entry?.[1].ids[0] ?? null;
-}
+import { Colors } from "@core/config";
+import { StaffRepository, SubmitConfigRepository, SubmissionTypeRepository } from "@database/repositories";
 
 export default {
     customId: /^staff-submit_/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
-        const parts = interaction.customId.split("_");
-        const dep = parts[1] as Department;
-        const questions = getQuestionsByDepartment(dep);
-        const embedConfig = getDepartmentEmbedConfig(dep);
+        const key = interaction.customId.slice("staff-submit_".length);
+        const guildId = interaction.guildId!;
+        const type = await SubmissionTypeRepository.get(guildId, key);
 
-        if (!questions.length) {
+        if (!type || !type.questions.length) {
             await interaction.reply({
-                content: "❌ No questions configured for this department.",
+                content: "❌ No questions configured for this submission type.",
                 flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
-        const config = await SubmitConfigRepository.get(interaction.guildId!);
+        const config = await SubmitConfigRepository.get(guildId);
         if (!config?.reviewChannelId) {
             await interaction.reply({
                 content: "❌ The submission system is not configured. Please contact an administrator.",
@@ -55,33 +45,32 @@ export default {
             return;
         }
 
-        const answers = questions.map(q => ({
+        const answers = type.questions.map(q => ({
             id: q.id,
             question: q.question,
             answer: interaction.fields.getTextInputValue(q.id),
         }));
 
         const embed = new EmbedBuilder()
-            .setTitle(embedConfig.submissionTitle)
+            .setTitle(`New ${type.name} Submission`)
             .setDescription(`From <@${interaction.user.id}>`)
             .addFields(answers.map(a => ({ name: a.question, value: a.answer })))
-            .setColor(embedConfig.submissionColor)
+            .setColor(Colors.hr)
             .setTimestamp();
 
         const acceptBtn = new ButtonBuilder()
-            .setCustomId(`staff-accept_${dep}_${interaction.user.id}`)
+            .setCustomId(`staff-accept_${type.key}_${interaction.user.id}`)
             .setLabel("Accept")
             .setStyle(ButtonStyle.Success);
 
         const rejectBtn = new ButtonBuilder()
-            .setCustomId(`staff-reject_${dep}_${interaction.user.id}`)
+            .setCustomId(`staff-reject_${type.key}_${interaction.user.id}`)
             .setLabel("Reject")
             .setStyle(ButtonStyle.Danger);
 
         const row = new ActionRowBuilder<ButtonBuilder>().addComponents(acceptBtn, rejectBtn);
 
-        const managerRoleId = getManagerRoleId(dep);
-        const ping = managerRoleId ? `<@&${managerRoleId}>` : "";
+        const ping = type.managerRoleIds.map(id => `<@&${id}>`).join(" ");
 
         await reviewChannel.send({
             content: ping || undefined,
@@ -91,7 +80,7 @@ export default {
 
         await StaffRepository.createSubmission({
             userId: interaction.user.id,
-            department: dep,
+            department: type.key,
             questions: answers,
         });
 

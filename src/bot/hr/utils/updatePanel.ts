@@ -7,17 +7,7 @@ import {
 import type { BotClient } from "@core/BotClient";
 import type { ISubmitConfig } from "@database/models/SubmitConfig";
 import { Colors } from "@core/config";
-import { departments } from "../config/departments";
-
-const DEPT_EMOJI: Record<string, string> = {
-    Dev: "💻",
-    Design: "🎨",
-    Moderation: "🛡️",
-    Community: "💬",
-    Events: "🎉",
-    Support: "🎫",
-    HR: "👥",
-};
+import { SubmissionTypeRepository } from "@database/repositories";
 
 export async function updatePanel(client: BotClient, config: ISubmitConfig): Promise<void> {
     if (!config.panelChannelId || !config.panelMessageId) return;
@@ -28,15 +18,16 @@ export async function updatePanel(client: BotClient, config: ISubmitConfig): Pro
     const message = await channel.messages.fetch(config.panelMessageId).catch(() => null);
     if (!message) return;
 
-    const openDepts = departments.filter(d => config.openDepartments.includes(d.name));
+    const allTypes = await SubmissionTypeRepository.list(config.guildId);
+    const openTypes = allTypes.filter(t => t.isOpen);
 
     const embed = new EmbedBuilder()
         .setTitle("📋 Staff Applications")
         .setTimestamp();
 
-    if (!openDepts.length) {
+    if (!openTypes.length) {
         embed
-            .setDescription("No departments are currently open for applications.\nCheck back later!")
+            .setDescription("No submission types are currently open for applications.\nCheck back later!")
             .setColor(Colors.error);
 
         await message.edit({ embeds: [embed], components: [] });
@@ -44,11 +35,11 @@ export async function updatePanel(client: BotClient, config: ISubmitConfig): Pro
     }
 
     embed
-        .setDescription("Select a department below to submit your application.\nMake sure to read the requirements before applying.")
+        .setDescription("Select a submission type below to apply.\nMake sure to read the requirements before applying.")
         .setColor(Colors.success)
         .addFields(
-            openDepts.map(d => ({
-                name: `${DEPT_EMOJI[d.name] ?? "📋"} ${d.name}`,
+            openTypes.map(t => ({
+                name: `📋 ${t.name}`,
                 value: "✅ Open",
                 inline: true,
             }))
@@ -56,12 +47,12 @@ export async function updatePanel(client: BotClient, config: ISubmitConfig): Pro
 
     const selectMenu = new StringSelectMenuBuilder()
         .setCustomId("staff-apply-select")
-        .setPlaceholder("Select a department to apply...")
+        .setPlaceholder("Select where to apply...")
         .addOptions(
-            openDepts.map(d => ({
-                label: `${d.name} Department`,
-                value: d.name,
-                emoji: DEPT_EMOJI[d.name] ?? "📋",
+            openTypes.map(t => ({
+                label: t.name,
+                value: t.key,
+                emoji: "📋",
             }))
         );
 

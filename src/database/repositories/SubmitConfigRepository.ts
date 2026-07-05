@@ -20,20 +20,4 @@ export class SubmitConfigRepository {
             { upsert: true, new: true, setDefaultsOnInsert: true },
         ) as Promise<ISubmitConfig>;
     }
-
-    static async openDepartment(guildId: string, department: string): Promise<ISubmitConfig | null> {
-        return SubmitConfig.findOneAndUpdate(
-            { guildId },
-            { $addToSet: { openDepartments: department } },
-            { upsert: true, new: true, setDefaultsOnInsert: true },
-        );
-    }
-
-    static async closeDepartment(guildId: string, department: string): Promise<ISubmitConfig | null> {
-        return SubmitConfig.findOneAndUpdate(
-            { guildId },
-            { $pull: { openDepartments: department } },
-            { new: true },
-        );
-    }
 }

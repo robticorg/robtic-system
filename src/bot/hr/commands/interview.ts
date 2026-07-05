@@ -1,18 +1,16 @@
-import {
-  resultChannelId,
-  STAFF_TRAINEE_ROLE_ID,
-} from "./../config/departments";
+import { resultChannelId, STAFF_TRAINEE_ROLE_ID } from "../config/departments";
 import { STAFF_TEAM_ROLE_ID } from "@core/config/constants";
 import {
   SlashCommandBuilder,
   EmbedBuilder,
   ChatInputCommandInteraction,
-  MessageFlags
+  MessageFlags,
+  type GuildMember,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { StaffRepository } from "@database/repositories";
-import { departments } from "../config/departments";
+import { StaffRepository, SubmissionTypeRepository } from "@database/repositories";
 import { interviewCollectors } from "../utils/interviewCollectors";
+import { hasFullPower } from "@shared/utils/access";
 
 export default {
   data: new SlashCommandBuilder()
@@ -39,6 +37,17 @@ export default {
       });
     }
 
+    const type = await SubmissionTypeRepository.get(interaction.guildId!, data.department);
+    const manager = interaction.member as GuildMember;
+    const isManager = type?.managerRoleIds.some((id) => manager.roles.cache.has(id)) ?? false;
+
+    if (!isManager && !hasFullPower(manager)) {
+      return await interaction.reply({
+        content: "❌ | You don't have permission to decide on this interview.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const user = await client.users.fetch(data.userId);
     const member = await interaction.guild?.members.fetch(data.userId);
 
@@ -50,16 +59,13 @@ export default {
     }
 
     if (sub === "accept") {
-      data.isApproved = true;
-      data.save();
-
-      const dep = departments.find((d) => d.name === data.department);
-
       await member?.roles.add([
-        dep?.roleId!,
+        ...(type?.grantRoleIds ?? []),
         STAFF_TEAM_ROLE_ID,
         STAFF_TRAINEE_ROLE_ID,
       ]);
+
+      await StaffRepository.deleteSubmission(data.userId);
 
       await interaction.reply({
         content: "✅ | Submission accepted",
@@ -92,7 +98,7 @@ export default {
         sub === "accept" ? "✅ Interview Accepted" : "❌ Interview Rejected",
       )
       .addFields(
-        { name: "Department", value: data.department },
+        { name: "Submission Type", value: type?.name ?? data.department },
         { name: "Submitter", value: `<@${data.userId}>` },
         { name: "Manager", value: `<@${interaction.user.id}>` },
       )

@@ -1,10 +1,10 @@
-import type { Question } from "bot/hr/config/questions";
+import type { ISubmissionQuestion } from "@database/models/SubmissionType";
 import { Document, model, Schema } from "mongoose";
 
 export interface ISubmission extends Document {
   userId: string;
-  department: Department;
-  questions: Question[];
+  department: string;
+  questions: (ISubmissionQuestion & { answer: string })[];
   isApproved: boolean;
   threadId: string | null;
   createdAt: Date;

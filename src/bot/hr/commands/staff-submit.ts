@@ -1,72 +1,84 @@
 import {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
+    AutocompleteInteraction,
     EmbedBuilder,
     MessageFlags,
     PermissionFlagsBits,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { Colors, ROLE_MAP } from "@core/config";
-import { StaffRepository, SubmitConfigRepository } from "@database/repositories";
-import { departments } from "../config/departments";
+import { Colors } from "@core/config";
+import { StaffRepository, SubmitConfigRepository, SubmissionTypeRepository } from "@database/repositories";
 import { updatePanel } from "../utils/updatePanel";
-
-const DEPT_EMOJI: Record<string, string> = {
-    Dev: "💻",
-    Design: "🎨",
-    Moderation: "🛡️",
-    Community: "💬",
-    Events: "🎉",
-    Support: "🎫",
-    HR: "👥",
-};
-
-function getManagerRoleId(department: Department): string | null {
-    const entry = Object.entries(ROLE_MAP).find(
-        ([key, v]) => v.department === department && key.includes("Manager")
-    );
-    return entry?.[1].ids[0] ?? null;
-}
+import { buildConfigPanel } from "../utils/configPanel";
 
 export default {
     data: new SlashCommandBuilder()
         .setName("staff-submit")
-        .setDescription("Manage staff submission fields")
+        .setDescription("Manage staff submission types")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommand(sub =>
             sub
                 .setName("open")
-                .setDescription("Open a department for applications")
+                .setDescription("Open a submission type for applications")
                 .addStringOption(opt =>
                     opt
-                        .setName("department")
-                        .setDescription("Department to open")
+                        .setName("type")
+                        .setDescription("Submission type to open")
                         .setRequired(true)
-                        .addChoices(...departments.map(d => ({ name: d.name, value: d.name })))
+                        .setAutocomplete(true)
                 )
         )
         .addSubcommand(sub =>
             sub
                 .setName("close")
-                .setDescription("Close a department from accepting applications")
+                .setDescription("Close a submission type from accepting applications")
                 .addStringOption(opt =>
                     opt
-                        .setName("department")
-                        .setDescription("Department to close")
+                        .setName("type")
+                        .setDescription("Submission type to close")
                         .setRequired(true)
-                        .addChoices(...departments.map(d => ({ name: d.name, value: d.name })))
+                        .setAutocomplete(true)
                 )
         )
         .addSubcommand(sub =>
-            sub.setName("status").setDescription("Show all departments status and staff count")
+            sub
+                .setName("config")
+                .setDescription("Create or edit a submission type (name, roles, questions)")
+                .addStringOption(opt =>
+                    opt
+                        .setName("type")
+                        .setDescription("Existing type to edit, or a new name to create one")
+                        .setRequired(true)
+                        .setAutocomplete(true)
+                )
+        )
+        .addSubcommand(sub =>
+            sub.setName("status").setDescription("Show all submission types status and staff count")
         ),
+
+    async autocomplete(interaction: AutocompleteInteraction, client: BotClient) {
+        const focused = interaction.options.getFocused().toLowerCase();
+        const types = await SubmissionTypeRepository.list(interaction.guildId!);
+        const items = types
+            .filter(t => t.name.toLowerCase().includes(focused))
+            .slice(0, 25)
+            .map(t => ({ name: t.name, value: t.key }));
+
+        await interaction.respond(items);
+    },
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         const sub = interaction.options.getSubcommand();
         const guildId = interaction.guildId!;
 
         if (sub === "open") {
-            const department = interaction.options.getString("department", true) as Department;
+            const key = interaction.options.getString("type", true);
+            const type = await SubmissionTypeRepository.get(guildId, key);
+            if (!type) {
+                await interaction.reply({ content: "❌ Submission type not found.", flags: MessageFlags.Ephemeral });
+                return;
+            }
 
             const config = await SubmitConfigRepository.get(guildId);
             if (!config?.reviewChannelId) {
@@ -77,22 +89,22 @@ export default {
                 return;
             }
 
-            if (config.openDepartments.includes(department)) {
+            if (type.isOpen) {
                 await interaction.reply({
-                    content: `⚠️ **${department}** is already open.`,
+                    content: `⚠️ **${type.name}** is already open.`,
                     flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
 
-            const updated = await SubmitConfigRepository.openDepartment(guildId, department);
-            if (updated) await updatePanel(client, updated);
+            await SubmissionTypeRepository.setOpen(guildId, key, true);
+            await updatePanel(client, config);
 
             await interaction.reply({
                 embeds: [
                     new EmbedBuilder()
-                        .setTitle(`${DEPT_EMOJI[department]} ${department} — Opened`)
-                        .setDescription(`Applications for **${department}** are now open. The panel has been updated.`)
+                        .setTitle(`📋 ${type.name} — Opened`)
+                        .setDescription(`Applications for **${type.name}** are now open. The panel has been updated.`)
                         .setColor(Colors.success),
                 ],
                 flags: MessageFlags.Ephemeral,
@@ -101,25 +113,31 @@ export default {
         }
 
         if (sub === "close") {
-            const department = interaction.options.getString("department", true) as Department;
+            const key = interaction.options.getString("type", true);
+            const type = await SubmissionTypeRepository.get(guildId, key);
+            if (!type) {
+                await interaction.reply({ content: "❌ Submission type not found.", flags: MessageFlags.Ephemeral });
+                return;
+            }
 
-            const config = await SubmitConfigRepository.get(guildId);
-            if (!config?.openDepartments.includes(department)) {
+            if (!type.isOpen) {
                 await interaction.reply({
-                    content: `⚠️ **${department}** is already closed.`,
+                    content: `⚠️ **${type.name}** is already closed.`,
                     flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
 
-            const updated = await SubmitConfigRepository.closeDepartment(guildId, department);
-            if (updated) await updatePanel(client, updated);
+            await SubmissionTypeRepository.setOpen(guildId, key, false);
+
+            const config = await SubmitConfigRepository.get(guildId);
+            if (config) await updatePanel(client, config);
 
             await interaction.reply({
                 embeds: [
                     new EmbedBuilder()
-                        .setTitle(`🔒 ${department} — Closed`)
-                        .setDescription(`Applications for **${department}** are now closed and removed from the panel.`)
+                        .setTitle(`🔒 ${type.name} — Closed`)
+                        .setDescription(`Applications for **${type.name}** are now closed and removed from the panel.`)
                         .setColor(Colors.error),
                 ],
                 flags: MessageFlags.Ephemeral,
@@ -127,31 +145,39 @@ export default {
             return;
         }
 
+        if (sub === "config") {
+            const name = interaction.options.getString("type", true);
+            const { type } = await SubmissionTypeRepository.getOrCreate(guildId, name);
+
+            await interaction.reply({ ...buildConfigPanel(type), flags: MessageFlags.Ephemeral });
+            return;
+        }
+
         if (sub === "status") {
             await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
             const config = await SubmitConfigRepository.get(guildId);
-            const openDepts = config?.openDepartments ?? [];
+            const types = await SubmissionTypeRepository.list(guildId);
 
             const staffCounts = await Promise.all(
-                departments.map(async d => ({
-                    name: d.name,
-                    count: (await StaffRepository.findByDepartment(d.name)).length,
+                types.map(async t => ({
+                    key: t.key,
+                    count: (await StaffRepository.findByDepartment(t.key)).length,
                 }))
             );
 
-            const countMap = Object.fromEntries(staffCounts.map(s => [s.name, s.count]));
+            const countMap = Object.fromEntries(staffCounts.map(s => [s.key, s.count]));
 
-            const fields = departments.map(d => {
-                const isOpen = openDepts.includes(d.name);
-                const managerRoleId = getManagerRoleId(d.name as Department);
-                const manager = managerRoleId ? `<@&${managerRoleId}>` : "—";
-                const staffCount = countMap[d.name] ?? 0;
+            const fields = types.map(t => {
+                const manager = t.managerRoleIds.length
+                    ? t.managerRoleIds.map(id => `<@&${id}>`).join(", ")
+                    : "—";
+                const staffCount = countMap[t.key] ?? 0;
 
                 return {
-                    name: `${DEPT_EMOJI[d.name] ?? "📋"} ${d.name}`,
+                    name: `📋 ${t.name}`,
                     value: [
-                        `Status: ${isOpen ? "✅ Open" : "🔒 Closed"}`,
+                        `Status: ${t.isOpen ? "✅ Open" : "🔒 Closed"}`,
                         `Staff: \`${staffCount}\``,
                         `Manager: ${manager}`,
                     ].join("\n"),
@@ -164,7 +190,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle("📊 Submission System Status")
-                .addFields(fields)
+                .addFields(fields.length ? fields : [{ name: "No submission types yet", value: "Use `/staff-submit config <name>` to create one." }])
                 .addFields(
                     { name: "Review Channel", value: reviewChannelMention, inline: true },
                     { name: "Panel Channel", value: panelChannelMention, inline: true },
