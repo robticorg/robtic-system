@@ -17,6 +17,8 @@ export interface IAdsConfig extends Document {
     approvalChannelId?: string;
     panelChannelId?: string;
     panelMessageId?: string;
+    /** Role allowed to accept/reject ad orders and claim ad tickets. */
+    managerRoleId?: string;
     standardAds: IAdItem[];
     giveaway: IAdItem[];
     packages: IAdItem[];
@@ -39,6 +41,7 @@ const AdsConfigSchema = new Schema<IAdsConfig>({
     approvalChannelId: { type: String },
     panelChannelId: { type: String },
     panelMessageId: { type: String },
+    managerRoleId: { type: String },
     standardAds: { type: [AdItemSchema], default: [] },
     giveaway: { type: [AdItemSchema], default: [] },
     packages: { type: [AdItemSchema], default: [] },

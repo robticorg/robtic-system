@@ -2,8 +2,7 @@ import { ButtonInteraction, MessageFlags } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { AdsConfigRepository } from "@database/repositories";
 import type { AdSection } from "@database/models/AdsConfig";
-import { addToCart, getCart } from "../utils/cartStore";
-import { buildCartSummary } from "../utils/adsPanels";
+import { addToCart } from "../utils/cartStore";
 
 export default {
     customId: /^ads-cart-add_/,
@@ -19,11 +18,10 @@ export default {
         }
 
         addToCart(interaction.user.id, { section: section as AdSection, key: item.key, name: item.name, priceUsd: item.priceUsd });
-        const cart = getCart(interaction.user.id);
 
-        await interaction.update({
-            ...buildCartSummary(cart, config.exchangeRate, `✅ Added **${item.name}** to your cart.`),
-            flags: MessageFlags.IsComponentsV2,
+        await interaction.reply({
+            content: `✅ تمت إضافة **${item.name}** إلى سلتك.`,
+            flags: MessageFlags.Ephemeral,
         });
     },
 };

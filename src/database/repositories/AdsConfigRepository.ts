@@ -72,7 +72,7 @@ export class AdsConfigRepository {
         return AdsConfig.findOneAndUpdate(
             { guildId },
             { $set: { approvalChannelId: channelId } },
-            { new: true }
+            { returnDocument: "after" }
         ) as Promise<IAdsConfig>;
     }
 
@@ -81,7 +81,16 @@ export class AdsConfigRepository {
         return AdsConfig.findOneAndUpdate(
             { guildId },
             { $set: { panelChannelId: channelId, panelMessageId: messageId } },
-            { new: true }
+            { returnDocument: "after" }
+        ) as Promise<IAdsConfig>;
+    }
+
+    static async setManagerRole(guildId: string, roleId: string): Promise<IAdsConfig> {
+        await this.ensureDefaults(guildId);
+        return AdsConfig.findOneAndUpdate(
+            { guildId },
+            { $set: { managerRoleId: roleId } },
+            { returnDocument: "after" }
         ) as Promise<IAdsConfig>;
     }
 
@@ -90,7 +99,7 @@ export class AdsConfigRepository {
         return AdsConfig.findOneAndUpdate(
             { guildId },
             { $set: { exchangeRate: rate } },
-            { new: true }
+            { returnDocument: "after" }
         ) as Promise<IAdsConfig>;
     }
 

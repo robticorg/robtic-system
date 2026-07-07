@@ -9,6 +9,7 @@ import type { BotClient } from "@core/BotClient";
 import { AdsConfigRepository } from "@database/repositories";
 import { buildAdsPanel } from "../utils/adsPanels";
 import { buildConfigRoot } from "../utils/adsConfigViews";
+import { Logger } from "@core/libs";
 
 export default {
     data: new SlashCommandBuilder()
@@ -28,19 +29,28 @@ export default {
         )
         .addSubcommand(sub =>
             sub.setName("config").setDescription("Open the ads configuration panel (prices, details, exchange rate)")
+        )
+        .addSubcommand(sub =>
+            sub
+                .setName("manager")
+                .setDescription("Set the role allowed to accept/reject ad orders and claim ad tickets")
+                .addRoleOption(opt =>
+                    opt.setName("role").setDescription("The ads manager role").setRequired(true)
+                )
         ),
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         const sub = interaction.options.getSubcommand();
         const guildId = interaction.guildId!;
 
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         if (sub === "channel") {
             const channel = interaction.options.getChannel("channel", true) as TextChannel;
             await AdsConfigRepository.setApprovalChannel(guildId, channel.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: `✅ Ad orders will now be sent to ${channel} for approval.`,
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -54,19 +64,33 @@ export default {
 
             await AdsConfigRepository.setPanel(guildId, channel.id, msg.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: `✅ Ads panel posted in ${channel}.`,
-                flags: MessageFlags.Ephemeral,
+            });
+            return;
+        }
+
+        if (sub === "manager") {
+            const role = interaction.options.getRole("role", true);
+            await AdsConfigRepository.setManagerRole(guildId, role.id);
+
+            await interaction.editReply({
+                content: `✅ ${role} يمكنهم الآن قبول/رفض طلبات الإعلانات واستلام تذاكرها.`,
             });
             return;
         }
 
         if (sub === "config") {
-            const config = await AdsConfigRepository.get(guildId);
-            await interaction.reply({
-                ...buildConfigRoot(config),
-                flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
-            });
+            try {
+                const config = await AdsConfigRepository.get(guildId);
+                await interaction.editReply({
+                    ...buildConfigRoot(config),
+                    flags: MessageFlags.IsComponentsV2,
+                });
+            } catch ( err ) {
+                Logger.error(`error ${err}`)
+                await interaction.editReply({ content: "❌ Something went wrong." }).catch(() => {});
+            }
         }
     },
 };

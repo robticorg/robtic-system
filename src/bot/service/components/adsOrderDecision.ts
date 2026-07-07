@@ -5,9 +5,11 @@ import {
     type GuildMember,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { AdOrderRepository, AdsConfigRepository } from "@database/repositories";
+import { AdOrderRepository, AdsConfigRepository, TicketRepository } from "@database/repositories";
 import { hasFullPower } from "@shared/utils/access";
+import { Logger } from "@core/libs";
 import { buildOrderReview } from "../utils/adsOrderReview";
+import { buildAdsTicketCard, createAdsTicketChannel } from "../utils/adsTicket";
 
 export default {
     customId: /^ads-order-(accept|reject)_/,
@@ -15,13 +17,16 @@ export default {
     async run(interaction: ButtonInteraction, client: BotClient) {
         const [, action, orderId] = interaction.customId.match(/^ads-order-(accept|reject)_(.+)$/) ?? [];
 
+        const guildId = interaction.guildId!;
+        const config = await AdsConfigRepository.get(guildId);
         const member = interaction.member as GuildMember;
-        if (!member.permissions.has(PermissionFlagsBits.ManageGuild) && !hasFullPower(member)) {
+        const isManager = Boolean(config.managerRoleId && member.roles.cache.has(config.managerRoleId));
+
+        if (!member.permissions.has(PermissionFlagsBits.ManageGuild) && !hasFullPower(member) && !isManager) {
             await interaction.reply({ content: "❌ You don't have permission to decide on ad orders.", flags: MessageFlags.Ephemeral });
             return;
         }
 
-        const guildId = interaction.guildId!;
         const order = await AdOrderRepository.get(guildId, orderId);
         if (!order) {
             await interaction.reply({ content: "❌ This order no longer exists.", flags: MessageFlags.Ephemeral });
@@ -36,7 +41,35 @@ export default {
         const status = action === "accept" ? "approved" : "rejected";
         const decided = await AdOrderRepository.decide(orderId, status, interaction.user.id);
 
-        const config = await AdsConfigRepository.get(guildId);
+        let ticketChannelId: string | undefined;
+        if (status === "approved") {
+            try {
+                const channel = await createAdsTicketChannel(interaction.guild!, decided!, config, interaction.user.id);
+                await TicketRepository.create({
+                    ticketId: orderId,
+                    guildId,
+                    channelId: channel.id,
+                    userId: order.userId,
+                    category: "ads-order",
+                    subject: `Ad Order #${orderId}`,
+                    status: "open",
+                    priority: "medium",
+                    messages: [],
+                    assignedTo: null,
+                    closedBy: null,
+                    closedAt: null,
+                    transcript: null,
+                });
+                await channel.send({
+                    ...buildAdsTicketCard(decided!, config.exchangeRate, orderId),
+                    flags: MessageFlags.IsComponentsV2,
+                });
+                ticketChannelId = channel.id;
+            } catch (err) {
+                Logger.error(`Failed to open ads ticket channel: ${err}`);
+            }
+        }
+
         await interaction.update({
             ...buildOrderReview(decided!, config.exchangeRate),
             flags: MessageFlags.IsComponentsV2,
@@ -45,9 +78,13 @@ export default {
         try {
             const user = await client.users.fetch(order.userId);
             if (status === "approved") {
-                await user.send(`✅ Your ad order (total $${order.totalUsd}) has been **accepted**! Please complete payment as instructed by staff.`);
+                await user.send(
+                    ticketChannelId
+                        ? `✅ تم **قبول** طلب إعلانك (الإجمالي $${order.totalUsd})! تم فتح تذكرة خاصة لمتابعة طلبك: <#${ticketChannelId}>`
+                        : `✅ تم **قبول** طلب إعلانك (الإجمالي $${order.totalUsd})! سيتواصل معك أحد المسؤولين قريبًا.`
+                );
             } else {
-                await user.send(`❌ Your ad order (total $${order.totalUsd}) has been **rejected**.`);
+                await user.send(`❌ تم **رفض** طلب إعلانك (الإجمالي $${order.totalUsd}).`);
             }
         } catch {
             // User has DMs closed — ignore.

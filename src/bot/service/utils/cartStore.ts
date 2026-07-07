@@ -24,6 +24,13 @@ export function clearCart(userId: string): void {
     carts.delete(userId);
 }
 
+export function removeFromCart(userId: string, index: number): CartItem[] {
+    const cart = carts.get(userId) ?? [];
+    cart.splice(index, 1);
+    carts.set(userId, cart);
+    return cart;
+}
+
 export function cartTotalUsd(items: CartItem[]): number {
     return items.reduce((sum, i) => sum + i.priceUsd, 0);
 }

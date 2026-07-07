@@ -21,7 +21,7 @@ function priceList(items: IAdItem[], rate: number): string {
 /** The public ordering panel — banner, rules, prices, package buttons, add-ons select. */
 export function buildAdsPanel(config: IAdsConfig): { components: ContainerBuilder[]; files: AttachmentBuilder[] } {
     const files: AttachmentBuilder[] = [];
-    const container = new ContainerBuilder().setAccentColor(0x2ecc71);
+    const container = new ContainerBuilder()
 
     if (existsSync(BANNER_PATH)) {
         const banner = new AttachmentBuilder(BANNER_PATH, { name: "ads-banner.png" });
@@ -31,20 +31,19 @@ export function buildAdsPanel(config: IAdsConfig): { components: ContainerBuilde
         );
     }
 
-    container.addTextDisplayComponents(td => td.setContent("# 📢 Ads"));
-    container.addSeparatorComponents(sep => sep);
+    container.addTextDisplayComponents(td => td.setContent("## <:forward:1480426683570983014> الاعـلانـات"));
 
     container.addSectionComponents(sc =>
         sc.addTextDisplayComponents(td =>
-            td.setContent("Before ordering, please make sure to read our advertisement rules.")
+            td.setContent("قبل الطلب الرجاء قراءة قوانين الاعلانات")
         ).setButtonAccessory(btn =>
-            btn.setCustomId("ads-rules-view").setLabel("📜 View Ad Rules").setStyle(ButtonStyle.Secondary)
+            btn.setCustomId("ads-rules-view").setLabel("📜 عرض قوانين الإعلان").setStyle(ButtonStyle.Secondary)
         )
     );
     container.addSeparatorComponents(sep => sep);
 
     const priceLines = [
-        "## 💰 Advertisement Prices",
+        "## <:2reading:1479437373854187642> اسـعـار الاعـلانـات",
         priceList(config.standardAds, config.exchangeRate),
         "",
         priceList(config.giveaway, config.exchangeRate),
@@ -53,31 +52,51 @@ export function buildAdsPanel(config: IAdsConfig): { components: ContainerBuilde
     container.addSeparatorComponents(sep => sep);
 
     container.addTextDisplayComponents(td =>
-        td.setContent("## 📦 Packages\nPick a pack below to see what's included and add it to your order.")
+        td.setContent("## 📦 الباقات\nاختر باقة من الأسفل لمعرفة تفاصيلها وإضافتها إلى طلبك.")
     );
-    if (config.packages.length) {
-        container.addActionRowComponents(row =>
-            row.setComponents(
-                config.packages.slice(0, 5).map(p =>
-                    new ButtonBuilder()
-                        .setCustomId(`ads-pack_${p.key}`)
-                        .setLabel(`${p.name} — ${formatPrice(p.priceUsd, config.exchangeRate)}`.slice(0, 80))
-                        .setStyle(ButtonStyle.Primary)
-                )
+    for (const p of config.packages) {
+        container.addSectionComponents(sc =>
+            sc.addTextDisplayComponents(td =>
+                td.setContent(`**${p.name}** — ${formatPrice(p.priceUsd, config.exchangeRate)}`)
+            ).setButtonAccessory(btn =>
+                btn.setCustomId(`ads-pack_${p.key}`).setLabel("🛒 عرض التفاصيل").setStyle(ButtonStyle.Primary)
             )
         );
     }
     container.addSeparatorComponents(sep => sep);
 
-    container.addTextDisplayComponents(td =>
-        td.setContent("## ➕ Add-ons\nAnything extra you want to add? Pick it below to add it to your order.")
-    );
     if (config.addons.length) {
-        container.addActionRowComponents(row =>
+        container.addSectionComponents(sc =>
+            sc.addTextDisplayComponents(td =>
+                td.setContent("## ➕ الإضافات\nهل تريد إضافة أي شيء إضافي؟ اضغط الزر لاختيار الإضافات.")
+            ).setButtonAccessory(btn =>
+                btn.setCustomId("ads-addons-view").setLabel("➕ اختر الإضافات").setStyle(ButtonStyle.Secondary)
+            )
+        );
+    }
+    container.addSeparatorComponents(sep => sep);
+
+    container.addActionRowComponents(row =>
+        row.setComponents(
+            new ButtonBuilder().setCustomId("ads-cart-view").setLabel("🛒 عرض السلة").setStyle(ButtonStyle.Success)
+        )
+    );
+
+    return { components: [container], files };
+}
+
+/** Ephemeral picker shown after clicking the add-ons button — supports selecting multiple add-ons at once. */
+export function buildAddonsSelector(config: IAdsConfig): BaseMessageOptions {
+    const container = new ContainerBuilder()
+        .setAccentColor(0x5865F2)
+        .addTextDisplayComponents(td => td.setContent("## ➕ الإضافات\nاختر إضافة واحدة أو أكثر لإضافتها إلى طلبك."))
+        .addActionRowComponents(row =>
             row.setComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId("ads-select-addon")
-                    .setPlaceholder("Select an add-on to add to your order")
+                    .setPlaceholder("اختر الإضافات")
+                    .setMinValues(1)
+                    .setMaxValues(Math.min(config.addons.length, 25))
                     .addOptions(
                         config.addons.slice(0, 25).map(a => ({
                             label: a.name.slice(0, 100),
@@ -87,22 +106,21 @@ export function buildAdsPanel(config: IAdsConfig): { components: ContainerBuilde
                     )
             )
         );
-    }
 
-    return { components: [container], files };
+    return { components: [container] };
 }
 
 export function buildRulesContainer(): BaseMessageOptions {
     const container = new ContainerBuilder()
         .setAccentColor(0xed4245)
-        .addTextDisplayComponents(td => td.setContent("## 📜 Advertisement Rules"))
+        .addTextDisplayComponents(td => td.setContent("## 📜 قوانين الإعلانات"))
         .addSeparatorComponents(sep => sep)
         .addTextDisplayComponents(td =>
             td.setContent(
-                "• Payment must be completed before publishing.\n" +
-                "• Advertisements must follow the community rules.\n" +
-                "• Robtic may reject any advertisement that violates our policies.\n" +
-                "• Prices may change based on the Credits exchange rate."
+                "• يجب إتمام الدفع قبل النشر.\n" +
+                "• يجب أن تلتزم الإعلانات بقوانين المجتمع.\n" +
+                "• يحق لـ Robtic رفض أي إعلان يخالف سياساتنا.\n" +
+                "• قد تتغير الأسعار بناءً على سعر صرف الكريديت."
             )
         );
 
@@ -114,14 +132,14 @@ export function buildPackageDetail(item: IAdItem, rate: number): BaseMessageOpti
         .setAccentColor(0x5865F2)
         .addTextDisplayComponents(td => td.setContent(`## ${item.name}`))
         .addSeparatorComponents(sep => sep)
-        .addTextDisplayComponents(td => td.setContent(item.details || "*No details set.*"))
+        .addTextDisplayComponents(td => td.setContent(item.details || "*لم يتم تحديد التفاصيل.*"))
         .addSeparatorComponents(sep => sep)
-        .addTextDisplayComponents(td => td.setContent(`**Price:** ${formatPrice(item.priceUsd, rate)}`))
+        .addTextDisplayComponents(td => td.setContent(`**السعر:** ${formatPrice(item.priceUsd, rate)}`))
         .addActionRowComponents(row =>
             row.setComponents(
                 new ButtonBuilder()
                     .setCustomId(`ads-cart-add_packages_${item.key}`)
-                    .setLabel("🛒 Add to Cart")
+                    .setLabel("🛒 أضف إلى السلة")
                     .setStyle(ButtonStyle.Success)
             )
         );
@@ -137,23 +155,31 @@ export function buildCartSummary(cart: CartItem[], rate: number, note?: string):
         container.addSeparatorComponents(sep => sep);
     }
 
-    container.addTextDisplayComponents(td => td.setContent("## 🛒 Your Cart"));
+    container.addTextDisplayComponents(td => td.setContent("## 🛒 سلتك"));
 
     if (!cart.length) {
-        container.addTextDisplayComponents(td => td.setContent("*Your cart is empty.*"));
+        container.addTextDisplayComponents(td => td.setContent("*سلتك فارغة.*"));
         return { components: [container] };
     }
-
-    const lines = cart.map(i => `• **${i.name}** — ${formatPrice(i.priceUsd, rate)}`).join("\n");
-    const total = cart.reduce((sum, i) => sum + i.priceUsd, 0);
-
-    container.addTextDisplayComponents(td => td.setContent(lines));
     container.addSeparatorComponents(sep => sep);
-    container.addTextDisplayComponents(td => td.setContent(`**Total:** ${formatPrice(total, rate)}`));
+
+    cart.forEach((i, index) => {
+        container.addSectionComponents(sc =>
+            sc.addTextDisplayComponents(td =>
+                td.setContent(`**${i.name}** — ${formatPrice(i.priceUsd, rate)}`)
+            ).setButtonAccessory(btn =>
+                btn.setCustomId(`ads-cart-remove_${index}`).setLabel("🗑️").setStyle(ButtonStyle.Danger)
+            )
+        );
+    });
+
+    const total = cart.reduce((sum, i) => sum + i.priceUsd, 0);
+    container.addSeparatorComponents(sep => sep);
+    container.addTextDisplayComponents(td => td.setContent(`**الإجمالي:** ${formatPrice(total, rate)}`));
     container.addActionRowComponents(row =>
         row.setComponents(
-            new ButtonBuilder().setCustomId("ads-cart-confirm").setLabel("✅ Confirm Order").setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId("ads-cart-clear").setLabel("🗑️ Clear Cart").setStyle(ButtonStyle.Danger)
+            new ButtonBuilder().setCustomId("ads-cart-confirm").setLabel("✅ تأكيد الطلب").setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId("ads-cart-clear").setLabel("🗑️ إفراغ السلة").setStyle(ButtonStyle.Danger)
         )
     );
 

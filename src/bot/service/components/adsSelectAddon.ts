@@ -1,28 +1,30 @@
 import { StringSelectMenuInteraction, MessageFlags } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { AdsConfigRepository } from "@database/repositories";
-import { addToCart, getCart } from "../utils/cartStore";
-import { buildCartSummary } from "../utils/adsPanels";
+import { addToCart } from "../utils/cartStore";
 
 export default {
     customId: "ads-select-addon",
 
     async run(interaction: StringSelectMenuInteraction, client: BotClient) {
-        const key = interaction.values[0];
         const config = await AdsConfigRepository.get(interaction.guildId!);
-        const item = AdsConfigRepository.findItem(config, "addons", key);
+        const items = interaction.values
+            .map(key => AdsConfigRepository.findItem(config, "addons", key))
+            .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
-        if (!item) {
-            await interaction.reply({ content: "❌ This add-on no longer exists.", flags: MessageFlags.Ephemeral });
+        if (!items.length) {
+            await interaction.reply({ content: "❌ These add-ons no longer exist.", flags: MessageFlags.Ephemeral });
             return;
         }
 
-        addToCart(interaction.user.id, { section: "addons", key: item.key, name: item.name, priceUsd: item.priceUsd });
-        const cart = getCart(interaction.user.id);
+        for (const item of items) {
+            addToCart(interaction.user.id, { section: "addons", key: item.key, name: item.name, priceUsd: item.priceUsd });
+        }
+        const names = items.map(i => `**${i.name}**`).join("، ");
 
         await interaction.reply({
-            ...buildCartSummary(cart, config.exchangeRate, `✅ Added **${item.name}** to your cart.`),
-            flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            content: `✅ تمت إضافة ${names} إلى سلتك.`,
+            flags: MessageFlags.Ephemeral,
         });
     },
 };

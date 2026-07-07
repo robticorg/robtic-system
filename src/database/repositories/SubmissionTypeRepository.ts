@@ -175,7 +175,7 @@ export class SubmissionTypeRepository {
         return SubmissionType.findOneAndUpdate(
             { guildId, key },
             { $set: { name: name.trim() } },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -183,7 +183,7 @@ export class SubmissionTypeRepository {
         return SubmissionType.findOneAndUpdate(
             { guildId, key },
             { $set: { grantRoleIds: roleIds } },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -191,7 +191,7 @@ export class SubmissionTypeRepository {
         return SubmissionType.findOneAndUpdate(
             { guildId, key },
             { $set: { managerRoleIds: roleIds } },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -205,7 +205,7 @@ export class SubmissionTypeRepository {
         return SubmissionType.findOneAndUpdate(
             { guildId, key },
             { $set: { questions: trimmed } },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 
@@ -213,7 +213,7 @@ export class SubmissionTypeRepository {
         return SubmissionType.findOneAndUpdate(
             { guildId, key },
             { $set: { isOpen } },
-            { new: true }
+            { returnDocument: "after" }
         );
     }
 

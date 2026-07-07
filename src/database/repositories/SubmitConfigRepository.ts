@@ -9,7 +9,7 @@ export class SubmitConfigRepository {
         return SubmitConfig.findOneAndUpdate(
             { guildId },
             { $set: { reviewChannelId: channelId } },
-            { upsert: true, new: true, setDefaultsOnInsert: true },
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
         ) as Promise<ISubmitConfig>;
     }
 
@@ -17,7 +17,7 @@ export class SubmitConfigRepository {
         return SubmitConfig.findOneAndUpdate(
             { guildId },
             { $set: { panelChannelId: channelId, panelMessageId: messageId } },
-            { upsert: true, new: true, setDefaultsOnInsert: true },
+            { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
         ) as Promise<ISubmitConfig>;
     }
 }
