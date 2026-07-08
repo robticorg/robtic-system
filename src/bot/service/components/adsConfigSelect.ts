@@ -8,16 +8,18 @@ export default {
     customId: "ads-config-select-item",
 
     async run(interaction: StringSelectMenuInteraction, client: BotClient) {
+        await interaction.deferUpdate();
+
         const [section, key] = interaction.values[0].split(":") as [AdSection, string];
         const config = await AdsConfigRepository.get(interaction.guildId!);
         const item = AdsConfigRepository.findItem(config, section, key);
 
         if (!item) {
-            await interaction.reply({ content: "❌ This item no longer exists.", flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: "❌ This item no longer exists.", flags: MessageFlags.Ephemeral });
             return;
         }
 
-        await interaction.update({
+        await interaction.editReply({
             ...buildItemDetail(section, item, config.exchangeRate),
             flags: MessageFlags.IsComponentsV2,
         });

@@ -19,20 +19,22 @@ import { hasFullPower } from "@shared/utils/access";
 export default {
   customId: /^staff-accept_/,
   async run(interaction: ButtonInteraction, client: BotClient) {
+    await interaction.deferUpdate();
+
     const parts = interaction.customId.split("_");
     const key = parts[1];
     const userId = parts[2];
 
     const type = await SubmissionTypeRepository.get(interaction.guildId!, key);
     if (!type) {
-      await interaction.reply({ content: "❌ This submission type no longer exists.", flags: MessageFlags.Ephemeral });
+      await interaction.followUp({ content: "❌ This submission type no longer exists.", flags: MessageFlags.Ephemeral });
       return;
     }
 
     const member = interaction.member as GuildMember;
     const isManager = type.managerRoleIds.some(id => member.roles.cache.has(id));
     if (!isManager && !hasFullPower(member)) {
-      await interaction.reply({ content: "❌ You don't have permission to accept this submission.", flags: MessageFlags.Ephemeral });
+      await interaction.followUp({ content: "❌ You don't have permission to accept this submission.", flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -50,7 +52,7 @@ export default {
       ButtonBuilder.from(acceptBtn as ButtonComponent).setDisabled(true),
       ButtonBuilder.from(rejectBtn as ButtonComponent).setDisabled(true)
     );
-    await interaction.update({ components: [row] });
+    await interaction.editReply({ components: [row] });
 
     const channel = interaction.channel as TextChannel;
     if (!channel) return;

@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
-import { Colors, FULL_POWER_ROLE_ID, MembersPunishments, PunishmentsSystem } from "@core/config";
+import { Colors, FULL_POWER_ROLE_IDS, MembersPunishments, PunishmentsSystem } from "@core/config";
 import { ModMailRepository, PunishmentRepository, ServerConfigRepository } from "@database/repositories";
 import { getMemberLevel } from "@shared/utils/access";
 import { type Lang } from "@shared/utils/lang";
@@ -27,7 +27,7 @@ const appealDecision: ComponentHandler<ButtonInteraction> = {
         const caseId = (embedCaseId && embedCaseId !== "N/A") ? embedCaseId : customCaseId;
 
         const modMember = interaction.member as GuildMember;
-        if (!modMember.roles.cache.has(FULL_POWER_ROLE_ID) && getMemberLevel(modMember).score < 80) {
+        if (!FULL_POWER_ROLE_IDS.some(id => modMember.roles.cache.has(id)) && getMemberLevel(modMember).score < 80) {
             await interaction.reply({
                 embeds: [new EmbedBuilder().setDescription("❌ Only Manager+ can handle appeals.").setColor(Colors.error)],
                 flags: MessageFlags.Ephemeral,
@@ -36,11 +36,12 @@ const appealDecision: ComponentHandler<ButtonInteraction> = {
         }
 
         if (action === "openchat") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const existing = await ModMailRepository.findOpenByUser(userId);
             if (existing) {
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [new EmbedBuilder().setDescription(`⚠️ User already has an open chat: <#${existing.threadId}>`).setColor(Colors.warning)],
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -50,9 +51,8 @@ const appealDecision: ComponentHandler<ButtonInteraction> = {
             const staffChannel = modmailChannelId ? staffGuild?.channels.cache.get(modmailChannelId) as TextChannel | undefined : undefined;
 
             if (!staffGuild || !staffChannel) {
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [new EmbedBuilder().setDescription("❌ Modmail channel was not found.").setColor(Colors.error)],
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -86,9 +86,8 @@ const appealDecision: ComponentHandler<ButtonInteraction> = {
                 await targetUser.send({ content: msg }).catch(() => null);
             }
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setDescription(`✅ Opened appeal chat: <#${thread.id}>`).setColor(Colors.success)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -110,9 +109,11 @@ const appealDecision: ComponentHandler<ButtonInteraction> = {
             return;
         }
 
+        await interaction.deferUpdate();
+
         const punishment = await PunishmentRepository.findByCaseId(caseId);
         if (!punishment || punishment.userId !== userId) {
-            await interaction.reply({
+            await interaction.followUp({
                 embeds: [new EmbedBuilder().setDescription("❌ The selected punishment case was not found.").setColor(Colors.error)],
                 flags: MessageFlags.Ephemeral,
             });
@@ -120,7 +121,7 @@ const appealDecision: ComponentHandler<ButtonInteraction> = {
         }
 
         if (punishment.appealed) {
-            await interaction.reply({
+            await interaction.followUp({
                 embeds: [new EmbedBuilder().setDescription("⚠️ This appeal has already been processed.").setColor(Colors.warning)],
                 flags: MessageFlags.Ephemeral,
             });
@@ -186,7 +187,7 @@ const appealDecision: ComponentHandler<ButtonInteraction> = {
             .setColor(Colors.success)
             .setFooter({ text: footerText });
 
-        await interaction.update({ embeds: [approvedEmbed], components: [] });
+        await interaction.editReply({ embeds: [approvedEmbed], components: [] });
 
         const user = await client.users.fetch(userId).catch(() => null);
         if (user) {

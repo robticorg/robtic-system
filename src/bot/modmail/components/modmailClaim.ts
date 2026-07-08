@@ -13,11 +13,14 @@ const modmailClaim: ComponentHandler<ButtonInteraction> = {
     customId: /^modmail_claim_\d+$/,
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferReply();
+
         const threadId = interaction.customId.replace("modmail_claim_", "");
 
         const modmail = await ModMailRepository.findByThreadId(threadId);
         if (!modmail || modmail.status !== "open") {
-            await interaction.reply({
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({
                 content: messages.errors.thread_no_longer_active,
                 flags: MessageFlags.Ephemeral,
             });
@@ -25,7 +28,8 @@ const modmailClaim: ComponentHandler<ButtonInteraction> = {
         }
 
         if (modmail.claimedBy) {
-            await interaction.reply({
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({
                 content: messages.errors.already_claimed.replace("{userId}", modmail.claimedBy),
                 flags: MessageFlags.Ephemeral,
             });
@@ -34,7 +38,7 @@ const modmailClaim: ComponentHandler<ButtonInteraction> = {
 
         await ModMailRepository.claim(threadId, interaction.user.id);
 
-        await interaction.reply({
+        await interaction.editReply({
             content: messages.success.thread_claimed.replace("{userId}", interaction.user.id),
         });
 

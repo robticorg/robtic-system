@@ -14,7 +14,10 @@ export default {
 
     async run(interaction: StringSelectMenuInteraction, client: BotClient) {
         const key = interaction.values[0];
-        const type = await SubmissionTypeRepository.get(interaction.guildId!, key);
+        const [type, existing] = await Promise.all([
+            SubmissionTypeRepository.get(interaction.guildId!, key),
+            StaffRepository.getSubmission(interaction.user.id),
+        ]);
 
         if (!type || !type.isOpen) {
             await interaction.reply({
@@ -32,7 +35,6 @@ export default {
             return;
         }
 
-        const existing = await StaffRepository.getSubmission(interaction.user.id);
         if (existing) {
             await interaction.reply({
                 content: "❌ You already have an active submission. Please wait for it to be reviewed.",

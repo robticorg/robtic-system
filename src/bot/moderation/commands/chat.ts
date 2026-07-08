@@ -2,6 +2,7 @@ import {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
     PermissionFlagsBits,
+    MessageFlags,
     type GuildTextBasedChannel,
 } from "discord.js";
 import { ChatUtils } from "../utils/chat";
@@ -54,6 +55,8 @@ export default {
             return;
         }
 
+        await interaction.deferReply();
+
         const subcommand = interaction.options.getSubcommand();
         const channel = interaction.channel as GuildTextBasedChannel;
         const guild = interaction.guild;
@@ -85,7 +88,7 @@ export default {
             }
 
             if (msg) {
-                await interaction.reply({ content: `${emoji.info} ${msg}` }).then(() => {
+                await interaction.editReply({ content: `${emoji.info} ${msg}` }).then(() => {
                     if (subcommand === "clear") {
                         setTimeout(() => {
                             interaction.deleteReply().catch(() => { });
@@ -93,13 +96,15 @@ export default {
                     }
                 });
             } else {
-                await interaction.reply({ content: `${emoji.info} Unknown subcommand.`, ephemeral: true });
+                await interaction.deleteReply().catch(() => { });
+                await interaction.followUp({ content: `${emoji.info} Unknown subcommand.`, flags: MessageFlags.Ephemeral });
             }
         } catch (error) {
             console.error(error);
-            await interaction.reply({
+            await interaction.deleteReply().catch(() => { });
+            await interaction.followUp({
                 content: "An error occurred while executing the command. Please check my permissions.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
     }

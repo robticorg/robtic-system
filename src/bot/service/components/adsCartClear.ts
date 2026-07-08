@@ -8,10 +8,12 @@ export default {
     customId: "ads-cart-clear",
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferUpdate();
+
         clearCart(interaction.user.id);
         const config = await AdsConfigRepository.get(interaction.guildId!);
 
-        await interaction.update({
+        await interaction.editReply({
             ...buildCartSummary(getCart(interaction.user.id), config.exchangeRate, "🗑️ Cart cleared."),
             flags: MessageFlags.IsComponentsV2,
         });

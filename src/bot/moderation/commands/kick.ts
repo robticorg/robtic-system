@@ -33,22 +33,27 @@ export default {
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         if (!interaction.guild || !interaction.guildId) return;
 
+        await interaction.deferReply();
+
         const target = interaction.options.getUser("target", true);
         const reason = interaction.options.getString("reason") ?? "No reason provided";
 
         if (target.id === interaction.user.id) {
-            await interaction.reply({ embeds: [errorEmbed("You cannot kick yourself.")], flags: MessageFlags.Ephemeral });
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({ embeds: [errorEmbed("You cannot kick yourself.")], flags: MessageFlags.Ephemeral });
             return;
         }
 
         const member = interaction.guild.members.cache.get(target.id) ?? await interaction.guild.members.fetch(target.id).catch(() => null);
         if (!member) {
-            await interaction.reply({ embeds: [errorEmbed("Target member not found in guild.")], flags: MessageFlags.Ephemeral });
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({ embeds: [errorEmbed("Target member not found in guild.")], flags: MessageFlags.Ephemeral });
             return;
         }
 
         if (!member.kickable) {
-            await interaction.reply({ embeds: [errorEmbed("I cannot kick this member due to role hierarchy or permissions.")], flags: MessageFlags.Ephemeral });
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({ embeds: [errorEmbed("I cannot kick this member due to role hierarchy or permissions.")], flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -64,7 +69,7 @@ export default {
             )
             .setTimestamp();
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
 
         await sendAuditLog(
             interaction.guild,

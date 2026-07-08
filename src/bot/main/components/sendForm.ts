@@ -15,6 +15,8 @@ const createEmbedModal: ComponentHandler<ModalSubmitInteraction> = {
 
         if (!interaction.isModalSubmit()) return;
 
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const title = interaction.fields.getTextInputValue("embed-title");
         const description = interaction.fields.getTextInputValue("embed-desc");
 
@@ -23,9 +25,8 @@ const createEmbedModal: ComponentHandler<ModalSubmitInteraction> = {
         });
 
         if (!data) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: "⛔ Embed session expired or not found.",
-                flags: MessageFlags.Ephemeral
             });
             return;
         }
@@ -33,9 +34,8 @@ const createEmbedModal: ComponentHandler<ModalSubmitInteraction> = {
         const channel = await interaction.guild?.channels.fetch(data.channel);
 
         if (!channel || !channel.isTextBased()) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: "❌ Channel not found.",
-                flags: MessageFlags.Ephemeral
             });
             return;
         }
@@ -49,9 +49,8 @@ const createEmbedModal: ComponentHandler<ModalSubmitInteraction> = {
             embeds: [embed]
         });
 
-        await interaction.reply({
+        await interaction.editReply({
             content: `✅ Embed sent to <#${data.channel}>`,
-            flags: MessageFlags.Ephemeral
         });
     }
 };

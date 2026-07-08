@@ -7,11 +7,13 @@ export default {
     customId: "ads-addons-view",
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const config = await AdsConfigRepository.get(interaction.guildId!);
 
-        await interaction.reply({
+        await interaction.editReply({
             ...buildAddonsSelector(config),
-            flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            flags: MessageFlags.IsComponentsV2,
         });
     },
 };

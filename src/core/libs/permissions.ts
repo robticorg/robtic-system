@@ -1,12 +1,12 @@
 import { GuildMember } from "discord.js";
-import { PERMISSION_HIERARCHY, ROLE_MAP, FULL_POWER_ROLE_ID } from "@core/config";
+import { PERMISSION_HIERARCHY, ROLE_MAP, FULL_POWER_ROLE_IDS } from "@core/config";
 
 export function hasPermission(
     member: GuildMember,
     requiredScore: number
 ): boolean {
     if (requiredScore <= 0) return true;
-    if (member.roles.cache.has(FULL_POWER_ROLE_ID)) return true;
+    if (FULL_POWER_ROLE_IDS.some(id => member.roles.cache.has(id))) return true;
 
     for (const [level, config] of Object.entries(ROLE_MAP)) {
         const levelValue = PERMISSION_HIERARCHY[level] ?? 0;

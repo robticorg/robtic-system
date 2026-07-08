@@ -98,16 +98,17 @@ export default {
         }
 
         if (sub === "close") {
+            await interaction.deferReply();
+
             const modmail = await ModMailRepository.findByThreadId(interaction.channel.id);
             if (!modmail || modmail.status !== "open") {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.errors.no_active_thread,
                     flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
-
-            await interaction.deferReply();
 
             const thread = interaction.channel as ThreadChannel;
             await closeModMail(modmail, interaction.user.id, client, thread);
@@ -117,9 +118,12 @@ export default {
         }
 
         if (sub === "stop") {
+            await interaction.deferReply();
+
             const modmail = await ModMailRepository.findByThreadId(interaction.channel.id);
             if (!modmail || modmail.status !== "open") {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.errors.no_active_thread,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -127,7 +131,8 @@ export default {
             }
 
             if (modmail.claimedBy !== interaction.user.id) {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.errors.only_claimer_can_pause,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -135,7 +140,8 @@ export default {
             }
 
             if (modmail.paused) {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.success.chat_already_paused,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -143,14 +149,17 @@ export default {
             }
 
             await ModMailRepository.setPaused(interaction.channel.id, true);
-            await interaction.reply({ content: messages.success.chat_paused });
+            await interaction.editReply({ content: messages.success.chat_paused });
             return;
         }
 
         if (sub === "start") {
+            await interaction.deferReply();
+
             const modmail = await ModMailRepository.findByThreadId(interaction.channel.id);
             if (!modmail || modmail.status !== "open") {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.errors.no_active_thread,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -158,7 +167,8 @@ export default {
             }
 
             if (modmail.claimedBy !== interaction.user.id) {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.errors.only_claimer_can_resume,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -166,7 +176,8 @@ export default {
             }
 
             if (!modmail.paused) {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.success.chat_already_active,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -174,14 +185,17 @@ export default {
             }
 
             await ModMailRepository.setPaused(interaction.channel.id, false);
-            await interaction.reply({ content: messages.success.chat_resumed });
+            await interaction.editReply({ content: messages.success.chat_resumed });
             return;
         }
 
         if (sub === "reopen") {
+            await interaction.deferReply();
+
             const modmail = await ModMailRepository.findByThreadId(interaction.channel.id);
             if (!modmail || modmail.status !== "closed") {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.errors.no_closed_thread,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -190,7 +204,8 @@ export default {
 
             const member = interaction.member as GuildMember;
             if (!hasDepartmentAuthority(member, "Moderation")) {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.errors.only_manager_can_reopen,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -199,7 +214,8 @@ export default {
 
             const reopened = await ModMailRepository.reopen(interaction.channel.id);
             if (!reopened) {
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     content: messages.errors.reopen_failed,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -210,7 +226,7 @@ export default {
             await thread.setArchived(false).catch(() => null);
             await thread.setLocked(false).catch(() => null);
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: messages.success.thread_reopened.replace("{userId}", interaction.user.id),
             });
             return;

@@ -8,20 +8,21 @@ export default {
     customId: /^ads-cart-add_/,
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const [, section, key] = interaction.customId.match(/^ads-cart-add_(\w+)_(.+)$/) ?? [];
         const config = await AdsConfigRepository.get(interaction.guildId!);
         const item = AdsConfigRepository.findItem(config, section as AdSection, key);
 
         if (!item) {
-            await interaction.reply({ content: "❌ This item no longer exists.", flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ content: "❌ This item no longer exists." });
             return;
         }
 
         addToCart(interaction.user.id, { section: section as AdSection, key: item.key, name: item.name, priceUsd: item.priceUsd });
 
-        await interaction.reply({
+        await interaction.editReply({
             content: `✅ تمت إضافة **${item.name}** إلى سلتك.`,
-            flags: MessageFlags.Ephemeral,
         });
     },
 };

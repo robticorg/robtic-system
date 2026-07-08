@@ -1,5 +1,5 @@
 import type { CommandConfig } from "@core/config";
-import { FULL_POWER_ROLE_ID } from "@core/config";
+import { FULL_POWER_ROLE_IDS } from "@core/config";
 import { isOnCooldown, getRemainingCooldown, errorEmbed } from "@core/utils";
 import { ChatInputCommandInteraction, MessageFlags, type GuildMember, type Interaction, type InteractionReplyOptions } from "discord.js";
 import type { BotClient } from "@core/BotClient";
@@ -64,7 +64,7 @@ export const checkPermissions = async (intract: Interaction, command: CommandCon
 
     const member = interaction.member as GuildMember;
 
-    if (member.roles.cache.has(FULL_POWER_ROLE_ID)) return true;
+    if (FULL_POWER_ROLE_IDS.some(id => member.roles.cache.has(id))) return true;
 
     const { score } = getMemberLevel(member);
 

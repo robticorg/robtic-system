@@ -244,11 +244,12 @@ export default {
     async run(interaction: ChatInputCommandInteraction) {
         if (!interaction.guildId || !interaction.guild) return;
 
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const member = interaction.member as GuildMember;
         if (!managerOnly(member)) {
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [errorEmbed("Only Moderation Department Managers can use this command.")],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -276,7 +277,7 @@ export default {
                 )
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
@@ -284,9 +285,8 @@ export default {
             const enabled = interaction.options.getBoolean("enabled", true);
             config.enabled = enabled;
             const saved = await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Security system is now **${saved.enabled ? "ENABLED" : "DISABLED"}**.`)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -297,9 +297,8 @@ export default {
             config.settings.auditChannels[type] = channel.id;
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Audit log channel for **${type}** set to <#${channel.id}>.`)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -309,9 +308,8 @@ export default {
             config.settings.securityLogChannelId = channel.id;
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Security alert channel set to <#${channel.id}>.`)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -332,9 +330,8 @@ export default {
             config.rules.push(rule);
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Rule added: ${describeRule(rule, config.rules.length - 1)}`)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -345,7 +342,7 @@ export default {
             const list = config.rules.filter((rule) => rule.event === event);
 
             if (index < 0 || index >= list.length) {
-                await interaction.reply({ embeds: [errorEmbed("Invalid index for this event.")], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [errorEmbed("Invalid index for this event.")] });
                 return;
             }
 
@@ -360,9 +357,8 @@ export default {
             if (globalIndex >= 0) config.rules.splice(globalIndex, 1);
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Removed rule: ${describeRule(selected, index)}`)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -380,7 +376,7 @@ export default {
                 .setDescription(byEvent.join("\n\n"))
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
@@ -389,7 +385,7 @@ export default {
             const role = interaction.options.getRole("role", false);
 
             if (!user && !role) {
-                await interaction.reply({ embeds: [errorEmbed("Provide at least one of user or role.")], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [errorEmbed("Provide at least one of user or role.")] });
                 return;
             }
 
@@ -403,7 +399,7 @@ export default {
 
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
                         .setColor(Colors.success)
@@ -411,7 +407,6 @@ export default {
                             `${sub === "whitelist-add" ? "Added to" : "Removed from"} whitelist: ${user ? `<@${user.id}>` : ""} ${role ? `<@&${role.id}>` : ""}`.trim()
                         ),
                 ],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -436,7 +431,7 @@ export default {
                 )
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
@@ -447,9 +442,8 @@ export default {
             }
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Added <@&${role.id}> to role strip list.`)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -459,15 +453,14 @@ export default {
             config.settings.rolesToStrip = config.settings.rolesToStrip.filter((id) => id !== role.id);
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Removed <@&${role.id}> from role strip list.`)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         if (sub === "rolestrip-list") {
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
                         .setColor(Colors.info)
@@ -478,7 +471,6 @@ export default {
                                 : "No roles configured."
                         ),
                 ],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }

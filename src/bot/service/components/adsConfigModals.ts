@@ -10,6 +10,7 @@ export default {
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
         if (!interaction.isFromMessage()) return;
+        await interaction.deferUpdate();
 
         const guildId = interaction.guildId!;
 
@@ -18,14 +19,14 @@ export default {
             const rate = Number(raw.replace(/,/g, ""));
 
             if (!Number.isFinite(rate) || rate <= 0) {
-                await interaction.reply({ content: "❌ Exchange rate must be a positive number.", flags: MessageFlags.Ephemeral });
+                await interaction.followUp({ content: "❌ Exchange rate must be a positive number.", flags: MessageFlags.Ephemeral });
                 return;
             }
 
             const config = await AdsConfigRepository.setExchangeRate(guildId, rate);
             await refreshAdsPanel(client, config);
 
-            await interaction.update({ ...buildConfigRoot(config), flags: MessageFlags.IsComponentsV2 });
+            await interaction.editReply({ ...buildConfigRoot(config), flags: MessageFlags.IsComponentsV2 });
             return;
         }
 
@@ -36,7 +37,7 @@ export default {
         const details = interaction.fields.getTextInputValue("details")?.trim();
 
         if (!Number.isFinite(priceUsd) || priceUsd < 0) {
-            await interaction.reply({ content: "❌ Price must be a non-negative number.", flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: "❌ Price must be a non-negative number.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -49,7 +50,7 @@ export default {
         await refreshAdsPanel(client, config);
 
         const item = AdsConfigRepository.findItem(config, section as AdSection, key)!;
-        await interaction.update({
+        await interaction.editReply({
             ...buildItemDetail(section as AdSection, item, config.exchangeRate),
             flags: MessageFlags.IsComponentsV2,
         });

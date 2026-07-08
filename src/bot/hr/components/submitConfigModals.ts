@@ -10,13 +10,14 @@ export default {
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
         if (!interaction.isFromMessage()) return;
+        await interaction.deferUpdate();
 
         const [, action, key] = interaction.customId.match(/^submit-config-(rename|questions)-modal_(.+)$/) ?? [];
         const guildId = interaction.guildId!;
 
         const type = await SubmissionTypeRepository.get(guildId, key);
         if (!type) {
-            await interaction.reply({ content: "❌ This submission type no longer exists.", flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: "❌ This submission type no longer exists.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -28,7 +29,7 @@ export default {
             const config = await SubmitConfigRepository.get(guildId);
             if (config) await updatePanel(client, config);
 
-            await interaction.update(buildConfigPanel(updated));
+            await interaction.editReply(buildConfigPanel(updated));
             return;
         }
 
@@ -42,7 +43,7 @@ export default {
             const updated = await SubmissionTypeRepository.setQuestions(guildId, key, questions);
             if (!updated) return;
 
-            await interaction.update(buildConfigPanel(updated));
+            await interaction.editReply(buildConfigPanel(updated));
             return;
         }
     },

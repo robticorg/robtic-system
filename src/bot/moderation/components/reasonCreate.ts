@@ -13,6 +13,8 @@ export const reasonCreateHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^reason_create_(warn|mute|ban)$/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const type = interaction.customId.split("_")[2] as "warn" | "mute" | "ban";
         const key = interaction.fields.getTextInputValue("reason_key").toLowerCase().trim();
         const label = interaction.fields.getTextInputValue("reason_label").trim();
@@ -20,7 +22,7 @@ export const reasonCreateHandler: ComponentHandler<ModalSubmitInteraction> = {
 
         const existing = await ReasonRepository.findByKey(key);
         if (existing) {
-            await interaction.reply({ embeds: [errorEmbed(`Reason \`${key}\` already exists.`)], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [errorEmbed(`Reason \`${key}\` already exists.`)] });
             return;
         }
 
@@ -45,6 +47,6 @@ export const reasonCreateHandler: ComponentHandler<ModalSubmitInteraction> = {
             )
             .setTimestamp();
 
-        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ embeds: [embed] });
     },
 };

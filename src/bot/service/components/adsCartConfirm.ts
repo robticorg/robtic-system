@@ -9,12 +9,14 @@ export default {
     customId: "ads-cart-confirm",
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferUpdate();
+
         const guildId = interaction.guildId!;
         const cart = getCart(interaction.user.id);
         const config = await AdsConfigRepository.get(guildId);
 
         if (!cart.length) {
-            await interaction.update({
+            await interaction.editReply({
                 ...buildCartSummary(cart, config.exchangeRate, "❌ Your cart is empty — add something first."),
                 flags: MessageFlags.IsComponentsV2,
             });
@@ -22,7 +24,7 @@ export default {
         }
 
         if (!config.approvalChannelId) {
-            await interaction.update({
+            await interaction.editReply({
                 ...buildCartSummary(cart, config.exchangeRate, "❌ The ads system isn't fully configured yet. Please contact an administrator."),
                 flags: MessageFlags.IsComponentsV2,
             });
@@ -31,7 +33,7 @@ export default {
 
         const reviewChannel = interaction.guild?.channels.cache.get(config.approvalChannelId) as TextChannel | undefined;
         if (!reviewChannel) {
-            await interaction.update({
+            await interaction.editReply({
                 ...buildCartSummary(cart, config.exchangeRate, "❌ The approval channel could not be found. Please contact an administrator."),
                 flags: MessageFlags.IsComponentsV2,
             });
@@ -49,7 +51,7 @@ export default {
 
         clearCart(interaction.user.id);
 
-        await interaction.update({
+        await interaction.editReply({
             ...buildCartSummary([], config.exchangeRate, "✅ Your order has been submitted! You'll be notified once staff review it."),
             flags: MessageFlags.IsComponentsV2,
         });

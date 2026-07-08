@@ -4,6 +4,7 @@ import {
     AutocompleteInteraction,
     EmbedBuilder,
     ChannelType,
+    MessageFlags,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { XPSettingsRepository } from "@database/repositories";
@@ -61,6 +62,8 @@ export default {
     requiredPermission: 80,
 
     async run(interaction: ChatInputCommandInteraction, _client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const guildId = interaction.guildId!;
         const sub = interaction.options.getSubcommand();
 
@@ -72,9 +75,8 @@ export default {
             else if (type === "support") await XPSettingsRepository.addSupportChannel(guildId, channel.id);
             else await XPSettingsRepository.addStaffChannel(guildId, channel.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: `Added <#${channel.id}> as a **${type}** channel.`,
-                ephemeral: true,
             });
         }
 
@@ -86,9 +88,8 @@ export default {
             else if (type === "support") await XPSettingsRepository.removeSupportChannel(guildId, channelId);
             else await XPSettingsRepository.removeStaffChannel(guildId, channelId);
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: `Removed <#${channelId}> from **${type}** channels.`,
-                ephemeral: true,
             });
         }
 
@@ -96,9 +97,8 @@ export default {
             const enabled = interaction.options.getBoolean("enabled", true);
             await XPSettingsRepository.setDecayEnabled(guildId, enabled);
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: `XP decay is now **${enabled ? "enabled" : "disabled"}**.`,
-                ephemeral: true,
             });
         }
 
@@ -119,7 +119,7 @@ export default {
                 .setColor(Colors.info)
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.editReply({ embeds: [embed] });
         }
     },
 

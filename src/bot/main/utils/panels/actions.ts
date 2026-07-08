@@ -15,9 +15,11 @@ import { ServerConfigRepository } from "@database/repositories/ServerConfigRepos
 import { getUserLang } from "@shared/utils/lang";
 
 export async function panelList(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const panels = await listPanels();
     if (!panels.length) {
-        await interaction.reply({ content: "No panels defined.", flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ content: "No panels defined." });
         return;
     }
 
@@ -38,19 +40,19 @@ export async function panelList(interaction: ChatInputCommandInteraction) {
         .setFooter({ text: `${panels.length} panel(s) available` })
         .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+    await interaction.editReply({ embeds: [embed] });
 }
 
 export async function panelSend(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const panelKey = interaction.options.getString("panel", true);
     const panel = await getPanel(panelKey);
 
     if (!panel) {
-        await interaction.reply({ content: `Panel \`${panelKey}\` not found.`, flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ content: `Panel \`${panelKey}\` not found.` });
         return;
     }
-
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const channel = interaction.channel as TextChannel;
     const name = panel.name ?? panel.key;
@@ -111,16 +113,16 @@ export async function panelSend(interaction: ChatInputCommandInteraction) {
 }
 
 export async function panelDelete(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const messageId = interaction.options.getString("panel_message", true);
     const guildId = interaction.guildId!;
 
     const sentPanel = await ServerConfigRepository.getSentPanel(guildId, messageId);
     if (!sentPanel) {
-        await interaction.reply({ content: "That panel was not found in the database.", flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ content: "That panel was not found in the database." });
         return;
     }
-
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
         const channel = await interaction.guild!.channels.fetch(sentPanel.channelId) as TextChannel | null;
@@ -140,11 +142,13 @@ export async function panelDelete(interaction: ChatInputCommandInteraction) {
 }
 
 export async function panelButtonHandler(interaction: ButtonInteraction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const panelKey = interaction.customId.replace("panel_view_", "");
 
     const panel = await getPanel(panelKey);
     if (!panel) {
-        await interaction.reply({ content: "This panel no longer exists.", flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ content: "This panel no longer exists." });
         return;
     }
 
@@ -154,9 +158,9 @@ export async function panelButtonHandler(interaction: ButtonInteraction) {
     const matched = panel.roles?.find(r => member.roles.cache.has(r.roleId));
     const container = panel.getContent(await lang, matched?.label ?? null);
 
-    await interaction.reply({
+    await interaction.editReply({
         components: [container],
-        flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+        flags: MessageFlags.IsComponentsV2,
     });
 }
 

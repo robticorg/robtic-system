@@ -95,12 +95,14 @@ const modmailType: ComponentHandler<StringSelectMenuInteraction> = {
         }
 
         // support thread creation
+        await interaction.deferUpdate();
+
         const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
         const modmailChannelId = staffGuild ? await ServerConfigRepository.getModmailChannel(staffGuild.id) : null;
         const staffChannel = modmailChannelId ? staffGuild?.channels.cache.get(modmailChannelId) as TextChannel : null;
 
         if (!staffGuild || !staffChannel) {
-            await interaction.update({ content: messages.errors.staff_channel_not_found, components: [] });
+            await interaction.editReply({ content: messages.errors.staff_channel_not_found, components: [] });
             pendingSessions.delete(userId);
             return;
         }
@@ -151,7 +153,7 @@ const modmailType: ComponentHandler<StringSelectMenuInteraction> = {
 
         pendingSessions.delete(userId);
 
-        await interaction.update({ content: t("modmail.thread_created", language), components: [] });
+        await interaction.editReply({ content: t("modmail.thread_created", language), components: [] });
     },
 };
 

@@ -18,6 +18,8 @@ export default {
         ),
 
     async run(interaction: ChatInputCommandInteraction) {
+        await interaction.deferReply();
+
         const target = interaction.options.getUser("user") ?? interaction.user;
         const guildId = interaction.guildId!;
 
@@ -43,7 +45,7 @@ export default {
             .setColor(Colors.activity)
             .setTimestamp();
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     },
 };
 

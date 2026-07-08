@@ -14,14 +14,15 @@ const modmailNotes: ComponentHandler<ButtonInteraction> = {
     customId: /^modmail_notes_\d+$/,
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const userId = interaction.customId.replace("modmail_notes_", "");
 
         const notes = await NoteRepository.findByUser(userId);
 
         if (!notes.length) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: messages.errors.no_notes_found,
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -36,9 +37,8 @@ const modmailNotes: ComponentHandler<ButtonInteraction> = {
             .setColor(Colors.warning)
             .setTimestamp();
 
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [embed],
-            flags: MessageFlags.Ephemeral,
         });
     },
 };

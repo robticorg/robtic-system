@@ -30,11 +30,14 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
         const guildId = interaction.guildId!;
         const modMember = interaction.member as GuildMember;
 
+        await interaction.deferReply();
+
         const targetUser = await client.users.fetch(targetId).catch(() => null);
         const targetMember = await interaction.guild?.members.fetch(targetId).catch(() => null);
 
         if (!targetUser) {
-            await interaction.reply({ content: "User not found.", flags: MessageFlags.Ephemeral });
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({ content: "User not found.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -86,7 +89,8 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }
 
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     embeds: [new EmbedBuilder().setDescription("⏳ Your warning request has been sent for approval.").setColor(Colors.info)],
                     flags: MessageFlags.Ephemeral,
                 });
@@ -94,7 +98,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             }
 
             const result = await executeWarn(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember);
-            await interaction.reply({ embeds: [result.embed] });
+            await interaction.editReply({ embeds: [result.embed] });
         } else if (type === "mute") {
             let durationHours = 24;
             const durationInput = interaction.fields.getTextInputValue("duration");
@@ -134,7 +138,8 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }
 
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     embeds: [new EmbedBuilder().setDescription("⏳ Your mute request has been sent for approval.").setColor(Colors.info)],
                     flags: MessageFlags.Ephemeral,
                 });
@@ -142,7 +147,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             }
 
             const result = await executeMute(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember, durationMs, interaction.guild!);
-            await interaction.reply({ embeds: [result.embed] });
+            await interaction.editReply({ embeds: [result.embed] });
         } else if (type === "ban") {
             const durationInput = interaction.fields.getTextInputValue("duration")?.toLowerCase() || "perm";
             const permanent = durationInput === "perm";
@@ -181,7 +186,8 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }
 
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     embeds: [new EmbedBuilder().setDescription("⏳ Your ban request has been sent for approval.").setColor(Colors.info)],
                     flags: MessageFlags.Ephemeral,
                 });
@@ -189,7 +195,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             }
 
             const result = await executeBan(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember, permanent, durationDays, interaction.guild!);
-            await interaction.reply({ embeds: [result.embed] });
+            await interaction.editReply({ embeds: [result.embed] });
         }
     }
 };

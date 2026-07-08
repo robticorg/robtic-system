@@ -35,6 +35,8 @@ export default {
             return;
         }
 
+        await interaction.deferUpdate();
+
         if (action === "deny") {
             const denyEmbed = new EmbedBuilder()
                 .setTitle("❌ Punishment Request Denied")
@@ -42,7 +44,7 @@ export default {
                 .setDescription(`<@${interaction.user.id}> denied the ${type} request by <@${requesterId}> against <@${targetId}>.`)
                 .setTimestamp();
 
-            await interaction.update({ embeds: [denyEmbed], components: [] });
+            await interaction.editReply({ embeds: [denyEmbed], components: [] });
             return;
         }
 
@@ -58,7 +60,7 @@ export default {
         if (type === "warn") {
             const result = await executeWarn(client, guildId, targetId, targetUsername, reason, reasonAr, requesterId, member);
             const approvedEmbed = result.embed.setFooter({ text: `Approved by ${interaction.user.username}` });
-            await interaction.update({ embeds: [approvedEmbed], components: [] });
+            await interaction.editReply({ embeds: [approvedEmbed], components: [] });
         }
 
         if (type === "mute") {
@@ -66,7 +68,7 @@ export default {
             const durationMs = durationHours * 60 * 60 * 1000;
             const result = await executeMute(client, guildId, targetId, targetUsername, reason, reasonAr, requesterId, member, durationMs, guild);
             const approvedEmbed = result.embed.setFooter({ text: `Approved by ${interaction.user.username}` });
-            await interaction.update({ embeds: [approvedEmbed], components: [] });
+            await interaction.editReply({ embeds: [approvedEmbed], components: [] });
         }
 
         if (type === "ban") {
@@ -74,7 +76,7 @@ export default {
             const durationDays = permanent ? 7 : (parseInt(extra) || 7);
             const result = await executeBan(client, guildId, targetId, targetUsername, reason, reasonAr, requesterId, member, permanent, durationDays, guild);
             const approvedEmbed = result.embed.setFooter({ text: `Approved by ${interaction.user.username}` });
-            await interaction.update({ embeds: [approvedEmbed], components: [] });
+            await interaction.editReply({ embeds: [approvedEmbed], components: [] });
         }
     },
 };

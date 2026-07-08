@@ -16,6 +16,8 @@ const reportSubmit: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^modmail_report_\d+_(en|ar)$/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
+        await interaction.deferReply();
+
         const parts = interaction.customId.split("_");
         const userId = parts[2];
         const lang = parts[3] as Lang;
@@ -60,7 +62,7 @@ const reportSubmit: ComponentHandler<ModalSubmitInteraction> = {
             await reportChannel.send({ embeds: [reportEmbed], components: [buttons] });
         }
 
-        await interaction.reply({
+        await interaction.editReply({
             content: t("modmail.report_submitted", lang),
         });
     },

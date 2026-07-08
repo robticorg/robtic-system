@@ -18,8 +18,9 @@ export default {
         const guildId = interaction.guildId!;
 
         if (interaction.customId === "ads-config-back") {
+            await interaction.deferUpdate();
             const config = await AdsConfigRepository.get(guildId);
-            await interaction.update({ ...buildConfigRoot(config), flags: MessageFlags.IsComponentsV2 });
+            await interaction.editReply({ ...buildConfigRoot(config), flags: MessageFlags.IsComponentsV2 });
             return;
         }
 

@@ -137,6 +137,8 @@ export default {
     department: "Moderation" as Department,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+        await interaction.deferReply();
+
         const sub = interaction.options.getSubcommand();
         const target = interaction.options.getUser("target", true);
         const guildId = interaction.guildId!;
@@ -181,7 +183,8 @@ export default {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }
 
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     embeds: [new EmbedBuilder().setDescription("⏳ Your warning request has been sent for approval by a senior moderator.").setColor(Colors.info)],
                     flags: MessageFlags.Ephemeral,
                 });
@@ -189,7 +192,7 @@ export default {
             }
 
             const result = await executeWarn(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member);
-            await interaction.reply({ embeds: [result.embed] });
+            await interaction.editReply({ embeds: [result.embed] });
         }
 
         if (sub === "appeal") {
@@ -198,12 +201,14 @@ export default {
 
             const punishment = await PunishmentRepository.findByCaseId(caseId);
             if (!punishment || punishment.userId !== target.id || punishment.type !== "warn") {
-                await interaction.reply({ embeds: [errorEmbed("Warning case not found for this user.")], flags: MessageFlags.Ephemeral });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ embeds: [errorEmbed("Warning case not found for this user.")], flags: MessageFlags.Ephemeral });
                 return;
             }
 
             if (punishment.appealed) {
-                await interaction.reply({ embeds: [errorEmbed("This warning has already been appealed.")], flags: MessageFlags.Ephemeral });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ embeds: [errorEmbed("This warning has already been appealed.")], flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -233,7 +238,7 @@ export default {
                 )
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
         }
 
         if (sub === "list") {
@@ -241,7 +246,8 @@ export default {
             const level = await PunishmentRepository.getPunishmentLevel(target.id);
 
             if (!warns.length) {
-                await interaction.reply({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no warnings.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no warnings.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -257,7 +263,8 @@ export default {
                 .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${warns.length} warning(s)` })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
     },
 

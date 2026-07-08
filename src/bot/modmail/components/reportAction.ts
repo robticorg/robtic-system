@@ -54,12 +54,14 @@ const reportAction: ComponentHandler<ButtonInteraction> = {
         }
 
         if (action === "investigate") {
+            await interaction.deferUpdate();
+
             const staffGuild = client.guilds.cache.get(process.env.MainGuild!);
             const modmailChannelId = staffGuild ? await ServerConfigRepository.getModmailChannel(staffGuild.id) : null;
             const staffChannel = modmailChannelId ? staffGuild?.channels.cache.get(modmailChannelId) as TextChannel : null;
 
             if (!staffChannel) {
-                await interaction.reply({
+                await interaction.followUp({
                     content: messages.errors.staff_channel_not_found,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -120,7 +122,7 @@ const reportAction: ComponentHandler<ButtonInteraction> = {
                 .setColor(Colors.info)
                 .setFooter({ text: `🔍 Investigation opened by ${interaction.user.username}` });
 
-            await interaction.update({ embeds: [updatedEmbed], components: [] });
+            await interaction.editReply({ embeds: [updatedEmbed], components: [] });
         }
     },
 };

@@ -48,6 +48,8 @@ export default {
             new ActionRowBuilder<TextInputBuilder>().addComponents(descInput)
         );
 
+        await interaction.showModal(modal);
+
         await Send.create({
             channel: channel?.id,
             user: interaction.user.id
@@ -57,7 +59,5 @@ export default {
             const doc = await Send.findOne({ user: interaction.user.id, channel: channel?.id });
             if (doc) await Send.deleteOne({ _id: doc._id });
         }, 180000);
-
-        await interaction.showModal(modal);
     }
 };

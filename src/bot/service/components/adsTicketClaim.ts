@@ -7,17 +7,19 @@ export default {
     customId: /^ads-ticket-claim_/,
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferUpdate();
+
         const ticketId = interaction.customId.slice("ads-ticket-claim_".length);
         const guildId = interaction.guildId!;
 
         const ticket = await TicketRepository.findById(ticketId);
         if (!ticket) {
-            await interaction.reply({ content: "❌ This ticket no longer exists.", flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: "❌ This ticket no longer exists.", flags: MessageFlags.Ephemeral });
             return;
         }
 
         if (ticket.assignedTo) {
-            await interaction.reply({
+            await interaction.followUp({
                 content: `⚠️ This ticket is already claimed by <@${ticket.assignedTo}>.`,
                 flags: MessageFlags.Ephemeral,
             });
@@ -26,7 +28,7 @@ export default {
 
         const order = await AdOrderRepository.get(guildId, ticketId);
         if (!order) {
-            await interaction.reply({ content: "❌ The order behind this ticket no longer exists.", flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: "❌ The order behind this ticket no longer exists.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -34,7 +36,7 @@ export default {
         await ActivityRepository.addSupportPoints(interaction.user.id, guildId, 1);
 
         const config = await AdsConfigRepository.get(guildId);
-        await interaction.update({
+        await interaction.editReply({
             ...buildAdsTicketCard(order, config.exchangeRate, ticketId, interaction.user.id),
             flags: MessageFlags.IsComponentsV2,
         });

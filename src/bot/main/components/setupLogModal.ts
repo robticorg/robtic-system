@@ -13,6 +13,8 @@ const setupLogModalHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^setup_log_modal_.+$/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const key = interaction.customId.replace("setup_log_modal_", "") as LogKey;
         const meta = LOG_REGISTRY[key];
 
@@ -22,18 +24,16 @@ const setupLogModalHandler: ComponentHandler<ModalSubmitInteraction> = {
 
         const guild = client.guilds.cache.get(serverId);
         if (!guild) {
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setDescription(`❌ Bot is not in server \`${serverId}\`.`).setColor(Colors.error)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         const channel = guild.channels.cache.get(channelId);
         if (!channel?.isTextBased()) {
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setDescription(`❌ Channel \`${channelId}\` not found or is not a text channel in **${guild.name}**.`).setColor(Colors.error)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -61,7 +61,7 @@ const setupLogModalHandler: ComponentHandler<ModalSubmitInteraction> = {
 
         embed.setTimestamp();
 
-        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ embeds: [embed] });
     },
 };
 

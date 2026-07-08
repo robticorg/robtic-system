@@ -14,18 +14,19 @@ const modmailCloseBtn: ComponentHandler<ButtonInteraction> = {
     customId: /^modmail_close_\d+$/,
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferReply();
+
         const threadId = interaction.customId.replace("modmail_close_", "");
 
         const modmail = await ModMailRepository.findByThreadId(threadId);
         if (!modmail || modmail.status !== "open") {
-            await interaction.reply({
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({
                 content: messages.errors.thread_already_closed,
                 flags: MessageFlags.Ephemeral,
             });
             return;
         }
-
-        await interaction.deferReply();
 
         const thread = interaction.channel as ThreadChannel;
         await closeModMail(modmail, interaction.user.id, client, thread);

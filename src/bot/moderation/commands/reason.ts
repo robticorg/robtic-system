@@ -95,11 +95,13 @@ export default {
         }
 
         if (sub === "remove") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const key = interaction.options.getString("key", true).toLowerCase();
 
             const deleted = await ReasonRepository.delete(key);
             if (!deleted) {
-                await interaction.reply({ embeds: [errorEmbed(`Reason \`${key}\` not found.`)], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [errorEmbed(`Reason \`${key}\` not found.`)] });
                 return;
             }
 
@@ -109,15 +111,17 @@ export default {
                 .setColor(Colors.success)
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
         if (sub === "list") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const reasons = await ReasonRepository.getAll();
 
             if (!reasons.length) {
-                await interaction.reply({ embeds: [new EmbedBuilder().setDescription("No punishment reasons created yet.").setColor(Colors.info)], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription("No punishment reasons created yet.").setColor(Colors.info)] });
                 return;
             }
 
@@ -138,7 +142,7 @@ export default {
                 .setFooter({ text: `Total: ${reasons.length} reason(s)` })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
         }
     },
 

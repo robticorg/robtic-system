@@ -43,12 +43,14 @@ export default {
         const sub = interaction.options.getSubcommand();
 
         if (sub === "help") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const allTags = await TagRepository.getAll();
             const tagList = allTags.length
                 ? allTags.map(t => `\`${t.key}\` — ${t.description}`).join("\n")
                 : "No tags created yet.";
 
-            await interaction.reply({ embeds: [tagHelpEmbed(tagList, TAG_VARIABLES_LIST)], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [tagHelpEmbed(tagList, TAG_VARIABLES_LIST)] });
             return;
         }
 
@@ -100,20 +102,20 @@ export default {
         }
 
         if (sub === "delete") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const key = interaction.options.getString("key", true).toLowerCase();
 
             const deleted = await TagRepository.delete(key);
             if (!deleted) {
-                await interaction.reply({
+                await interaction.editReply({
                     content: messages.errors.tag_not_found.replace("{key}", key),
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: messages.success.tag_deleted.replace("{key}", key),
-                flags: MessageFlags.Ephemeral,
             });
         }
     },

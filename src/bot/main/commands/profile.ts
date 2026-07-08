@@ -24,12 +24,14 @@ export default {
         ),
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const target = interaction.options.getUser("user") ?? interaction.user;
         const guildId = interaction.guildId!;
         const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
         const currentUser = interaction.guild?.members.cache.get(interaction.user.id) ?? await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
 
-        if(target !== interaction.user && isStaff(member as GuildMember) && !isStaff(currentUser as GuildMember)) return await interaction.reply({ content: "You cannot view the profile of another staff member.", flags: MessageFlags.Ephemeral });  
+        if(target !== interaction.user && isStaff(member as GuildMember) && !isStaff(currentUser as GuildMember)) return await interaction.editReply({ content: "You cannot view the profile of another staff member." });
 
         const punishmentLevel = await PunishmentRepository.getPunishmentLevel(target.id);
         const levelInfo = PunishmentRepository.getLevelInfo(punishmentLevel);
@@ -107,7 +109,7 @@ export default {
 
         const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
 
-        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ embeds: [embed], components: [row] });
     },
 };
 

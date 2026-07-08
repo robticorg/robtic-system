@@ -26,9 +26,12 @@ export default {
             return;
         }
 
+        await interaction.deferReply();
+
         const modmail = await ModMailRepository.findByThreadId(interaction.channel.id);
         if (!modmail || modmail.status !== "open") {
-            await interaction.reply({
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({
                 content: messages.errors.no_active_thread,
                 flags: MessageFlags.Ephemeral,
             });
@@ -39,7 +42,8 @@ export default {
         const isDeptAuthority = hasDepartmentAuthority(member, "Moderation");
 
         if (modmail.claimedBy !== interaction.user.id && !isDeptAuthority) {
-            await interaction.reply({
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({
                 content: messages.errors.only_handler_can_transfer,
                 flags: MessageFlags.Ephemeral,
             });
@@ -49,7 +53,8 @@ export default {
         const target = interaction.options.getUser("staff", true);
 
         if (target.bot) {
-            await interaction.reply({
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({
                 content: messages.errors.cannot_transfer_bot,
                 flags: MessageFlags.Ephemeral,
             });
@@ -57,7 +62,8 @@ export default {
         }
 
         if (target.id === modmail.claimedBy) {
-            await interaction.reply({
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({
                 content: messages.errors.already_owns_thread,
                 flags: MessageFlags.Ephemeral,
             });
@@ -66,7 +72,7 @@ export default {
 
         await ModMailRepository.transfer(interaction.channel.id, target.id);
 
-        await interaction.reply({
+        await interaction.editReply({
             content: messages.success.thread_transferred.replace("{targetId}", target.id).replace("{userId}", interaction.user.id),
         });
     },

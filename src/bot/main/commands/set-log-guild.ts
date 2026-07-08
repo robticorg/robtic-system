@@ -24,15 +24,16 @@ export default {
     department: "Management" as Department,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const guildId = interaction.options.getString("id", true).trim();
 
         const guild = client.guilds.cache.get(guildId);
         if (!guild) {
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setDescription(`❌ Bot is not in guild \`${guildId}\`. Make sure the bot is a member of that server.`)
                     .setColor(Colors.error)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -55,6 +56,6 @@ export default {
             embed.addFields({ name: "Previous", value: prevGuild ? `${prevGuild.name} (\`${previous}\`)` : `\`${previous}\`` });
         }
 
-        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ embeds: [embed] });
     },
 };

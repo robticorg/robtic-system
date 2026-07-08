@@ -24,6 +24,8 @@ export default {
     ),
 
   async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const sub = interaction.options.getSubcommand();
 
     const data = await StaffRepository.getSubmissionByThreadId(
@@ -31,9 +33,8 @@ export default {
     );
 
     if (!data) {
-      return await interaction.reply({
+      return await interaction.editReply({
         content: "❌ | Interview not found",
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -42,9 +43,8 @@ export default {
     const isManager = type?.managerRoleIds.some((id) => manager.roles.cache.has(id)) ?? false;
 
     if (!isManager && !hasFullPower(manager)) {
-      return await interaction.reply({
+      return await interaction.editReply({
         content: "❌ | You don't have permission to decide on this interview.",
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -67,9 +67,8 @@ export default {
 
       await StaffRepository.deleteSubmission(data.userId);
 
-      await interaction.reply({
+      await interaction.editReply({
         content: "✅ | Submission accepted",
-        flags: MessageFlags.Ephemeral,
       });
 
       user.send("Your submission has been accepted");
@@ -77,17 +76,15 @@ export default {
 
     if (sub === "reject") {
       if (data.isApproved) {
-        return interaction.reply({
+        return interaction.editReply({
           content: "❌ | This submission was accepted. You can’t reject it now",
-          flags: MessageFlags.Ephemeral,
         });
       }
 
       await StaffRepository.deleteSubmission(user.id);
 
-      await interaction.reply({
+      await interaction.editReply({
         content: "✅ | Submission rejected",
-        flags: MessageFlags.Ephemeral,
       });
 
       user.send("Your submission has been rejected");

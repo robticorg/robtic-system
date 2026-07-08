@@ -2,6 +2,7 @@ import {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
     EmbedBuilder,
+    MessageFlags,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { LevelRewardRepository } from "@database/repositories";
@@ -40,6 +41,8 @@ export default {
     requiredPermission: 80,
 
     async run(interaction: ChatInputCommandInteraction, _client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const guildId = interaction.guildId!;
         const sub = interaction.options.getSubcommand();
 
@@ -48,9 +51,8 @@ export default {
             const role = interaction.options.getRole("role", true);
 
             await LevelRewardRepository.set(guildId, level, role.id);
-            await interaction.reply({
+            await interaction.editReply({
                 content: `Level **${level}** will now grant <@&${role.id}>.`,
-                ephemeral: true,
             });
         }
 
@@ -58,11 +60,10 @@ export default {
             const level = interaction.options.getInteger("level", true);
             const removed = await LevelRewardRepository.remove(guildId, level);
 
-            await interaction.reply({
+            await interaction.editReply({
                 content: removed
                     ? `Removed reward for level **${level}**.`
                     : `No reward found for level **${level}**.`,
-                ephemeral: true,
             });
         }
 
@@ -70,7 +71,7 @@ export default {
             const rewards = await LevelRewardRepository.getAll(guildId);
 
             if (rewards.length === 0) {
-                await interaction.reply({ content: "No level rewards configured.", ephemeral: true });
+                await interaction.editReply({ content: "No level rewards configured." });
                 return;
             }
 
@@ -82,7 +83,7 @@ export default {
                 .setColor(Colors.activity)
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.editReply({ embeds: [embed] });
         }
     },
 };

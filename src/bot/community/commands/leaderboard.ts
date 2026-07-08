@@ -2,6 +2,7 @@ import {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
     EmbedBuilder,
+    MessageFlags,
 } from "discord.js";
 import { ActivityRepository } from "@database/repositories";
 import { Colors } from "@core/config";
@@ -19,6 +20,8 @@ export default {
         ),
 
     async run(interaction: ChatInputCommandInteraction) {
+        await interaction.deferReply();
+
         const page = interaction.options.getInteger("page") ?? 1;
         const perPage = 10;
         const guildId = interaction.guildId!;
@@ -27,7 +30,8 @@ export default {
         const pageData = top.slice((page - 1) * perPage);
 
         if (pageData.length === 0) {
-            await interaction.reply({ content: "No data for this page.", ephemeral: true });
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({ content: "No data for this page.", flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -44,6 +48,6 @@ export default {
             .setFooter({ text: `Page ${page}` })
             .setTimestamp();
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     },
 };

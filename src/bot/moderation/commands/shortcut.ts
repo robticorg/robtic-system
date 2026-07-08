@@ -4,6 +4,7 @@ import {
     AutocompleteInteraction,
     EmbedBuilder,
     PermissionFlagsBits,
+    MessageFlags,
 } from "discord.js";
 import { ServerConfigRepository } from "@database/repositories/ServerConfigRepository";
 import { ChatUtils } from "../utils/chat";
@@ -61,6 +62,8 @@ export default {
 
     async run(interaction: ChatInputCommandInteraction) {
         if (!interaction.guildId) return;
+        await interaction.deferReply();
+
         const subcommand = interaction.options.getSubcommand();
         const guildId = interaction.guildId;
 
@@ -69,26 +72,38 @@ export default {
             const trigger = interaction.options.getString("msg", true);
 
             if (!allowedCommands.includes(command)) {
-                return interaction.reply({ content: `Invalid command. Allowed: ${allowedCommands.join(", ")}`, ephemeral: true });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ content: `Invalid command. Allowed: ${allowedCommands.join(", ")}`, flags: MessageFlags.Ephemeral });
+                return;
             }
 
             await ServerConfigRepository.addShortcut(guildId, command, trigger);
 
-            return interaction.reply({
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({
                 content: `Shortcut added! Typing "${trigger}" will now execute "/chat ${command}".`,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral,
             });
+            return;
         } else if (subcommand === "remove") {
             const trigger = interaction.options.getString("msg", true);
             const result = await ServerConfigRepository.removeShortcut(guildId, trigger);
 
-            if (!result) return interaction.reply({ content: "Error accessing database.", ephemeral: true });
+            if (!result) {
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ content: "Error accessing database.", flags: MessageFlags.Ephemeral });
+                return;
+            }
 
-            return interaction.reply({ content: `Shortcut "${trigger}" removed (if it existed).`, ephemeral: true });
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({ content: `Shortcut "${trigger}" removed (if it existed).`, flags: MessageFlags.Ephemeral });
+            return;
         } else if (subcommand === "list") {
             const shortcuts = await ServerConfigRepository.getShortcuts(guildId);
             if (shortcuts.length === 0) {
-                return interaction.reply({ content: "No shortcuts defined.", ephemeral: true });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ content: "No shortcuts defined.", flags: MessageFlags.Ephemeral });
+                return;
             }
 
             const embed = new EmbedBuilder()
@@ -96,7 +111,7 @@ export default {
                 .setDescription(shortcuts.map(s => `• \`${s.trigger}\` → \`/chat ${s.command}\``).join("\n"))
                 .setColor(Colors.info || 0x3498DB);
 
-            return interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
         }
     }
 };

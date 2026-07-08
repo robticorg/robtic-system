@@ -7,6 +7,8 @@ export default {
     customId: /^submit-config-(grant-roles|manager-roles)_/,
 
     async run(interaction: RoleSelectMenuInteraction, client: BotClient) {
+        await interaction.deferUpdate();
+
         const [, action, key] = interaction.customId.match(/^submit-config-(grant-roles|manager-roles)_(.+)$/) ?? [];
         const guildId = interaction.guildId!;
         const roleIds = interaction.values;
@@ -17,6 +19,6 @@ export default {
 
         if (!updated) return;
 
-        await interaction.update(buildConfigPanel(updated));
+        await interaction.editReply(buildConfigPanel(updated));
     },
 };

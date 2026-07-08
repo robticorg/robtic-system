@@ -8,6 +8,8 @@ const appealNoteSubmit: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^appeal_note_submit_[A-Za-z0-9-]+_\d+$/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const parts = interaction.customId.split("_");
         const caseId = parts[3];
         const userId = parts[4];
@@ -15,9 +17,8 @@ const appealNoteSubmit: ComponentHandler<ModalSubmitInteraction> = {
 
         await NoteRepository.create(userId, `[Appeal ${caseId}] ${content}`, interaction.user.id);
 
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [new EmbedBuilder().setDescription(`📝 Note added for <@${userId}>.`).setColor(Colors.success)],
-            flags: MessageFlags.Ephemeral,
         });
     },
 };

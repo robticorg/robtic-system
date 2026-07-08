@@ -165,6 +165,8 @@ export default {
     department: "Moderation" as Department,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+        await interaction.deferReply();
+
         const sub = interaction.options.getSubcommand();
         const target = interaction.options.getUser("target", true);
         const guildId = interaction.guildId!;
@@ -212,7 +214,8 @@ export default {
                     await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
                 }
 
-                await interaction.reply({
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({
                     embeds: [new EmbedBuilder().setDescription("⏳ Your mute request has been sent for approval by a senior moderator.").setColor(Colors.info)],
                     flags: MessageFlags.Ephemeral,
                 });
@@ -220,7 +223,7 @@ export default {
             }
 
             const result = await executeMute(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, durationMs, interaction.guild);
-            await interaction.reply({ embeds: [result.embed] });
+            await interaction.editReply({ embeds: [result.embed] });
         }
 
         if (sub === "remove") {
@@ -229,12 +232,14 @@ export default {
 
             const punishment = await PunishmentRepository.findByCaseId(caseId);
             if (!punishment || punishment.userId !== target.id || punishment.type !== "mute") {
-                await interaction.reply({ embeds: [errorEmbed("Mute case not found for this user.")], flags: MessageFlags.Ephemeral });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ embeds: [errorEmbed("Mute case not found for this user.")], flags: MessageFlags.Ephemeral });
                 return;
             }
 
             if (!punishment.active) {
-                await interaction.reply({ embeds: [errorEmbed("This mute is already inactive.")], flags: MessageFlags.Ephemeral });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ embeds: [errorEmbed("This mute is already inactive.")], flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -257,7 +262,7 @@ export default {
                 .setFooter({ text: "Level was NOT removed. Use /mute appeal to remove level points." })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
         }
 
         if (sub === "appeal") {
@@ -266,12 +271,14 @@ export default {
 
             const punishment = await PunishmentRepository.findByCaseId(caseId);
             if (!punishment || punishment.userId !== target.id || punishment.type !== "mute") {
-                await interaction.reply({ embeds: [errorEmbed("Mute case not found for this user.")], flags: MessageFlags.Ephemeral });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ embeds: [errorEmbed("Mute case not found for this user.")], flags: MessageFlags.Ephemeral });
                 return;
             }
 
             if (punishment.appealed) {
-                await interaction.reply({ embeds: [errorEmbed("This mute has already been appealed.")], flags: MessageFlags.Ephemeral });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ embeds: [errorEmbed("This mute has already been appealed.")], flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -302,7 +309,7 @@ export default {
                 )
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
         }
 
         if (sub === "list") {
@@ -310,7 +317,8 @@ export default {
             const level = await PunishmentRepository.getPunishmentLevel(target.id);
 
             if (!mutes.length) {
-                await interaction.reply({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no mutes.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
+                await interaction.deleteReply().catch(() => {});
+                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no mutes.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -326,7 +334,8 @@ export default {
                 .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${mutes.length} mute(s)` })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.deleteReply().catch(() => {});
+            await interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
     },
 

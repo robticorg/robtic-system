@@ -58,6 +58,8 @@ export default {
   async run(interaction: ModalSubmitInteraction, client: BotClient) {
     if (!interaction.isModalSubmit()) return;
 
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const categoryId =
       interaction.fields.getStringSelectValues("ticket_category")[0];
     const subject = interaction.fields.getTextInputValue("ticket_description");
@@ -67,7 +69,7 @@ export default {
       interaction.guild!.id,
     );
     if (existing.length > 0) {
-      await interaction.reply({
+      await interaction.editReply({
         components: [
           new ContainerBuilder()
             .setAccentColor(ACCENT_COLOR)
@@ -77,7 +79,7 @@ export default {
               ),
             ),
         ],
-        flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+        flags: MessageFlags.IsComponentsV2,
       });
       return;
     }
@@ -118,10 +120,13 @@ export default {
       channel = await createChannel(interaction.user.username);
     } catch {
       
-      try { 
+      try {
         channel = await createChannel("unnamed");
       } catch {
         Logger.error("There was an issue when creating a ticket channel!");
+        await interaction.editReply({
+          content: "Something went wrong while creating your ticket channel. Please try again.",
+        });
         return;
       }
     }
@@ -171,7 +176,7 @@ export default {
       flags: MessageFlags.IsComponentsV2,
     });
 
-    interaction.reply({
+    await interaction.editReply({
       components: [
         new ContainerBuilder()
           .setAccentColor(ACCENT_COLOR)
@@ -184,7 +189,7 @@ export default {
             ),
           ),
       ],
-      flags: [MessageFlags.Ephemeral, MessageFlags.IsComponentsV2],
+      flags: MessageFlags.IsComponentsV2,
     });
 
     const report = new ContainerBuilder()

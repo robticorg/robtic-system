@@ -18,23 +18,26 @@ export default {
         const [, action, orderId] = interaction.customId.match(/^ads-order-(accept|reject)_(.+)$/) ?? [];
 
         const guildId = interaction.guildId!;
+
+        await interaction.deferUpdate();
+
         const config = await AdsConfigRepository.get(guildId);
         const member = interaction.member as GuildMember;
         const isManager = Boolean(config.managerRoleId && member.roles.cache.has(config.managerRoleId));
 
         if (!member.permissions.has(PermissionFlagsBits.ManageGuild) && !hasFullPower(member) && !isManager) {
-            await interaction.reply({ content: "❌ You don't have permission to decide on ad orders.", flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: "❌ You don't have permission to decide on ad orders.", flags: MessageFlags.Ephemeral });
             return;
         }
 
         const order = await AdOrderRepository.get(guildId, orderId);
         if (!order) {
-            await interaction.reply({ content: "❌ This order no longer exists.", flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: "❌ This order no longer exists.", flags: MessageFlags.Ephemeral });
             return;
         }
 
         if (order.status !== "pending") {
-            await interaction.reply({ content: `⚠️ This order was already ${order.status}.`, flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: `⚠️ This order was already ${order.status}.`, flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -70,7 +73,7 @@ export default {
             }
         }
 
-        await interaction.update({
+        await interaction.editReply({
             ...buildOrderReview(decided!, config.exchangeRate),
             flags: MessageFlags.IsComponentsV2,
         });

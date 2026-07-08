@@ -16,6 +16,8 @@ const setModChannelModalHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^set_mod_channel_modal_.+$/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const type = interaction.customId.replace("set_mod_channel_modal_", "");
         const label = MOD_CHANNEL_LABELS[type] ?? type;
 
@@ -25,18 +27,16 @@ const setModChannelModalHandler: ComponentHandler<ModalSubmitInteraction> = {
 
         const guild = client.guilds.cache.get(serverId);
         if (!guild) {
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setDescription(`❌ Bot is not in server \`${serverId}\`.`).setColor(Colors.error)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         const channel = guild.channels.cache.get(channelId);
         if (!channel?.isTextBased()) {
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setDescription(`❌ Channel \`${channelId}\` not found or is not a text channel in **${guild.name}**.`).setColor(Colors.error)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -45,7 +45,7 @@ const setModChannelModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             await ServerConfigRepository.setModmailChannel(serverId, channelId);
         }
 
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
                     .setTitle("✅ Mod Channel Configured")
@@ -57,7 +57,6 @@ const setModChannelModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                     )
                     .setTimestamp()
             ],
-            flags: MessageFlags.Ephemeral,
         });
     },
 };

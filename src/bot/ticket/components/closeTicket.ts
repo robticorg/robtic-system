@@ -18,11 +18,14 @@ export async function runCloseTicket(
   ticketId: string,
   interaction: ButtonInteraction,
 ) {
+  // Acknowledge the interaction before any slow DB/API work
+  await interaction.deferUpdate();
+
   // First, fetch the ticket without mutating it
   const existingTicket = await TicketRepository.findById(ticketId);
 
   if (!existingTicket) {
-    await interaction.reply({
+    await interaction.followUp({
       content: `This ticket no longer exists.`,
       flags: [MessageFlags.Ephemeral],
     });
@@ -31,21 +34,11 @@ export async function runCloseTicket(
 
   // Validate that the interaction was used in the correct channel
   if (interaction.channelId !== existingTicket.channelId) {
-    await interaction.reply({
+    await interaction.followUp({
       content: `You can only close this ticket from its own channel.`,
       flags: [MessageFlags.Ephemeral],
     });
     return;
-  }
-
-  // Acknowledge the interaction before mutating any state
-  if (interaction.deferUpdate) {
-    await interaction.deferUpdate();
-  } else {
-    await interaction.reply({
-      content: `Your Ticket was closed !`,
-      flags: [MessageFlags.Ephemeral],
-    });
   }
 
   // Now safely perform the close operation and subsequent side effects

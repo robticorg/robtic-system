@@ -8,12 +8,14 @@ export default {
     customId: "ads-cart-view",
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const config = await AdsConfigRepository.get(interaction.guildId!);
         const cart = getCart(interaction.user.id);
 
-        await interaction.reply({
+        await interaction.editReply({
             ...buildCartSummary(cart, config.exchangeRate),
-            flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+            flags: MessageFlags.IsComponentsV2,
         });
     },
 };

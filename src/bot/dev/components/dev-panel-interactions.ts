@@ -413,30 +413,30 @@ export const devPanelNextButton = {
 export const devPanelGetModal = {
     customId: "dev_projects_get_select",
     async run(interaction: StringSelectMenuInteraction) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const code = interaction.values[0];
         const project = await ProjectShareRepository.findPublishedByProjectId(code);
 
         await project?.updateOne({ $inc: { views: 1 } });
 
         if (!project) {
-            return interaction.reply({
+            return interaction.editReply({
                 content: "Project not found.",
-                flags: MessageFlags.Ephemeral,
             });
         }
 
         const container = buildProjectContainer(project, interaction.user.id, interaction);
 
         try {
-            await interaction.reply({
+            await interaction.editReply({
                 components: [container],
-                flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+                flags: MessageFlags.IsComponentsV2,
             });
         } catch (err) {
             Logger.error(err, "Dev Project Share");
-            await interaction.reply({
+            await interaction.editReply({
                 content: "Error displaying project details. Please contact staff.",
-                flags: MessageFlags.Ephemeral,
             });
         }
     }

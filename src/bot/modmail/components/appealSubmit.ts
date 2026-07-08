@@ -4,6 +4,7 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    MessageFlags,
     type TextChannel,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
@@ -17,6 +18,8 @@ const appealSubmit: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^modmail_appeal_sub_[A-Za-z0-9-]+_\d+_(en|ar)$/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const parts = interaction.customId.split("_");
         const caseId = parts[3];
         const userId = parts[4];
@@ -27,9 +30,8 @@ const appealSubmit: ComponentHandler<ModalSubmitInteraction> = {
 
         const punishment = await PunishmentRepository.findByCaseId(caseId);
         if (!punishment || punishment.userId !== userId || !punishment.active) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: t("modmail.no_active_punishments", lang),
-                ephemeral: true,
             });
             return;
         }
@@ -48,9 +50,8 @@ const appealSubmit: ComponentHandler<ModalSubmitInteraction> = {
         ) as TextChannel | null;
 
         if (!appealsChannel) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: "Staff appeal channel was not found. Please contact an administrator.",
-                ephemeral: true,
             });
             return;
         }
@@ -98,9 +99,8 @@ const appealSubmit: ComponentHandler<ModalSubmitInteraction> = {
 
         await appealsChannel.send({ embeds: [appealEmbed], components: [buttons] });
 
-        await interaction.reply({
+        await interaction.editReply({
             content: t("modmail.appeal_submitted", lang),
-            ephemeral: true,
         });
     },
 };

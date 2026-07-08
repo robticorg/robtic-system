@@ -73,26 +73,26 @@ export default {
         const guildId = interaction.guildId!;
 
         if (sub === "open") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const key = interaction.options.getString("type", true);
             const type = await SubmissionTypeRepository.get(guildId, key);
             if (!type) {
-                await interaction.reply({ content: "❌ Submission type not found.", flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: "❌ Submission type not found." });
                 return;
             }
 
             const config = await SubmitConfigRepository.get(guildId);
             if (!config?.reviewChannelId) {
-                await interaction.reply({
+                await interaction.editReply({
                     content: "❌ Set the review channel first with `/setup-submit channel`.",
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
 
             if (type.isOpen) {
-                await interaction.reply({
+                await interaction.editReply({
                     content: `⚠️ **${type.name}** is already open.`,
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -100,30 +100,30 @@ export default {
             await SubmissionTypeRepository.setOpen(guildId, key, true);
             await updatePanel(client, config);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
                         .setTitle(`📋 ${type.name} — Opened`)
                         .setDescription(`Applications for **${type.name}** are now open. The panel has been updated.`)
                         .setColor(Colors.success),
                 ],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         if (sub === "close") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const key = interaction.options.getString("type", true);
             const type = await SubmissionTypeRepository.get(guildId, key);
             if (!type) {
-                await interaction.reply({ content: "❌ Submission type not found.", flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: "❌ Submission type not found." });
                 return;
             }
 
             if (!type.isOpen) {
-                await interaction.reply({
+                await interaction.editReply({
                     content: `⚠️ **${type.name}** is already closed.`,
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -133,23 +133,24 @@ export default {
             const config = await SubmitConfigRepository.get(guildId);
             if (config) await updatePanel(client, config);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
                         .setTitle(`🔒 ${type.name} — Closed`)
                         .setDescription(`Applications for **${type.name}** are now closed and removed from the panel.`)
                         .setColor(Colors.error),
                 ],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         if (sub === "config") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const name = interaction.options.getString("type", true);
             const { type } = await SubmissionTypeRepository.getOrCreate(guildId, name);
 
-            await interaction.reply({ ...buildConfigPanel(type), flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ ...buildConfigPanel(type) });
             return;
         }
 

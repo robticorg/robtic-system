@@ -14,18 +14,20 @@ const appealMenuSelect: ComponentHandler<StringSelectMenuInteraction> = {
     customId: /^modmail_appeal_menu_\d+_(en|ar)$/,
 
     async run(interaction: StringSelectMenuInteraction, client: BotClient) {
+        await interaction.deferUpdate();
+
         const parts = interaction.customId.split("_");
         const userId = parts[3];
         const lang = normalizeLang(parts[4]);
 
         if (interaction.user.id !== userId) {
-            await interaction.reply({ content: messages.errors.menu_not_for_you, flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: messages.errors.menu_not_for_you, flags: MessageFlags.Ephemeral });
             return;
         }
 
         const view = await buildPunishmentsView(userId, lang);
         if (!view.punishments.length || !view.embed || !view.row) {
-            await interaction.update({ content: t("modmail.no_active_punishments", lang), embeds: [], components: [] });
+            await interaction.editReply({ content: t("modmail.no_active_punishments", lang), embeds: [], components: [] });
             pendingSessions.delete(userId);
             return;
         }
@@ -35,7 +37,7 @@ const appealMenuSelect: ComponentHandler<StringSelectMenuInteraction> = {
             ? t("modmail.appeal_select_prompt", lang)
             : `${t("modmail.appeal_request", lang)}: ${t("modmail.appeal_select_prompt", lang)}`;
 
-        await interaction.update({ content: prompt, embeds: [view.embed], components: [view.row] });
+        await interaction.editReply({ content: prompt, embeds: [view.embed], components: [view.row] });
         pendingSessions.delete(userId);
     },
 };

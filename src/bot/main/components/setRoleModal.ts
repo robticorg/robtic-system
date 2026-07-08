@@ -20,6 +20,8 @@ const setRoleModalHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^set_role_modal_(en|ar|members|bots)$/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const type = interaction.customId.replace("set_role_modal_", "") as keyof IServerRoles;
         const label = ROLE_LABELS[type] ?? type;
         const guildId = interaction.guildId!;
@@ -29,16 +31,15 @@ const setRoleModalHandler: ComponentHandler<ModalSubmitInteraction> = {
         const guild = client.guilds.cache.get(guildId);
         const role = guild?.roles.cache.get(roleId);
         if (!role) {
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [new EmbedBuilder().setDescription(`❌ Role \`${roleId}\` not found in this server.`).setColor(Colors.error)],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         await ServerConfigRepository.setRole(guildId, type, roleId);
 
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
                     .setTitle("✅ Role Configured")
@@ -49,7 +50,6 @@ const setRoleModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                     )
                     .setTimestamp()
             ],
-            flags: MessageFlags.Ephemeral,
         });
     },
 };

@@ -12,6 +12,8 @@ const tagCreate: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^tag_create$/,
 
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const key = interaction.fields.getTextInputValue("tag_key").toLowerCase().trim();
         const description = interaction.fields.getTextInputValue("tag_description").trim();
         const content = interaction.fields.getTextInputValue("tag_content");
@@ -19,18 +21,16 @@ const tagCreate: ComponentHandler<ModalSubmitInteraction> = {
 
         const existing = await TagRepository.findByKey(key);
         if (existing) {
-            await interaction.reply({
+            await interaction.editReply({
                 content: messages.errors.tag_already_exists.replace("{key}", key),
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         await TagRepository.create(key, description, { en: content, ar: contentAr }, interaction.user.id);
 
-        await interaction.reply({
+        await interaction.editReply({
             content: messages.success.tag_created.replace(/\{key\}/g, key),
-            flags: MessageFlags.Ephemeral,
         });
     },
 };

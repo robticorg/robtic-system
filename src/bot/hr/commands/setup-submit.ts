@@ -37,29 +37,31 @@ export default {
         const guildId = interaction.guildId!;
 
         if (sub === "channel") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const channel = interaction.options.getChannel("channel", true) as TextChannel;
 
             await SubmitConfigRepository.setReviewChannel(guildId, channel.id);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
                         .setTitle("✅ Submit Review Channel Set")
                         .setDescription(`All staff submissions will now be sent to ${channel}.`)
                         .setColor(Colors.success),
                 ],
-                flags: MessageFlags.Ephemeral,
             });
             return;
         }
 
         if (sub === "panel") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
             const config = await SubmitConfigRepository.get(guildId);
 
             if (!config?.reviewChannelId) {
-                await interaction.reply({
+                await interaction.editReply({
                     content: "❌ Set the review channel first with `/setup-submit channel`.",
-                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -83,14 +85,13 @@ export default {
                 if (updated) await updatePanel(client, updated);
             }
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
                         .setTitle("✅ Application Panel Posted")
                         .setDescription(`Panel posted in ${panelChannel}. Use \`/staff-submit open <department>\` to open applications.`)
                         .setColor(Colors.success),
                 ],
-                flags: MessageFlags.Ephemeral,
             });
         }
     },

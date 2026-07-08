@@ -17,6 +17,8 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
     customId: /^profile_menu_\d+$/,
 
     async run(interaction: StringSelectMenuInteraction, client: BotClient) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const targetId = interaction.customId.split("_")[2];
         const selected = interaction.values[0];
         const guildId = interaction.guildId!;
@@ -54,14 +56,14 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                 .setColor(Colors.default)
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
         if (selected === "staff_activity") {
             const member = interaction.guild?.members.cache.get(targetId) ?? await interaction.guild?.members.fetch(targetId).catch(() => null);
             if (!member || !isStaff(member as GuildMember)) {
-                await interaction.reply({ content: "This user is not a staff member.", flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: "This user is not a staff member." });
                 return;
             }
 
@@ -87,7 +89,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                 .setColor(Colors.default)
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
@@ -95,7 +97,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
             const notes = await NoteRepository.findByUser(targetId);
 
             if (!notes.length) {
-                await interaction.reply({ embeds: [new EmbedBuilder().setDescription(`No notes found for <@${targetId}>.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(`No notes found for <@${targetId}>.`).setColor(Colors.info)] });
                 return;
             }
 
@@ -110,7 +112,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                 .setFooter({ text: `Total: ${notes.length} note(s)` })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
@@ -118,9 +120,8 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
             const projects = await ProjectsRepository.findByUserId(targetId);
 
             if (!projects.length) {
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [new EmbedBuilder().setDescription(`No projects found for <@${targetId}>.`).setColor(Colors.info)],
-                    flags: MessageFlags.Ephemeral
                 });
                 return;
             }
@@ -137,7 +138,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                 .setFooter({ text: `Showing ${Math.min(projects.length, 10)} of ${projects.length} project(s)` })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
             return;
         }
 
@@ -146,7 +147,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
             const level = await PunishmentRepository.getPunishmentLevel(targetId);
 
             if (!all.length) {
-                await interaction.reply({ embeds: [new EmbedBuilder().setDescription(`No punishment history for <@${targetId}>.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(`No punishment history for <@${targetId}>.`).setColor(Colors.info)] });
                 return;
             }
 
@@ -163,7 +164,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                 .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${all.length} record(s)` })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({ embeds: [embed] });
         }
     },
 };

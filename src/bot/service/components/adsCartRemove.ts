@@ -8,11 +8,13 @@ export default {
     customId: /^ads-cart-remove_/,
 
     async run(interaction: ButtonInteraction, client: BotClient) {
+        await interaction.deferUpdate();
+
         const index = Number(interaction.customId.slice("ads-cart-remove_".length));
         removeFromCart(interaction.user.id, index);
 
         const config = await AdsConfigRepository.get(interaction.guildId!);
-        await interaction.update({
+        await interaction.editReply({
             ...buildCartSummary(getCart(interaction.user.id), config.exchangeRate),
             flags: MessageFlags.IsComponentsV2,
         });
