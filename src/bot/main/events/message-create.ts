@@ -1,0 +1,27 @@
+import { Events, type Message, AttachmentBuilder } from "discord.js";
+import path from "path";
+import { existsSync } from "fs";
+import { ServerConfigRepository } from "@database/repositories";
+import emojis from "@shared/emojis.json";
+import type { BotClient } from "@core/BotClient";
+
+const LINE_IMAGE_PATH = path.join(process.cwd(), "images", "line.png");
+
+export default {
+    name: Events.MessageCreate,
+
+    async execute(message: Message, _client: BotClient) {
+        if (message.author.bot) return;
+        if (!message.guild) return;
+
+        const lineChannelId = await ServerConfigRepository.getLineChannel(message.guild.id);
+        if (!lineChannelId || message.channel.id !== lineChannelId) return;
+
+        if (message.channel.isSendable() && existsSync(LINE_IMAGE_PATH)) {
+            const attachment = new AttachmentBuilder(LINE_IMAGE_PATH, { name: "line.png" });
+            await message.channel.send({ files: [attachment] }).catch(() => null);
+        }
+
+        await message.react(emojis.add).catch(() => null);
+    },
+};

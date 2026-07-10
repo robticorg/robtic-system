@@ -39,6 +39,19 @@ export class ServerConfigRepository {
         return config?.modmailChannelId ?? null;
     }
 
+    static async setLineChannel(guildId: string, channelId: string): Promise<IServerConfig> {
+        return ServerConfig.findOneAndUpdate(
+            { guildId },
+            { $set: { lineChannelId: channelId } },
+            { upsert: true, returnDocument: "after", new: true }
+        ) as Promise<IServerConfig>;
+    }
+
+    static async getLineChannel(guildId: string): Promise<string | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.lineChannelId ?? null;
+    }
+
     static async addShortcut(guildId: string, command: string, trigger: string): Promise<IServerConfig> {
         const config = await this.findOrCreate(guildId);
         // Avoid duplicates for same trigger

@@ -26,6 +26,7 @@ export interface IServerConfig extends Document {
     shortcuts: IShortcut[];
     roles: IServerRoles;
     modmailChannelId?: string;
+    lineChannelId?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -61,6 +62,7 @@ const serverConfigSchema = new Schema<IServerConfig>(
             default: {},
         },
         modmailChannelId: { type: String },
+        lineChannelId: { type: String },
     },
     { timestamps: true }
 );
