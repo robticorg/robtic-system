@@ -1,10 +1,11 @@
 import type { CommandConfig } from "@core/config";
-import { FULL_POWER_ROLE_IDS } from "@core/config";
+import { FULL_POWER_ROLE_IDS, SUPER_ADMIN_ID } from "@core/config";
 import { isOnCooldown, getRemainingCooldown, errorEmbed } from "@core/utils";
 import { ChatInputCommandInteraction, MessageFlags, type GuildMember, type Interaction, type InteractionReplyOptions } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { BotError, handleError } from "@core/handlers";
 import { getMemberLevel, isInDepartment } from "@shared/utils/access";
+import { SuperUserRepository } from "@database/repositories";
 
 export const HandlingComponent = async (interaction: Interaction, client: BotClient): Promise<boolean> => {
     if (
@@ -61,6 +62,9 @@ export const HandlingComponent = async (interaction: Interaction, client: BotCli
 
 export const checkPermissions = async (intract: Interaction, command: CommandConfig): Promise<boolean> => {
     let interaction = intract as ChatInputCommandInteraction;
+
+    if (interaction.user.id === SUPER_ADMIN_ID) return true;
+    if (await SuperUserRepository.isWhitelisted(interaction.user.id)) return true;
 
     const member = interaction.member as GuildMember;
 

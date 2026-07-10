@@ -2,6 +2,8 @@ import type { PermissionResolvable } from "discord.js";
 
 export const STAFF_TEAM_ROLE_ID = "1479440690063736892";
 export const FULL_POWER_ROLE_IDS = ["1362501792407228426"];
+/** Only this user may add/remove entries in the super user whitelist (/whitelist). */
+export const SUPER_ADMIN_ID = "695223884735053905";
 
 export const SUPPORTED_LANGUAGES = {
     en: {
