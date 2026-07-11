@@ -77,18 +77,6 @@ export const BOT_DEFINITIONS: BotDefinition<GatewayIntentBits, Partials>[] = [
     ],
   },
   {
-    name: "service",
-    tokenKey: "ServiceBotToken",
-    description: "Service tiers and membership management",
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.DirectMessages,
-      GatewayIntentBits.MessageContent,
-    ],
-  },
-  {
     name: "dev",
     tokenKey: "DevBotToken",
     description: "Development and testing bot",
@@ -98,6 +86,16 @@ export const BOT_DEFINITIONS: BotDefinition<GatewayIntentBits, Partials>[] = [
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.DirectMessages,
       GatewayIntentBits.MessageContent,
+    ],
+  },
+  {
+    name: "partnership",
+    tokenKey: "PartnershipBotToken",
+    description: "Partner server management and cross-branch partner announcements",
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.DirectMessages,
     ],
   }
 ];

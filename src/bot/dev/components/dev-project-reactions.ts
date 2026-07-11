@@ -2,6 +2,7 @@ import { ButtonBuilder, ButtonInteraction, ButtonStyle, ContainerBuilder, Messag
 import { ProjectShareRepository } from "@database/repositories";
 import type { IProject } from "@database/models/ProjectShare";
 import emoji from "@shared/emojis.json";
+import { BRANCH_CONFIG } from "@core/config";
 
 function buildReactionButtons(project: IProject, viewerId: string) {
     const liked = project.likes.includes(viewerId);
@@ -29,7 +30,7 @@ function buildReactionButtons(project: IProject, viewerId: string) {
 }
 
 export function buildProjectContainer(project: IProject, viewerId: string, interaction: ButtonInteraction | StringSelectMenuInteraction) {
-    const usericon = interaction.client.users.cache.get(project.userId)?.displayAvatarURL() || "https://raw.githubusercontent.com/RoBo159/assets/refs/heads/main/utils/discord/user.png";
+    const usericon = interaction.client.users.cache.get(project.userId)?.displayAvatarURL() || `${BRANCH_CONFIG.server.githubAssetsBase}/utils/discord/user.png`;
 
     const container = new ContainerBuilder()
         .setAccentColor(0x0099ff)
@@ -101,7 +102,7 @@ export function buildProjectContainer(project: IProject, viewerId: string, inter
 
     container.addMediaGalleryComponents(mg =>
         mg.addItems(
-            item => item.setURL("https://raw.githubusercontent.com/RoBo159/assets/refs/heads/main/utils/discord/line.png")
+            item => item.setURL(`${BRANCH_CONFIG.server.githubAssetsBase}/utils/discord/line.png`)
                 .setDescription("Project Separator"),
         )
     )

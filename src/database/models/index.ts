@@ -19,3 +19,4 @@ export { ActivityLog, type IActivityLog, type ActivityLogType } from "./Activity
 export { AuditLog, type IAuditLog } from "./AuditLog";
 export { ServerConfig, type IServerConfig, type ISentPanel } from "./ServerConfig";
 export { Project, type IProject } from "./ProjectShare";
+export { Partner, type IPartner } from "./Partner";

@@ -1,6 +1,7 @@
 import { ContainerBuilder, StringSelectMenuBuilder } from "discord.js";
 import type { PanelDefinition } from "../registry";
 import emoji from "@shared/emojis.json";
+import { BRANCH_CONFIG } from "@core/config";
 
 function devProjectsContent(name: string): ContainerBuilder {
     return new ContainerBuilder()
@@ -26,7 +27,7 @@ function devProjectsContent(name: string): ContainerBuilder {
         )
         .addMediaGalleryComponents(mg =>
             mg.addItems(
-                item => item.setURL("https://raw.githubusercontent.com/RoBo159/assets/refs/heads/main/utils/discord/Projects.png")
+                item => item.setURL(`${BRANCH_CONFIG.server.githubAssetsBase}/utils/discord/Projects.png`)
             )
         )
         .addActionRowComponents(row => row.setComponents(

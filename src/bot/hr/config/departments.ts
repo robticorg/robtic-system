@@ -1,3 +1,5 @@
-export const resultChannelId = "1482197106868359208";
+import { BRANCH_CONFIG } from "@core/config";
 
-export const STAFF_TRAINEE_ROLE_ID = "1479428092304035912";
+export const resultChannelId = BRANCH_CONFIG.channels.hrResult;
+
+export const STAFF_TRAINEE_ROLE_ID = BRANCH_CONFIG.roles.hrStaffTrainee;

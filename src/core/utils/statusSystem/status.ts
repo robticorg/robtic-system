@@ -1,4 +1,4 @@
-import { BOT_DEFINITIONS } from "@core/config";
+import { BOT_DEFINITIONS, BRANCH_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
 import { ServerConfigRepository } from "@database/repositories";
 import { EmbedBuilder, type Channel, type Client, type Message } from "discord.js";
@@ -7,7 +7,7 @@ import os from "os";
 import { BOT_STATUSES } from "./botStatus";
 
 const PANEL_KEY = "system_status";
-const SERVER_TARGET = "core.robtic.org";
+const SERVER_TARGET = BRANCH_CONFIG.server.statusTargetHost;
 const PANEL_REFRESH_MS = 30_000;
 const CORE_REACHABILITY_CHECK_MS = 20_000;
 
@@ -75,7 +75,7 @@ type CoreSnapshot = {
 let latestCoreSnapshot: CoreSnapshot = {
     status: "STARTING",
     line: `${ICONS.STARTING} **Core Server**: waiting for local probe`,
-    details: ["Target: https://core.robtic.org"],
+    details: [`Target: https://${SERVER_TARGET}`],
     checkedAt: Date.now(),
 };
 
@@ -246,7 +246,7 @@ export async function buildSystemStatusEmbed(): Promise<EmbedBuilder> {
                     `Process RSS: ${formatMegabytes(processMemory.rss)}`,
                     `Process heap: ${formatMegabytes(processMemory.heapUsed)} / ${formatMegabytes(processMemory.heapTotal)}`,
                     `Load average (1m/5m/15m): ${os.loadavg().map((value) => value.toFixed(2)).join(" / ")}`,
-                    `Core server: core.robtic.org`,
+                    `Core server: ${SERVER_TARGET}`,
                 ].join("\n"),
                 inline: false,
             }

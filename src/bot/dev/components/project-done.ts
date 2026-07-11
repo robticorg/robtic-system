@@ -1,6 +1,6 @@
 import { ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, TextChannel, MessageFlags } from "discord.js";
 import { ProjectShareRepository } from "@database/repositories";
-import channels from "@shared/channel.json";
+import { BRANCH_CONFIG } from "@core/config";
 
 export default {
     customId: /^project_done_.*$/,
@@ -31,7 +31,7 @@ export default {
         // If member, send for review
         if (project.type === "member") {
             try {
-                const channel = await interaction.client.channels.fetch(channels.memberProjectReview) as TextChannel;
+                const channel = await interaction.client.channels.fetch(BRANCH_CONFIG.channels.devProjectReview) as TextChannel;
                 if (channel) {
                     const embed = new EmbedBuilder()
                         .setTitle("New Project Submission")

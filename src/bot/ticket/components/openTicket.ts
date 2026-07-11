@@ -29,9 +29,6 @@ import {
 } from "../config/misc";
 import { ticketCategories } from "../config/categories";
 
-// const TICKET_CATEGORY_ID = "PUT_DISCORD_CATEGORY_ID_HERE";
-// const SUPPORT_ROLE_ID = "PUT_SUPPORT_ROLE_ID_HERE";
-
 export function ticketCard(user?:string, categoryId?:string, subject?:string/*, openedAt?:Date*/) {
 // const timeOpened = openedAt? Math.floor(openedAt?.getTime() / 1000): null;
   return `

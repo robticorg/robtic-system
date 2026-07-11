@@ -9,7 +9,7 @@ import {
     ButtonBuilder,
     ActionRowBuilder,
 } from "discord.js";
-import { Colors } from "@core/config";
+import { BRANCH_CONFIG, Colors } from "@core/config";
 import { getPanel, listPanels, getPanelKeys } from "./registry";
 import { ServerConfigRepository } from "@database/repositories/ServerConfigRepository";
 import { getUserLang } from "@shared/utils/lang";
@@ -81,7 +81,7 @@ export async function panelSend(interaction: ChatInputCommandInteraction) {
         .setColor(panel.accentColor ?? Colors.default)
         .setTitle(name)
         .setDescription(panel.description ?? "")
-        .setImage(`https://raw.githubusercontent.com/robo159/assets/main/utils/discord/rules.png`)
+        .setImage(`${BRANCH_CONFIG.server.githubAssetsBase}/utils/discord/rules.png`)
         .setFooter({
             text: "Click the button below to view more details"
         });
@@ -89,7 +89,7 @@ export async function panelSend(interaction: ChatInputCommandInteraction) {
     const button = new ButtonBuilder()
         .setCustomId(`panel_view_${panel.key}`)
         .setLabel(panel.buttonLabel ?? "View Details")
-        .setEmoji("1480426683570983014")
+        .setEmoji(BRANCH_CONFIG.emojis.membersPanelButton)
         .setStyle(ButtonStyle.Secondary);
 
     const row = new ActionRowBuilder<ButtonBuilder>()

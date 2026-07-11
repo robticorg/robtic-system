@@ -1,6 +1,6 @@
 import { ModalSubmitInteraction, TextChannel, EmbedBuilder, MessageFlags } from "discord.js";
 import { ProjectShareRepository } from "@database/repositories";
-import channels from "@shared/channel.json";
+import { BRANCH_CONFIG } from "@core/config";
 
 export default {
     customId: /^modal_review_(accept|refuse)_.*$/,
@@ -31,7 +31,7 @@ export default {
         if (project.youtubeTutorialLink && !project.youtubeTutorialLink.match(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/)) project.youtubeTutorialLink = undefined;
     
 
-        const logChannel = await interaction.client.channels.fetch(channels.memberProjectLog) as TextChannel;
+        const logChannel = await interaction.client.channels.fetch(BRANCH_CONFIG.channels.devProjectLog) as TextChannel;
 
         if (action === "accept") {
             await ProjectShareRepository.createPublishedFromPending(project);

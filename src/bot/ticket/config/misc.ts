@@ -1,9 +1,11 @@
-export const TICKET_TEXTCHAT_CATEGORY_ID = "1486500136585789453";
-export const SUPPORT_ROLE_ID = "1479440690063736892";
-export const SUPPORT_REPORT_CHANNEL_ID = "1479467031546826833";
+import { BRANCH_CONFIG } from "@core/config";
+
+export const TICKET_TEXTCHAT_CATEGORY_ID = BRANCH_CONFIG.channels.ticketCategory;
+export const SUPPORT_ROLE_ID = BRANCH_CONFIG.roles.staffTeam;
+export const SUPPORT_REPORT_CHANNEL_ID = BRANCH_CONFIG.channels.ticketSupportReport;
 
 export const SUPPORT_ROLE = `<@&${SUPPORT_ROLE_ID}>`;
-export const ROBO_MANAGER_EMOJI = `<:4manager:1479437342983983185>`;
+export const ROBO_MANAGER_EMOJI = BRANCH_CONFIG.emojis.ticketManager;
 
 export const ACCENT_COLOR = 0x0505ff;
 export const TICKET_CREATED_COLOR = ACCENT_COLOR;

@@ -1,6 +1,6 @@
 import { Events, type GuildMember } from "discord.js";
 import { ServerConfigRepository } from "@database/repositories";
-import data from "@shared/data.json";
+import { BRANCH_CONFIG } from "@core/config";
 
 export default {
     name: Events.GuildMemberAdd,
@@ -12,11 +12,11 @@ export default {
         const membersRoleId = config?.roles?.members;
         const role = membersRoleId ? member.guild.roles.cache.get(membersRoleId) : null;
 
-        const channels = data.general_chat_channel_id;
+        const channels = BRANCH_CONFIG.channels.generalChat;
         channels.forEach(async id => {
             const channel = member.guild.channels.cache.get(id);
             if (channel?.isTextBased() && process.env.NODE_ENV === "production") {
-                await channel.send(`🎉 Welcome <@${member.id}> to the Robtic Server!`);
+                await channel.send(`🎉 Welcome <@${member.id}> to the ${BRANCH_CONFIG.server.fullName}!`);
             }
         });
 

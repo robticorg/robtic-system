@@ -2,6 +2,7 @@ import { ContainerBuilder, ButtonStyle } from "discord.js";
 import type { PanelDefinition } from "../registry";
 import type { Lang } from "@shared/utils/lang";
 import emoji from "@shared/emojis.json";
+import { BRANCH_CONFIG } from "@core/config";
 
 function englishRules(): ContainerBuilder {
     return new ContainerBuilder()
@@ -200,7 +201,7 @@ ${emoji.dots}By remaining in this server, you confirm your acceptance of these t
     buttonLabel: "Review Server Rules",
     accentColor: 0x5865F2,
     roles: [
-        { roleId: "1362501805941985492", label: "Members" },
+        { roleId: BRANCH_CONFIG.roles.members, label: "Members" },
     ],
     getContent(lang: Lang) {
         return lang === "ar" ? arabicRules() : englishRules();

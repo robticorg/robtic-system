@@ -23,3 +23,4 @@ export * from "./SubmissionTypeRepository";
 export * from "./AdsConfigRepository";
 export * from "./AdOrderRepository";
 export * from "./SuperUserRepository";
+export * from "./PartnerRepository";

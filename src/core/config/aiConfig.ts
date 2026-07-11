@@ -1,11 +1,9 @@
 export const AI_CONFIG = {
     enabled: process.env.AI_ENABLED === "true",
-    provider: "groq" as const,
     apiKey: process.env.GROQ_API_KEY ?? "",
     model: process.env.AI_MODEL ?? "llama-3.3-70b-versatile",
-    timeoutMs: 5_000,
-    minMessageLength: 5,
-    confidenceThreshold: 0.6,
+    timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 5_000,
+    minMessageLength: Number(process.env.AI_MIN_MESSAGE_LENGTH) || 5,
     maxPromptLength: 800,
 } as const;
 

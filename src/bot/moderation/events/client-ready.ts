@@ -2,6 +2,7 @@ import { Events } from "discord.js";
 import type { BotClient } from "@core/BotClient.ts";
 import { Logger } from "@core/libs";
 import { setPresence, setupGuildGuard } from "@shared/index";
+import { BRANCH_CONFIG } from "@core/config";
 
 export default {
     name: Events.ClientReady,
@@ -11,10 +12,6 @@ export default {
         Logger.debug(`Bot ID: ${client.user?.id}`, client.botName);
         Logger.debug(`Serving ${client.guilds.cache.size} guild(s)`, client.botName);
 
-        const activityNames = [
-            "Moderation Automation Active 🛡️",
-            "Robtic Mod at your service! 🤖"
-        ]
-        setPresence(client, "idle", "Watching", activityNames)
+        setPresence(client, "idle", "Watching", [...BRANCH_CONFIG.presence.moderation])
     },
 };

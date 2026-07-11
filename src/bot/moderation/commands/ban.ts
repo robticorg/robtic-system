@@ -11,13 +11,12 @@ import {
     type TextChannel,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { Colors, MembersPunishments, PunishmentsSystem } from "@core/config";
+import { BRANCH_CONFIG, Colors, MembersPunishments, PunishmentsSystem } from "@core/config";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
 import { errorEmbed } from "@core/utils";
 import { getMemberLevel } from "@shared/utils/access";
 import { getUserLang, t } from "@shared/utils/lang";
 import { getLogChannel } from "@shared/utils/getLogChannel";
-import data from "@shared/data.json";
 import { recordSecurityEvent } from "../utils/security";
 
 export async function executeBan(
@@ -90,7 +89,7 @@ export async function executeBan(
             new ButtonBuilder()
                 .setLabel(t("moderation.contact_modmail", lang))
                 .setStyle(ButtonStyle.Link)
-                .setURL(`https://discord.com/users/${data.modmail_bot_id}`)
+                .setURL(`https://discord.com/users/${BRANCH_CONFIG.ids.modmailBot}`)
                 .setEmoji("📨"),
         );
 

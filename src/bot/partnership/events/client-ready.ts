@@ -2,6 +2,7 @@ import { Events } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { Logger } from "@core/libs";
 import { setPresence, setupGuildGuard } from "@shared/index";
+import { BRANCH_CONFIG } from "@core/config";
 
 export default {
     name: Events.ClientReady,
@@ -11,11 +12,7 @@ export default {
         Logger.debug(`Bot ID: ${client.user?.id}`, client.botName);
         Logger.debug(`Serving ${client.guilds.cache.size} guild(s)`, client.botName);
 
-        const activityNames = [
-            "Robtic Advertisements 📢",
-            "Managing Ad Orders 🛒",
-        ];
-        setPresence(client, "online", "Watching", activityNames);
+        setPresence(client, "online", "Watching", [...BRANCH_CONFIG.presence.partnership]);
         setupGuildGuard(client);
     },
 };
