@@ -87,15 +87,5 @@ export const BOT_DEFINITIONS: BotDefinition<GatewayIntentBits, Partials>[] = [
       GatewayIntentBits.DirectMessages,
       GatewayIntentBits.MessageContent,
     ],
-  },
-  {
-    name: "partnership",
-    tokenKey: "PartnershipBotToken",
-    description: "Partner server management and cross-branch partner announcements",
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.DirectMessages,
-    ],
   }
 ];

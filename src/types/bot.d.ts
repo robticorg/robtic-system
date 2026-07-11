@@ -1,4 +1,4 @@
-type BotName = "main" | "moderation" | "hr" | "modmail" | "community" | "ticket" | "dev" | "partnership";
+type BotName = "main" | "moderation" | "hr" | "modmail" | "community" | "ticket" | "dev";
 type StatusType = "STARTING" | "HEALTHY" | "DEGRADED" | "OFFLINE"
 
 type BotTokenKey =
@@ -9,7 +9,6 @@ type BotTokenKey =
     | "CommunityBotToken"
     | "TicketBotToken"
     | "DevBotToken"
-    | "PartnershipBotToken"
     | "TestBot"
 
 

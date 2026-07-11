@@ -14,7 +14,7 @@ export default {
         if (partner) {
             const role = await ensurePartnerRole(member.guild);
             await member.roles.add(role).catch((err) => {
-                Logger.warn(`Could not grant partner role to ${member.id} in ${member.guild.id}: ${err}`, "partnership");
+                Logger.warn(`Could not grant partner role to ${member.id} in ${member.guild.id}: ${err}`, "partner");
             });
         }
 
@@ -22,7 +22,7 @@ export default {
         if (partners.length === 0) return;
 
         await member.send(buildPartnerListMessage(partners)).catch((err) => {
-            Logger.debug(`Could not DM partner list to ${member.id}: ${err}`, "partnership");
+            Logger.debug(`Could not DM partner list to ${member.id}: ${err}`, "partner");
         });
     },
 };

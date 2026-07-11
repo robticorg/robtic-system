@@ -90,7 +90,6 @@ export const BRANCH_CONFIG = {
     presence: {
         ticket: ["Robtic Ticket System 🔥", "Assisting with ticket management ⚙️"],
         moderation: ["Moderation Automation Active 🛡️", "Robtic Mod at your service! 🤖"],
-        partnership: ["Connecting Robtic with partner communities 🤝", "Managing partnerships 🌐"],
     },
 
     partnership: {

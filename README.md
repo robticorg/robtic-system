@@ -11,14 +11,13 @@ A central **Main Bot** controls and coordinates several functional bots, allowin
 
 ## Core Components
 
-* **Main Bot** – system controller, configuration manager, and advertisement system
+* **Main Bot** – system controller, configuration manager, advertisement system, and partner server management
 * **Ticket Bot** – ticket and support management
 * **Moderation Bot** – moderation tools and punishment logging
 * **HR Bot** – staff management, recruitment, and promotions
 * **ModMail Bot** – private communication between users and staff
 * **Community Bot** – XP, activity tracking, and progression roles
 * **Dev Bot** – development and testing
-* **Partnership Bot** – partner server management and cross-branch partner announcements
 
 ## Key Features
 
