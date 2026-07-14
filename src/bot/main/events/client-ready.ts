@@ -2,6 +2,7 @@ import { Events } from "discord.js";
 import type { BotClient } from "@core/BotClient.ts";
 import { Logger } from "@core/libs";
 import { setPresence, setupGuildGuard } from "@shared/index";
+import { startStreakScheduler } from "../services/streak-scheduler";
 
 export default {
     name: Events.ClientReady,
@@ -19,5 +20,6 @@ export default {
         ]
         setPresence(client, "dnd", "Playing", activityNames)
         setupGuildGuard(client);
+        startStreakScheduler(client);
     },
 };

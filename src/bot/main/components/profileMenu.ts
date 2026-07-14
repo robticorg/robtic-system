@@ -9,6 +9,8 @@ import { PunishmentRepository, NoteRepository, ActivityRepository, ProjectsRepos
 import type { ComponentHandler } from "@core/config";
 import { calculateLevel, xpForLevel } from "../../community/services/xp-service";
 import { getStaffActivity, getSupportStats, getActivityLogs } from "@shared/utils/staff-activity";
+import { getStreakSummary } from "../services/streak-service";
+import { formatDuration } from "@core/utils";
 import { isStaff } from "@shared/utils/access";
 import type { GuildMember } from "discord.js";
 import emoji from "@shared/emojis.json";
@@ -54,6 +56,28 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                     { name: "Recent Activity", value: recentLines.slice(0, 1024) },
                 )
                 .setColor(Colors.default)
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
+            return;
+        }
+
+        if (selected === "streak") {
+            const summary = await getStreakSummary(targetId, guildId, user?.username ?? "unknown");
+            const { record, rank, bestRank, expiresInMs, nextClaimMs } = summary;
+
+            const embed = new EmbedBuilder()
+                .setTitle(`🔥 Streak ${putUser}`)
+                .addFields(
+                    { name: "Current Streak", value: `🔥 ${record.currentStreak}`, inline: true },
+                    { name: "Best Streak", value: `🏆 ${record.bestStreak}`, inline: true },
+                    { name: "Current Rank", value: rank > 0 ? `#${rank}` : "Unranked", inline: true },
+                    { name: "Best Rank", value: bestRank > 0 ? `#${bestRank}` : "Unranked", inline: true },
+                    { name: "Next Streak", value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : "✅ Available now!", inline: true },
+                    { name: "Expires In", value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : "N/A", inline: true },
+                    { name: "Reminder Status", value: record.active ? (record.reminderSent ? "Sent" : "Pending") : "N/A", inline: true },
+                )
+                .setColor(Colors.activity)
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });

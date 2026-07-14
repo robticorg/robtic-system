@@ -13,6 +13,7 @@ import { PunishmentRepository, NoteRepository, ActivityRepository } from "@datab
 import { getMemberLevel, isStaff } from "@shared/utils/access";
 import { calculateLevel, xpForLevel } from "../../community/services/xp-service";
 import { getStaffActivity, getSupportStats } from "@shared/utils/staff-activity";
+import { getStreakSummary } from "../services/streak-service";
 import emoji from "@shared/emojis.json";
 
 export default {
@@ -58,7 +59,7 @@ export default {
         const xpBar = buildXPBar(progress, needed);
         const rank = await ActivityRepository.getRank(target.id, guildId);
 
-
+        const streak = await getStreakSummary(target.id, guildId, target.username);
 
         const embed = new EmbedBuilder()
             .setTitle(`${emoji.user} Profile — ${target.username}`)
@@ -71,6 +72,7 @@ export default {
                 ...(staffLevel && staffLevel.level !== "Member" ? [{ name: "Staff Level", value: `${staffLevel.level} (${staffLevel.score})`, inline: true }] : []),
                 { name: "XP Level", value: `Level **${xpLevel}** — Rank #${rank}\n${xpBar} \`${progress}/${needed}\` XP`, inline: true },
                 { name: "Total XP", value: `${xpRecord.totalXP}`, inline: true },
+                { name: "Streak", value: `🔥 **${streak.record.currentStreak}** current — 🏆 **${streak.record.bestStreak}** best`, inline: true },
             );
 
         if (memberIsStaff) {
@@ -96,6 +98,7 @@ export default {
 
         const menuOptions = [
             { label: "Activity", description: "View XP activity and recent logs", value: "activity", emoji: emoji.status },
+            { label: "Streak", description: "View daily streak details", value: "streak", emoji: "🔥" },
             ...(memberIsStaff ? [{ label: "Staff Activity", description: "View detailed staff points breakdown", value: "staff_activity", emoji: emoji.trophy }] : []),
             { label: "Projects", description: "View this user's published projects", value: "projects", emoji: emoji.computer },
             { label: "Notes", description: "View all notes for this user", value: "notes", emoji: emoji.info },

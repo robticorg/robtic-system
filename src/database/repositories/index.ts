@@ -24,3 +24,7 @@ export * from "./AdsConfigRepository";
 export * from "./AdOrderRepository";
 export * from "./SuperUserRepository";
 export * from "./PartnerRepository";
+export * from "./SavedRolesRepository";
+export * from "./StreakRepository";
+export * from "./StreakSettingsRepository";
+export * from "./StreakRecoveryRepository";

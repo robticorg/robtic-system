@@ -20,3 +20,7 @@ export { AuditLog, type IAuditLog } from "./AuditLog";
 export { ServerConfig, type IServerConfig, type ISentPanel } from "./ServerConfig";
 export { Project, type IProject } from "./ProjectShare";
 export { Partner, type IPartner } from "./Partner";
+export { SavedRoles, type ISavedRoles } from "./SavedRoles";
+export { Streak, type IStreak } from "./Streak";
+export { StreakSettings, type IStreakSettings } from "./StreakSettings";
+export { StreakRecovery, type IStreakRecovery } from "./StreakRecovery";

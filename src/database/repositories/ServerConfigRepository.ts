@@ -39,17 +39,34 @@ export class ServerConfigRepository {
         return config?.modmailChannelId ?? null;
     }
 
-    static async setLineChannel(guildId: string, channelId: string): Promise<IServerConfig> {
+    static async addLineChannel(guildId: string, channelId: string): Promise<IServerConfig> {
         return ServerConfig.findOneAndUpdate(
             { guildId },
-            { $set: { lineChannelId: channelId } },
+            { $addToSet: { lineChannelIds: channelId } },
             { upsert: true, returnDocument: "after", new: true }
         ) as Promise<IServerConfig>;
     }
 
-    static async getLineChannel(guildId: string): Promise<string | null> {
+    static async removeLineChannel(guildId: string, channelId: string): Promise<IServerConfig | null> {
         const config = await ServerConfig.findOne({ guildId });
-        return config?.lineChannelId ?? null;
+        if (!config) return null;
+
+        const update: Record<string, unknown> = { $pull: { lineChannelIds: channelId } };
+        if (config.lineChannelId === channelId) {
+            update.$unset = { lineChannelId: "" };
+        }
+
+        return ServerConfig.findOneAndUpdate({ guildId }, update, { returnDocument: "after" });
+    }
+
+    static async getLineChannels(guildId: string): Promise<string[]> {
+        const config = await ServerConfig.findOne({ guildId });
+        if (!config) return [];
+        // Merge legacy single-channel field in case it was never migrated
+        const legacy = config.lineChannelId && !config.lineChannelIds.includes(config.lineChannelId)
+            ? [config.lineChannelId]
+            : [];
+        return [...config.lineChannelIds, ...legacy];
     }
 
     static async addShortcut(guildId: string, command: string, trigger: string): Promise<IServerConfig> {

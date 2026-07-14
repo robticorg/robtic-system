@@ -14,8 +14,8 @@ export default {
         if (message.author.bot) return;
         if (!message.guild) return;
 
-        const lineChannelId = await ServerConfigRepository.getLineChannel(message.guild.id);
-        if (!lineChannelId || message.channel.id !== lineChannelId) return;
+        const lineChannelIds = await ServerConfigRepository.getLineChannels(message.guild.id);
+        if (!lineChannelIds.includes(message.channel.id)) return;
 
         if (message.channel.isSendable() && existsSync(LINE_IMAGE_PATH)) {
             const attachment = new AttachmentBuilder(LINE_IMAGE_PATH, { name: "line.png" });
