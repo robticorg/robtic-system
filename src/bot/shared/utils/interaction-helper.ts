@@ -66,7 +66,15 @@ export const checkPermissions = async (intract: Interaction, command: CommandCon
     if (interaction.user.id === SUPER_ADMIN_ID) return true;
     if (await SuperUserRepository.isWhitelisted(interaction.user.id)) return true;
 
-    const member = interaction.member as GuildMember;
+    const member = interaction.member as GuildMember | null;
+
+    if (!member) {
+        await interaction.reply({
+            embeds: [errorEmbed("This command can only be used in a server.")],
+            flags: MessageFlags.Ephemeral,
+        });
+        return false;
+    }
 
     if (FULL_POWER_ROLE_IDS.some(id => member.roles.cache.has(id))) return true;
 
@@ -97,8 +105,9 @@ export const cooldowns = async (intract: Interaction, command: CommandConfig): P
     let interaction = intract as ChatInputCommandInteraction;
 
     const cooldownMs = (command.cooldown ?? 5) * 1000;
-    if (isOnCooldown(interaction.user.id, interaction.commandName, cooldownMs)) {
-        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, cooldownMs);
+    const scopeId = interaction.guildId ?? "dm";
+    if (isOnCooldown(interaction.user.id, interaction.commandName, cooldownMs, scopeId)) {
+        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, cooldownMs, scopeId);
         await interaction.reply({
             embeds: [errorEmbed(`Please wait ${remaining}s before using this command again.`)],
             flags: MessageFlags.Ephemeral,
