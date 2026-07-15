@@ -15,13 +15,12 @@ export function isOnCooldown(userId: string, commandName: string, cooldownMs: nu
     const timestamps = cooldowns.get(key)!;
     const now = Date.now();
 
-    if (timestamps.has(userId)) {
-        const expiresAt = timestamps.get(userId)! + cooldownMs;
-        if (now < expiresAt) return true;
+    const startedAt = timestamps.get(userId);
+    if (startedAt !== undefined && now < startedAt + cooldownMs) {
+        return true;
     }
 
     timestamps.set(userId, now);
-    setTimeout(() => timestamps.delete(userId), cooldownMs);
     return false;
 }
 

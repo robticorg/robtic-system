@@ -101,13 +101,27 @@ export const checkPermissions = async (intract: Interaction, command: CommandCon
     return true;
 }
 
+function getCooldownKey(interaction: ChatInputCommandInteraction): string {
+    const parts = [interaction.commandName];
+    try {
+        const group = interaction.options.getSubcommandGroup(false);
+        if (group) parts.push(group);
+        const sub = interaction.options.getSubcommand(false);
+        if (sub) parts.push(sub);
+    } catch {
+        // Command has no subcommands defined — fall back to the base command name.
+    }
+    return parts.join(":");
+}
+
 export const cooldowns = async (intract: Interaction, command: CommandConfig): Promise<boolean> => {
     let interaction = intract as ChatInputCommandInteraction;
 
     const cooldownMs = (command.cooldown ?? 5) * 1000;
     const scopeId = interaction.guildId ?? "dm";
-    if (isOnCooldown(interaction.user.id, interaction.commandName, cooldownMs, scopeId)) {
-        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, cooldownMs, scopeId);
+    const cooldownKey = getCooldownKey(interaction);
+    if (isOnCooldown(interaction.user.id, cooldownKey, cooldownMs, scopeId)) {
+        const remaining = getRemainingCooldown(interaction.user.id, cooldownKey, cooldownMs, scopeId);
         await interaction.reply({
             embeds: [errorEmbed(`Please wait ${remaining}s before using this command again.`)],
             flags: MessageFlags.Ephemeral,
