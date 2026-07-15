@@ -1,6 +1,6 @@
 import type { CommandConfig } from "@core/config";
 import { FULL_POWER_ROLE_IDS, SUPER_ADMIN_ID } from "@core/config";
-import { isOnCooldown, getRemainingCooldown, errorEmbed } from "@core/utils";
+import { isOnCooldown, getRemainingCooldown, clearCooldown, errorEmbed } from "@core/utils";
 import { ChatInputCommandInteraction, MessageFlags, type GuildMember, type Interaction, type InteractionReplyOptions } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { BotError, handleError } from "@core/handlers";
@@ -129,6 +129,13 @@ export const cooldowns = async (intract: Interaction, command: CommandConfig): P
         return false;
     }
     return true;
+}
+
+/** Rolls back the cooldown charged for this interaction, for use when the command failed to actually run to completion. */
+export const releaseCooldown = (intract: Interaction): void => {
+    const interaction = intract as ChatInputCommandInteraction;
+    const scopeId = interaction.guildId ?? "dm";
+    clearCooldown(interaction.user.id, getCooldownKey(interaction), scopeId);
 }
 
 export const commandError = async (error: unknown, intract: Interaction, client: BotClient) => {

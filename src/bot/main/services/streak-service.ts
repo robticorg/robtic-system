@@ -3,21 +3,16 @@ import { StreakRepository, StreakSettingsRepository } from "@database/repositori
 import type { IStreak, IStreakSettings } from "@database/models";
 import { Colors, STREAK_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
+import { isClaimable, isStreakExpired, nextClaimAt, streakExpiresAt, isAcceptableMessage } from "@core/utils";
+import { applyStreakRole } from "../utils/streakRole";
 
 const CTX = "main:streak";
-
-const EMOJI_REGEX = /<a?:\w+:\d+>|[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}️‍]/gu;
-
-function isEmojiOnly(content: string): boolean {
-    return content.replace(EMOJI_REGEX, "").trim().length === 0;
-}
 
 function isValidStreakMessage(message: Message, settings: IStreakSettings, record: IStreak): boolean {
     if (message.author.bot || message.webhookId) return false;
 
     const trimmed = message.content.trim();
-    if (trimmed.length < settings.minMessageLength) return false;
-    if (isEmojiOnly(trimmed)) return false;
+    if (!isAcceptableMessage(trimmed, settings.minMessageLength)) return false;
 
     const isDuplicate = trimmed.toLowerCase() === record.lastMessageContent.trim().toLowerCase();
     const withinDuplicateWindow = Date.now() - record.lastMessageAt.getTime() < STREAK_CONFIG.duplicateWindowMs;
@@ -41,9 +36,8 @@ export async function getStreakSummary(discordId: string, guildId: string, usern
     const rank = await StreakRepository.getRank(discordId, guildId);
     const bestRank = await StreakRepository.getBestRank(discordId, guildId);
 
-    const elapsed = Date.now() - record.lastIncrement.getTime();
-    const nextClaimMs = record.active ? Math.max(0, STREAK_CONFIG.claimWindowMs - elapsed) : 0;
-    const expiresInMs = record.active ? Math.max(0, STREAK_CONFIG.expireWindowMs - elapsed) : null;
+    const nextClaimMs = record.active ? Math.max(0, nextClaimAt(record.lastIncrement).getTime() - Date.now()) : 0;
+    const expiresInMs = record.active ? Math.max(0, streakExpiresAt(record.lastIncrement).getTime() - Date.now()) : null;
 
     return { record, rank, bestRank, nextClaimMs, expiresInMs };
 }
@@ -61,13 +55,12 @@ export async function processStreakMessage(message: Message): Promise<void> {
 
     if (!isValidStreakMessage(message, settings, record)) return;
 
-    const elapsed = Date.now() - record.lastIncrement.getTime();
     const isFreshStart = record.currentStreak === 0;
 
-    if (!isFreshStart && elapsed < STREAK_CONFIG.claimWindowMs) return;
+    if (!isFreshStart && !isClaimable(record.lastIncrement)) return;
 
-    const withinGrace = elapsed <= STREAK_CONFIG.expireWindowMs;
-    const newCurrent = isFreshStart || !withinGrace ? 1 : record.currentStreak + 1;
+    const broken = !isFreshStart && isStreakExpired(record.lastIncrement);
+    const newCurrent = isFreshStart || broken ? 1 : record.currentStreak + 1;
     const newBest = Math.max(record.bestStreak, newCurrent);
 
     const updated = await StreakRepository.applyIncrement(
@@ -80,6 +73,13 @@ export async function processStreakMessage(message: Message): Promise<void> {
     if (!updated) return;
 
     Logger.debug(`${message.author.username} (${message.author.id}) streak → ${newCurrent} (best ${newBest})`, CTX);
+
+    const member = message.member ?? await message.guild.members.fetch(message.author.id).catch(() => null);
+    if (member) {
+        await applyStreakRole(member, newCurrent).catch(err =>
+            Logger.warn(`Failed to apply streak role for ${message.author.id} in ${guildId}: ${err}`, CTX)
+        );
+    }
 
     await sendPublicReply(message, updated);
     await sendStreakDM(message.author, updated);

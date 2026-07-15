@@ -9,6 +9,7 @@ import type { BotClient } from "@core/BotClient";
 import { StreakSettingsRepository, StreakRepository, StreakRecoveryRepository } from "@database/repositories";
 import { Colors, STREAK_CONFIG } from "@core/config";
 import { formatDuration } from "@core/utils";
+import { applyStreakRole } from "../utils/streakRole";
 
 export default {
     data: new SlashCommandBuilder()
@@ -150,6 +151,11 @@ export default {
 
         await StreakRepository.restore(user.id, guildId, recovery.currentStreak, recovery.bestStreak);
         await StreakRecoveryRepository.delete(user.id, guildId);
+
+        const member = await interaction.guild?.members.fetch(user.id).catch(() => null);
+        if (member) {
+            await applyStreakRole(member, recovery.currentStreak).catch(() => null);
+        }
 
         await interaction.editReply({
             embeds: [new EmbedBuilder()

@@ -1,0 +1,54 @@
+import { StringSelectMenuInteraction, MessageFlags, type GuildMember } from "discord.js";
+import type { ComponentHandler } from "@core/config";
+import type { BotClient } from "@core/BotClient";
+import type { ComboLeaderboardPeriod, ComboLeaderboardType } from "@core/config";
+import { isAnyManager } from "@shared/utils/access";
+import { buildLeaderboardEmbed } from "../utils/comboEmbeds";
+import { buildComboNavRow, buildComboLeaderboardRows, verifyInvoker } from "../utils/comboComponents";
+
+async function render(interaction: StringSelectMenuInteraction, invokerId: string, period: ComboLeaderboardPeriod, type: ComboLeaderboardType): Promise<void> {
+    const guild = interaction.guild;
+    if (!guild) {
+        await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral }).catch(() => null);
+        return;
+    }
+
+    await interaction.deferUpdate();
+
+    const member = interaction.member as GuildMember | null;
+    const isAdmin = member ? isAnyManager(member) : false;
+
+    const embed = await buildLeaderboardEmbed(guild, period, type);
+    const nav = buildComboNavRow(invokerId, isAdmin);
+    const lbRows = buildComboLeaderboardRows(invokerId, period, type);
+
+    await interaction.editReply({ embeds: [embed], components: [nav, ...lbRows] });
+}
+
+export const comboLeaderboardPeriodHandler: ComponentHandler<StringSelectMenuInteraction> = {
+    customId: /^combo:lb-period:\d+:(combo|streak|partner)$/,
+
+    async run(interaction: StringSelectMenuInteraction, _client: BotClient) {
+        const parts = interaction.customId.split(":");
+        const invokerId = parts[2];
+        const type = parts[3] as ComboLeaderboardType;
+        if (!(await verifyInvoker(interaction, invokerId))) return;
+
+        const period = interaction.values[0] as ComboLeaderboardPeriod;
+        await render(interaction, invokerId, period, type);
+    },
+};
+
+export const comboLeaderboardTypeHandler: ComponentHandler<StringSelectMenuInteraction> = {
+    customId: /^combo:lb-type:\d+:(daily|weekly|monthly|alltime)$/,
+
+    async run(interaction: StringSelectMenuInteraction, _client: BotClient) {
+        const parts = interaction.customId.split(":");
+        const invokerId = parts[2];
+        const period = parts[3] as ComboLeaderboardPeriod;
+        if (!(await verifyInvoker(interaction, invokerId))) return;
+
+        const type = interaction.values[0] as ComboLeaderboardType;
+        await render(interaction, invokerId, period, type);
+    },
+};

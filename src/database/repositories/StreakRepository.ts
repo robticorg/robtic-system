@@ -94,22 +94,8 @@ export class StreakRepository {
         return above + 1;
     }
 
-    /** Active streaks whose expiry falls in (after, beforeOrEqual] and haven't been reminded yet. */
-    static async findDueForReminder(guildId: string, after: Date, beforeOrEqual: Date): Promise<IStreak[]> {
-        return Streak.find({
-            guildId,
-            active: true,
-            reminderSent: false,
-            lastIncrement: { $gt: after, $lte: beforeOrEqual },
-        });
-    }
-
-    /** Active streaks whose expiry has already passed the given cutoff (lastIncrement + expireWindow <= now). */
-    static async findExpired(guildId: string, cutoff: Date): Promise<IStreak[]> {
-        return Streak.find({
-            guildId,
-            active: true,
-            lastIncrement: { $lte: cutoff },
-        });
+    /** All active streaks for a guild; exact expiry/reminder timing is evaluated in-memory since it depends on calendar-day boundaries. */
+    static async findAllActive(guildId: string): Promise<IStreak[]> {
+        return Streak.find({ guildId, active: true });
     }
 }

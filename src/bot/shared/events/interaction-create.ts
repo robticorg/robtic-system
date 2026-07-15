@@ -4,7 +4,7 @@ import {
 } from "discord.js";
 import type { BotClient } from "@core/BotClient.ts";
 import { Logger } from "@core/libs";
-import { checkPermissions, commandError, cooldowns, HandlingComponent } from "../utils/interaction-helper";
+import { checkPermissions, commandError, cooldowns, releaseCooldown, HandlingComponent } from "../utils/interaction-helper";
 
 export default {
     name: Events.InteractionCreate,
@@ -40,7 +40,14 @@ export default {
             const canProceed = await cooldowns(interaction, command);
             if (!canProceed) return;
 
-            await command.run(interaction, client);
+            try {
+                await command.run(interaction, client);
+            } catch (error) {
+                // The command didn't actually complete (e.g. threw before/while replying,
+                // interaction expired) — don't charge the cooldown for a no-op attempt.
+                releaseCooldown(interaction);
+                throw error;
+            }
         } catch (error) {
             await commandError(error, interaction, client);
         }

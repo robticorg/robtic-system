@@ -1,0 +1,39 @@
+import { RoleSelectMenuInteraction, MessageFlags, type GuildMember } from "discord.js";
+import type { ComponentHandler } from "@core/config";
+import type { BotClient } from "@core/BotClient";
+import { isAnyManager } from "@shared/utils/access";
+import { ComboSettingsRepository } from "@database/repositories";
+import { buildSettingsEmbed } from "../utils/comboEmbeds";
+import { buildComboNavRow, buildComboSettingsRow, verifyInvoker } from "../utils/comboComponents";
+
+export const comboSettingsRoleHandler: ComponentHandler<RoleSelectMenuInteraction> = {
+    customId: /^combo:settings-role:\d+$/,
+
+    async run(interaction: RoleSelectMenuInteraction, _client: BotClient) {
+        const invokerId = interaction.customId.split(":")[2];
+        if (!(await verifyInvoker(interaction, invokerId))) return;
+
+        const guild = interaction.guild;
+        if (!guild) {
+            await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            return;
+        }
+
+        const member = interaction.member as GuildMember | null;
+        if (!member || !isAnyManager(member)) {
+            await interaction.reply({ content: "You don't have permission to change combo settings.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            return;
+        }
+
+        await interaction.deferUpdate();
+
+        const roleId = interaction.values[0] ?? null;
+        await ComboSettingsRepository.setChampionRole(guild.id, roleId);
+
+        const embed = await buildSettingsEmbed(guild);
+        const nav = buildComboNavRow(invokerId, true);
+        const settingsRow = buildComboSettingsRow(invokerId);
+
+        await interaction.editReply({ embeds: [embed], components: [nav, settingsRow] });
+    },
+};

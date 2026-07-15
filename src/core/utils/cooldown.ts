@@ -1,5 +1,4 @@
 import { Collection } from "discord.js";
-import { Logger } from "@core/libs";
 
 const cooldowns = new Collection<string, Collection<string, number>>();
 
@@ -18,19 +17,16 @@ export function isOnCooldown(userId: string, commandName: string, cooldownMs: nu
 
     const startedAt = timestamps.get(userId);
     if (startedAt !== undefined && now < startedAt + cooldownMs) {
-        Logger.debug(
-            `[cooldown-debug] BLOCKED key=${key} user=${userId} startedAt=${startedAt} now=${now} elapsedMs=${now - startedAt} cooldownMs=${cooldownMs} pid=${process.pid}`,
-            "cooldown"
-        );
         return true;
     }
 
-    Logger.debug(
-        `[cooldown-debug] SET key=${key} user=${userId} prevStartedAt=${startedAt ?? "none"} now=${now} pid=${process.pid}`,
-        "cooldown"
-    );
     timestamps.set(userId, now);
     return false;
+}
+
+/** Rolls back a cooldown that was set for an attempt that ultimately failed (e.g. the command threw), so the failed attempt isn't charged against the user. */
+export function clearCooldown(userId: string, commandName: string, scopeId = "dm"): void {
+    cooldowns.get(scopeKey(commandName, scopeId))?.delete(userId);
 }
 
 export function getRemainingCooldown(userId: string, commandName: string, cooldownMs: number, scopeId = "dm"): number {

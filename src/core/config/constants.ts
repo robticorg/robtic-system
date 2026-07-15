@@ -331,3 +331,45 @@ export const STREAK_CONFIG = {
     duplicateWindowMs: 10_000,
     checkIntervalMs: 15 * 60 * 1000,
 } as const;
+
+/** Named score tiers for the Combo System. Ordered ascending; must stay sorted for level lookups to work. */
+export const COMBO_LEVELS = [
+    { name: "Bronze", minScore: 0 },
+    { name: "Silver", minScore: 30 },
+    { name: "Gold", minScore: 70 },
+    { name: "Diamond", minScore: 140 },
+    { name: "Legendary", minScore: 260 },
+] as const;
+
+export type ComboLevelName = typeof COMBO_LEVELS[number]["name"];
+
+export const COMBO_CONFIG = {
+    /** A combo expires after this long without a qualifying interaction between the pair. */
+    expireMs: 2 * 60 * 1000,
+    /** Periodic sweep interval: expiry, heat decay, leaderboard snapshots, champion role sync. */
+    scanIntervalMs: 30_000,
+    /** Heat halves roughly every this many ms of silence. */
+    heatHalfLifeMs: 45_000,
+    heatGainAlternating: 16,
+    heatGainSame: 6,
+    minMessageLength: 4,
+    minScorePerMessage: 3,
+    maxScorePerMessage: 12,
+    /** Minimum combined confidence for the conversation detector to attribute a message to a partner. */
+    detectionConfidenceThreshold: 0.35,
+    /** Signals older than this are no longer considered for detection (mirrors the combo expiry window). */
+    detectionWindowMs: 2 * 60 * 1000,
+    /** Per-channel in-memory ring buffer size used for alternation/recency detection. */
+    recentBufferSize: 12,
+    /** How long an untouched channel's detection buffer is kept before being pruned. */
+    channelBufferTtlMs: 10 * 60 * 1000,
+    historyPageSize: 10,
+    leaderboardLimit: 10,
+    /** Cap on distinct partners tracked per user for Favorite Partner, to bound document growth. */
+    maxTrackedPartners: 25,
+} as const;
+
+export type ComboLeaderboardPeriod = "daily" | "weekly" | "monthly" | "alltime";
+export const COMBO_LEADERBOARD_PERIODS: ComboLeaderboardPeriod[] = ["daily", "weekly", "monthly", "alltime"];
+
+export type ComboLeaderboardType = "combo" | "streak" | "partner";
