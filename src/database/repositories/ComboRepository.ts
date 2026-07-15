@@ -83,7 +83,7 @@ export class ComboRepository {
                     },
                 },
             ],
-            { returnDocument: "after" }
+            { returnDocument: "after", updatePipeline: true }
         );
     }
 
