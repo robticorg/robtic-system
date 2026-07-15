@@ -79,18 +79,22 @@ export function detectConversationPartner(
         if (candidate.authorId === authorId) continue;
         const elapsed = now - candidate.timestamp;
         if (elapsed > COMBO_CONFIG.detectionWindowMs) break;
-        const recencyWeight = elapsed <= 30_000 ? 0.4 : elapsed <= 60_000 ? 0.28 : elapsed <= 120_000 ? 0.15 : 0;
+        // Decay tuned for realistic typing/reply pacing (people often take 30-90s to respond),
+        // not just near-instant replies — a stricter curve here was causing normally-paced
+        // conversations to silently stop scoring after the first quick exchange.
+        const recencyWeight = elapsed <= 20_000 ? 0.45 : elapsed <= 60_000 ? 0.35 : elapsed <= 120_000 ? 0.22 : 0;
         addSignal(candidate.authorId, recencyWeight);
         break;
     }
 
-    // Previous conversation partner + existing conversation score — a bias toward the partner the
-    // author is already in an active combo with, scaled up the stronger (higher-scoring) that
-    // existing conversation already is.
+    // Previous conversation partner + existing conversation score — a solid baseline bias toward
+    // the partner the author is already in an active combo with (an ongoing conversation should
+    // reliably keep scoring on its own, not depend on also landing a fast reply every time), scaled
+    // up further the stronger (higher-scoring) that existing conversation already is.
     const activePartner = getActivePartner(authorId);
     if (activePartner) {
-        const scoreWeight = Math.min(activePartner.score / 50, 1) * 0.25;
-        addSignal(activePartner.partnerId, 0.1 + scoreWeight);
+        const scoreWeight = Math.min(activePartner.score / 30, 1) * 0.2;
+        addSignal(activePartner.partnerId, 0.25 + scoreWeight);
     }
 
     pushMessage(channelId, { authorId, timestamp: now });

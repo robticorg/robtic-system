@@ -1,8 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, type GuildMember } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { isAnyManager } from "@shared/utils/access";
 import { buildStatusEmbed } from "../utils/comboEmbeds";
-import { buildComboNavRow } from "../utils/comboComponents";
+import { buildComboNavRow, isComboAdmin } from "../utils/comboComponents";
 
 export default {
     data: new SlashCommandBuilder()
@@ -19,7 +18,7 @@ export default {
         }
 
         const member = interaction.member as GuildMember | null;
-        const isAdmin = member ? isAnyManager(member) : false;
+        const isAdmin = await isComboAdmin(interaction.user.id, member);
 
         const embed = await buildStatusEmbed(guild, {
             id: interaction.user.id,

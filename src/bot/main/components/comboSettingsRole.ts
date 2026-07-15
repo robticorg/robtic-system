@@ -1,10 +1,9 @@
 import { RoleSelectMenuInteraction, MessageFlags, type GuildMember } from "discord.js";
 import type { ComponentHandler } from "@core/config";
 import type { BotClient } from "@core/BotClient";
-import { isAnyManager } from "@shared/utils/access";
 import { ComboSettingsRepository } from "@database/repositories";
 import { buildSettingsEmbed } from "../utils/comboEmbeds";
-import { buildComboNavRow, buildComboSettingsRow, verifyInvoker } from "../utils/comboComponents";
+import { buildComboNavRow, buildComboSettingsRow, verifyInvoker, isComboAdmin } from "../utils/comboComponents";
 
 export const comboSettingsRoleHandler: ComponentHandler<RoleSelectMenuInteraction> = {
     customId: /^combo:settings-role:\d+$/,
@@ -20,7 +19,7 @@ export const comboSettingsRoleHandler: ComponentHandler<RoleSelectMenuInteractio
         }
 
         const member = interaction.member as GuildMember | null;
-        if (!member || !isAnyManager(member)) {
+        if (!(await isComboAdmin(interaction.user.id, member))) {
             await interaction.reply({ content: "ليس لديك صلاحية لتغيير إعدادات الكومبو.", flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }

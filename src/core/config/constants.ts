@@ -356,7 +356,7 @@ export const COMBO_CONFIG = {
     minScorePerMessage: 3,
     maxScorePerMessage: 12,
     /** Minimum combined confidence for the conversation detector to attribute a message to a partner. */
-    detectionConfidenceThreshold: 0.35,
+    detectionConfidenceThreshold: 0.3,
     /** Signals older than this are no longer considered for detection (mirrors the combo expiry window). */
     detectionWindowMs: 2 * 60 * 1000,
     /** Per-channel in-memory ring buffer size used for alternation/recency detection. */

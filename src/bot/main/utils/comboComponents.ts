@@ -3,10 +3,13 @@ import {
     StringSelectMenuBuilder,
     RoleSelectMenuBuilder,
     MessageFlags,
+    type GuildMember,
     type StringSelectMenuInteraction,
     type RoleSelectMenuInteraction,
 } from "discord.js";
-import { COMBO_LEADERBOARD_PERIODS, type ComboLeaderboardPeriod, type ComboLeaderboardType } from "@core/config";
+import { COMBO_LEADERBOARD_PERIODS, SUPER_ADMIN_ID, type ComboLeaderboardPeriod, type ComboLeaderboardType } from "@core/config";
+import { SuperUserRepository } from "@database/repositories";
+import { isAnyManager } from "@shared/utils/access";
 
 export type ComboPage = "status" | "statistics" | "history" | "leaderboards" | "records" | "settings";
 
@@ -24,6 +27,13 @@ const TYPE_LABELS: Record<ComboLeaderboardType, string> = {
 };
 
 const COMBO_LEADERBOARD_TYPES: ComboLeaderboardType[] = ["combo", "streak", "partner"];
+
+/** Mirrors checkPermissions()'s bypass order in interaction-helper.ts (super admin, then whitelist, then role-based level) so combo Settings isn't gated more strictly than every other admin surface in this bot. */
+export async function isComboAdmin(userId: string, member: GuildMember | null): Promise<boolean> {
+    if (userId === SUPER_ADMIN_ID) return true;
+    if (await SuperUserRepository.isWhitelisted(userId)) return true;
+    return member ? isAnyManager(member) : false;
+}
 
 /** Only the invoking user may operate their own /combo message's components. */
 export async function verifyInvoker(

@@ -2,9 +2,8 @@ import { StringSelectMenuInteraction, MessageFlags, type GuildMember } from "dis
 import type { ComponentHandler } from "@core/config";
 import type { BotClient } from "@core/BotClient";
 import type { ComboLeaderboardPeriod, ComboLeaderboardType } from "@core/config";
-import { isAnyManager } from "@shared/utils/access";
 import { buildLeaderboardEmbed } from "../utils/comboEmbeds";
-import { buildComboNavRow, buildComboLeaderboardRows, verifyInvoker } from "../utils/comboComponents";
+import { buildComboNavRow, buildComboLeaderboardRows, verifyInvoker, isComboAdmin } from "../utils/comboComponents";
 
 async function render(interaction: StringSelectMenuInteraction, invokerId: string, period: ComboLeaderboardPeriod, type: ComboLeaderboardType): Promise<void> {
     const guild = interaction.guild;
@@ -16,7 +15,7 @@ async function render(interaction: StringSelectMenuInteraction, invokerId: strin
     await interaction.deferUpdate();
 
     const member = interaction.member as GuildMember | null;
-    const isAdmin = member ? isAnyManager(member) : false;
+    const isAdmin = await isComboAdmin(interaction.user.id, member);
 
     const embed = await buildLeaderboardEmbed(guild, period, type);
     const nav = buildComboNavRow(invokerId, isAdmin);

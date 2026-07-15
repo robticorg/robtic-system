@@ -1,7 +1,6 @@
 import { StringSelectMenuInteraction, MessageFlags, type GuildMember } from "discord.js";
 import type { ComponentHandler } from "@core/config";
 import type { BotClient } from "@core/BotClient";
-import { isAnyManager } from "@shared/utils/access";
 import {
     buildStatusEmbed,
     buildStatisticsEmbed,
@@ -15,6 +14,7 @@ import {
     buildComboLeaderboardRows,
     buildComboSettingsRow,
     verifyInvoker,
+    isComboAdmin,
     type ComboPage,
 } from "../utils/comboComponents";
 
@@ -35,7 +35,7 @@ export const comboMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
 
         const page = interaction.values[0] as ComboPage;
         const member = interaction.member as GuildMember | null;
-        const isAdmin = member ? isAnyManager(member) : false;
+        const isAdmin = await isComboAdmin(interaction.user.id, member);
 
         if (page === "settings" && !isAdmin) {
             await interaction.followUp({ content: "ليس لديك صلاحية لعرض إعدادات الكومبو.", flags: MessageFlags.Ephemeral }).catch(() => null);
