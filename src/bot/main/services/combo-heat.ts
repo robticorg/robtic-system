@@ -8,8 +8,8 @@ export function computeHeat(previousHeat: number, elapsedMs: number, alternating
 }
 
 export function heatStatusLabel(heat: number): string {
-    if (heat >= 80) return "Very Active";
-    if (heat >= 50) return "Active";
-    if (heat >= 20) return "Cooling Down";
-    return "Cold";
+    if (heat >= 80) return "نشط جداً";
+    if (heat >= 50) return "نشط";
+    if (heat >= 20) return "يبرد";
+    return "بارد";
 }

@@ -9,7 +9,7 @@ import { buildComboNavRow, buildComboLeaderboardRows, verifyInvoker } from "../u
 async function render(interaction: StringSelectMenuInteraction, invokerId: string, period: ComboLeaderboardPeriod, type: ComboLeaderboardType): Promise<void> {
     const guild = interaction.guild;
     if (!guild) {
-        await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral }).catch(() => null);
+        await interaction.reply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر.", flags: MessageFlags.Ephemeral }).catch(() => null);
         return;
     }
 

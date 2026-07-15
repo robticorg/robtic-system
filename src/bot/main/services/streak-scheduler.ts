@@ -23,7 +23,7 @@ async function processGuildStreaks(client: Client, guild: Guild): Promise<void> 
             const user = member?.user ?? await client.users.fetch(streak.discordId).catch(() => null);
             if (user) {
                 const embed = new EmbedBuilder()
-                    .setDescription(`💔 Your streak has expired.\n\nLost streak: ${streak.currentStreak}\n\nAn administrator can restore it within 3 days.`)
+                    .setDescription(`💔 لقد انتهى تتابعك.\n\nالتتابع المفقود: ${streak.currentStreak}\n\nيمكن لأحد المشرفين استرجاعه خلال 3 أيام.`)
                     .setColor(Colors.error)
                     .setTimestamp();
 
@@ -42,7 +42,7 @@ async function processGuildStreaks(client: Client, guild: Guild): Promise<void> 
         const user = await client.users.fetch(streak.discordId).catch(() => null);
         if (user) {
             const embed = new EmbedBuilder()
-                .setDescription("⚠️ Your streak will expire in less than 2 hours.\n\nSend one message in the streak channel to keep your streak alive.")
+                .setDescription("⚠️ سينتهي تتابعك خلال أقل من ساعتين.\n\nأرسل رسالة واحدة في قناة التتابع للحفاظ عليه.")
                 .setColor(Colors.warning)
                 .setTimestamp();
 

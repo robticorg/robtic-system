@@ -11,16 +11,16 @@ import { COMBO_LEADERBOARD_PERIODS, type ComboLeaderboardPeriod, type ComboLeade
 export type ComboPage = "status" | "statistics" | "history" | "leaderboards" | "records" | "settings";
 
 const PERIOD_LABELS: Record<ComboLeaderboardPeriod, string> = {
-    daily: "Daily",
-    weekly: "Weekly",
-    monthly: "Monthly",
-    alltime: "All Time",
+    daily: "يومي",
+    weekly: "أسبوعي",
+    monthly: "شهري",
+    alltime: "كل الأوقات",
 };
 
 const TYPE_LABELS: Record<ComboLeaderboardType, string> = {
-    combo: "Highest Combo",
-    streak: "Conversation Streak",
-    partner: "Favorite Partner",
+    combo: "أعلى كومبو",
+    streak: "تتابع المحادثة",
+    partner: "الشريك المفضل",
 };
 
 const COMBO_LEADERBOARD_TYPES: ComboLeaderboardType[] = ["combo", "streak", "partner"];
@@ -31,26 +31,26 @@ export async function verifyInvoker(
     invokerId: string,
 ): Promise<boolean> {
     if (interaction.user.id === invokerId) return true;
-    await interaction.reply({ content: "This isn't your combo menu.", flags: MessageFlags.Ephemeral }).catch(() => null);
+    await interaction.reply({ content: "هذه ليست قائمة الكومبو الخاصة بك.", flags: MessageFlags.Ephemeral }).catch(() => null);
     return false;
 }
 
 export function buildComboNavRow(invokerId: string, isAdmin: boolean): ActionRowBuilder<StringSelectMenuBuilder> {
     const options: { label: string; description: string; value: ComboPage; emoji: string }[] = [
-        { label: "Status", description: "Your current combo status", value: "status", emoji: "🔥" },
-        { label: "Statistics", description: "Detailed combo statistics", value: "statistics", emoji: "📊" },
-        { label: "History", description: "Your past combos", value: "history", emoji: "📜" },
-        { label: "Leaderboards", description: "Server combo leaderboards", value: "leaderboards", emoji: "🏆" },
-        { label: "Server Records", description: "All-time server records", value: "records", emoji: "🏛️" },
+        { label: "الحالة", description: "حالة الكومبو الحالية الخاصة بك", value: "status", emoji: "🔥" },
+        { label: "الإحصائيات", description: "إحصائيات مفصلة عن الكومبو", value: "statistics", emoji: "📊" },
+        { label: "السجل", description: "الكومبوهات السابقة الخاصة بك", value: "history", emoji: "📜" },
+        { label: "لوحة المتصدرين", description: "لوحات متصدري الكومبو في السيرفر", value: "leaderboards", emoji: "🏆" },
+        { label: "الأرقام القياسية", description: "الأرقام القياسية للسيرفر منذ البداية", value: "records", emoji: "🏛️" },
     ];
 
     if (isAdmin) {
-        options.push({ label: "Settings", description: "Configure the Champion role (Admins)", value: "settings", emoji: "⚙️" });
+        options.push({ label: "الإعدادات", description: "إعداد رتبة البطل (للمشرفين)", value: "settings", emoji: "⚙️" });
     }
 
     const menu = new StringSelectMenuBuilder()
         .setCustomId(`combo:nav:${invokerId}`)
-        .setPlaceholder("Navigate...")
+        .setPlaceholder("التنقل...")
         .addOptions(options);
 
     return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
@@ -63,12 +63,12 @@ export function buildComboLeaderboardRows(
 ): ActionRowBuilder<StringSelectMenuBuilder>[] {
     const periodMenu = new StringSelectMenuBuilder()
         .setCustomId(`combo:lb-period:${invokerId}:${type}`)
-        .setPlaceholder("Period")
+        .setPlaceholder("الفترة")
         .addOptions(COMBO_LEADERBOARD_PERIODS.map(p => ({ label: PERIOD_LABELS[p], value: p, default: p === period })));
 
     const typeMenu = new StringSelectMenuBuilder()
         .setCustomId(`combo:lb-type:${invokerId}:${period}`)
-        .setPlaceholder("Leaderboard Type")
+        .setPlaceholder("نوع لوحة المتصدرين")
         .addOptions(COMBO_LEADERBOARD_TYPES.map(t => ({ label: TYPE_LABELS[t], value: t, default: t === type })));
 
     return [
@@ -80,7 +80,7 @@ export function buildComboLeaderboardRows(
 export function buildComboSettingsRow(invokerId: string): ActionRowBuilder<RoleSelectMenuBuilder> {
     const roleSelect = new RoleSelectMenuBuilder()
         .setCustomId(`combo:settings-role:${invokerId}`)
-        .setPlaceholder("Select the Champion role...")
+        .setPlaceholder("اختر رتبة البطل...")
         .setMinValues(0)
         .setMaxValues(1);
 

@@ -15,13 +15,13 @@ export const comboSettingsRoleHandler: ComponentHandler<RoleSelectMenuInteractio
 
         const guild = interaction.guild;
         if (!guild) {
-            await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر.", flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
         const member = interaction.member as GuildMember | null;
         if (!member || !isAnyManager(member)) {
-            await interaction.reply({ content: "You don't have permission to change combo settings.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: "ليس لديك صلاحية لتغيير إعدادات الكومبو.", flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 

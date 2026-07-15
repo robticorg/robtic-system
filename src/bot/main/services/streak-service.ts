@@ -89,7 +89,7 @@ async function sendPublicReply(message: Message, streak: IStreak): Promise<void>
     if (!message.channel.isSendable()) return;
 
     const reply = await message
-        .reply(`🔥 Streak ${streak.currentStreak}!\n\nCome back tomorrow to continue your streak.`)
+        .reply(`🔥 التتابع ${streak.currentStreak}!\n\nعُد غداً لمواصلة تتابعك.`)
         .catch(() => null);
     if (!reply) return;
 
@@ -109,10 +109,10 @@ export async function getLeaderboard(guildId: string, mode: LeaderboardMode, lim
 export function buildLeaderboardEmbed(guildName: string, mode: LeaderboardMode, records: IStreak[]): EmbedBuilder {
     const lines = records.length
         ? records.map((r, i) => `**${i + 1}.** <@${r.discordId}> — ${mode === "current" ? r.currentStreak : r.bestStreak} 🔥`).join("\n")
-        : "No streaks recorded yet.";
+        : "لا يوجد تتابع مسجل بعد.";
 
     return new EmbedBuilder()
-        .setTitle(mode === "current" ? "🔥 Current Streak Leaderboard" : "🏆 Best Streak Leaderboard")
+        .setTitle(mode === "current" ? "🔥 لوحة متصدري التتابع الحالي" : "🏆 لوحة متصدري أفضل تتابع")
         .setDescription(lines)
         .setColor(Colors.activity)
         .setFooter({ text: guildName })
@@ -121,12 +121,12 @@ export function buildLeaderboardEmbed(guildName: string, mode: LeaderboardMode, 
 
 async function sendStreakDM(user: User, streak: IStreak): Promise<void> {
     const embed = new EmbedBuilder()
-        .setTitle("🔥 Daily streak updated!")
+        .setTitle("🔥 تم تحديث التتابع اليومي!")
         .addFields(
-            { name: "Current Streak", value: `${streak.currentStreak}`, inline: true },
-            { name: "Best Streak", value: `${streak.bestStreak}`, inline: true },
+            { name: "التتابع الحالي", value: `${streak.currentStreak}`, inline: true },
+            { name: "أفضل تتابع", value: `${streak.bestStreak}`, inline: true },
         )
-        .setDescription("Next streak available tomorrow.")
+        .setDescription("التتابع القادم متاح غداً.")
         .setColor(Colors.activity)
         .setTimestamp();
 

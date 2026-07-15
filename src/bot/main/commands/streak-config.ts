@@ -83,21 +83,21 @@ export default {
             if (sub === "add") {
                 const channel = interaction.options.getChannel("channel", true);
                 await StreakSettingsRepository.addChannel(guildId, channel.id);
-                await interaction.editReply({ content: `Added <#${channel.id}> as a streak channel.` });
+                await interaction.editReply({ content: `تمت إضافة <#${channel.id}> كقناة للتتابع.` });
                 return;
             }
 
             if (sub === "remove") {
                 const channel = interaction.options.getChannel("channel", true);
                 await StreakSettingsRepository.removeChannel(guildId, channel.id);
-                await interaction.editReply({ content: `Removed <#${channel.id}> from streak channels.` });
+                await interaction.editReply({ content: `تمت إزالة <#${channel.id}> من قنوات التتابع.` });
                 return;
             }
 
             const settings = await StreakSettingsRepository.getOrCreate(guildId);
-            const list = settings.channels.length ? settings.channels.map(id => `<#${id}>`).join(", ") : "None";
+            const list = settings.channels.length ? settings.channels.map(id => `<#${id}>`).join(", ") : "لا يوجد";
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setTitle("Streak Channels").setDescription(list).setColor(Colors.info)],
+                embeds: [new EmbedBuilder().setTitle("قنوات التتابع").setDescription(list).setColor(Colors.info)],
             });
             return;
         }
@@ -105,7 +105,7 @@ export default {
         if (group === "reminder") {
             const enabled = interaction.options.getBoolean("enabled", true);
             await StreakSettingsRepository.setRemindersEnabled(guildId, enabled);
-            await interaction.editReply({ content: `Streak expiry reminders are now **${enabled ? "enabled" : "disabled"}**.` });
+            await interaction.editReply({ content: `أصبحت تذكيرات انتهاء التتابع الآن **${enabled ? "مفعّلة" : "معطّلة"}**.` });
             return;
         }
 
@@ -117,15 +117,15 @@ export default {
             }
 
             const embed = new EmbedBuilder()
-                .setTitle("Streak Settings")
+                .setTitle("إعدادات التتابع")
                 .addFields(
-                    { name: "Channels", value: settings.channels.length ? settings.channels.map(id => `<#${id}>`).join(", ") : "None" },
-                    { name: "Reminders", value: settings.remindersEnabled ? "Enabled" : "Disabled", inline: true },
-                    { name: "Min Message Length", value: `${settings.minMessageLength}`, inline: true },
-                    { name: "Claim Window", value: formatDuration(STREAK_CONFIG.claimWindowMs), inline: true },
-                    { name: "Expiry Window", value: formatDuration(STREAK_CONFIG.expireWindowMs), inline: true },
-                    { name: "Reminder Threshold", value: formatDuration(STREAK_CONFIG.reminderThresholdMs), inline: true },
-                    { name: "Recovery Window", value: formatDuration(STREAK_CONFIG.recoveryWindowMs), inline: true },
+                    { name: "القنوات", value: settings.channels.length ? settings.channels.map(id => `<#${id}>`).join(", ") : "لا يوجد" },
+                    { name: "التذكيرات", value: settings.remindersEnabled ? "مفعّل" : "معطّل", inline: true },
+                    { name: "الحد الأدنى لطول الرسالة", value: `${settings.minMessageLength}`, inline: true },
+                    { name: "مدة الحصول على التتابع", value: formatDuration(STREAK_CONFIG.claimWindowMs), inline: true },
+                    { name: "مدة انتهاء الصلاحية", value: formatDuration(STREAK_CONFIG.expireWindowMs), inline: true },
+                    { name: "حد التذكير", value: formatDuration(STREAK_CONFIG.reminderThresholdMs), inline: true },
+                    { name: "مدة الاسترجاع", value: formatDuration(STREAK_CONFIG.recoveryWindowMs), inline: true },
                 )
                 .setColor(Colors.info)
                 .setTimestamp();
@@ -139,13 +139,13 @@ export default {
         const recovery = await StreakRecoveryRepository.find(user.id, guildId);
 
         if (!recovery) {
-            await interaction.editReply({ content: `No recoverable streak found for ${user}.` });
+            await interaction.editReply({ content: `لا يوجد تتابع قابل للاسترجاع لـ ${user}.` });
             return;
         }
 
         const withinWindow = Date.now() - recovery.expiredAt.getTime() <= STREAK_CONFIG.recoveryWindowMs;
         if (!withinWindow) {
-            await interaction.editReply({ content: `${user}'s recovery window has expired.` });
+            await interaction.editReply({ content: `انتهت مدة استرجاع تتابع ${user}.` });
             return;
         }
 
@@ -159,9 +159,9 @@ export default {
 
         await interaction.editReply({
             embeds: [new EmbedBuilder()
-                .setTitle("✅ Streak Restored")
+                .setTitle("✅ تم استرجاع التتابع")
                 .setColor(Colors.success)
-                .setDescription(`Restored ${user}'s streak to **${recovery.currentStreak}** (best **${recovery.bestStreak}**).`)],
+                .setDescription(`تم استرجاع تتابع ${user} إلى **${recovery.currentStreak}** (الأفضل **${recovery.bestStreak}**).`)],
         });
     },
 };

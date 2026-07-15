@@ -14,7 +14,7 @@ export default {
 
         const guild = interaction.guild;
         if (!guild) {
-            await interaction.editReply({ content: "This command can only be used in a server." });
+            await interaction.editReply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر." });
             return;
         }
 

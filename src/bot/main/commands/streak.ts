@@ -26,16 +26,16 @@ export default {
         const { record, rank, expiresInMs, nextClaimMs } = summary;
 
         const embed = new EmbedBuilder()
-            .setTitle(`🔥 Streak — ${target.username}`)
+            .setTitle(`🔥 التتابع — ${target.username}`)
             .setThumbnail(target.displayAvatarURL({ size: 256 }))
             .setColor(record.active ? Colors.activity : Colors.info)
             .addFields(
-                { name: "Current Streak", value: `🔥 ${record.currentStreak}`, inline: true },
-                { name: "Best Streak", value: `🏆 ${record.bestStreak}`, inline: true },
-                { name: "Rank", value: rank > 0 ? `📈 #${rank}` : "Unranked", inline: true },
-                { name: "Next Streak", value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : "✅ Available now!", inline: true },
-                { name: "Expires In", value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : "N/A", inline: true },
-                { name: "Reminder", value: record.active ? (record.reminderSent ? "Sent" : "Pending") : "N/A", inline: true },
+                { name: "التتابع الحالي", value: `🔥 ${record.currentStreak}`, inline: true },
+                { name: "أفضل تتابع", value: `🏆 ${record.bestStreak}`, inline: true },
+                { name: "الترتيب", value: rank > 0 ? `📈 #${rank}` : "غير مصنف", inline: true },
+                { name: "التتابع القادم", value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : "✅ متاح الآن!", inline: true },
+                { name: "ينتهي خلال", value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : "غير متاح", inline: true },
+                { name: "التذكير", value: record.active ? (record.reminderSent ? "تم الإرسال" : "قيد الانتظار") : "غير متاح", inline: true },
             )
             .setTimestamp();
 

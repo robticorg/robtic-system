@@ -27,7 +27,7 @@ export const comboMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
 
         const guild = interaction.guild;
         if (!guild) {
-            await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر.", flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
@@ -38,7 +38,7 @@ export const comboMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
         const isAdmin = member ? isAnyManager(member) : false;
 
         if (page === "settings" && !isAdmin) {
-            await interaction.followUp({ content: "You don't have permission to view combo settings.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.followUp({ content: "ليس لديك صلاحية لعرض إعدادات الكومبو.", flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 

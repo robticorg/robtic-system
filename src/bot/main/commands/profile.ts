@@ -72,7 +72,7 @@ export default {
                 ...(staffLevel && staffLevel.level !== "Member" ? [{ name: "Staff Level", value: `${staffLevel.level} (${staffLevel.score})`, inline: true }] : []),
                 { name: "XP Level", value: `Level **${xpLevel}** — Rank #${rank}\n${xpBar} \`${progress}/${needed}\` XP`, inline: true },
                 { name: "Total XP", value: `${xpRecord.totalXP}`, inline: true },
-                { name: "Streak", value: `🔥 **${streak.record.currentStreak}** current — 🏆 **${streak.record.bestStreak}** best`, inline: true },
+                { name: "التتابع", value: `🔥 **${streak.record.currentStreak}** حالي — 🏆 **${streak.record.bestStreak}** الأفضل`, inline: true },
             );
 
         if (memberIsStaff) {
@@ -98,7 +98,7 @@ export default {
 
         const menuOptions = [
             { label: "Activity", description: "View XP activity and recent logs", value: "activity", emoji: emoji.status },
-            { label: "Streak", description: "View daily streak details", value: "streak", emoji: "🔥" },
+            { label: "التتابع", description: "عرض تفاصيل التتابع اليومي", value: "streak", emoji: "🔥" },
             ...(memberIsStaff ? [{ label: "Staff Activity", description: "View detailed staff points breakdown", value: "staff_activity", emoji: emoji.trophy }] : []),
             { label: "Projects", description: "View this user's published projects", value: "projects", emoji: emoji.computer },
             { label: "Notes", description: "View all notes for this user", value: "notes", emoji: emoji.info },

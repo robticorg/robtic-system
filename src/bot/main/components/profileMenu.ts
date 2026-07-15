@@ -67,15 +67,15 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
             const { record, rank, bestRank, expiresInMs, nextClaimMs } = summary;
 
             const embed = new EmbedBuilder()
-                .setTitle(`🔥 Streak ${putUser}`)
+                .setTitle(`🔥 التتابع ${putUser}`)
                 .addFields(
-                    { name: "Current Streak", value: `🔥 ${record.currentStreak}`, inline: true },
-                    { name: "Best Streak", value: `🏆 ${record.bestStreak}`, inline: true },
-                    { name: "Current Rank", value: rank > 0 ? `#${rank}` : "Unranked", inline: true },
-                    { name: "Best Rank", value: bestRank > 0 ? `#${bestRank}` : "Unranked", inline: true },
-                    { name: "Next Streak", value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : "✅ Available now!", inline: true },
-                    { name: "Expires In", value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : "N/A", inline: true },
-                    { name: "Reminder Status", value: record.active ? (record.reminderSent ? "Sent" : "Pending") : "N/A", inline: true },
+                    { name: "التتابع الحالي", value: `🔥 ${record.currentStreak}`, inline: true },
+                    { name: "أفضل تتابع", value: `🏆 ${record.bestStreak}`, inline: true },
+                    { name: "الترتيب الحالي", value: rank > 0 ? `#${rank}` : "غير مصنف", inline: true },
+                    { name: "أفضل ترتيب", value: bestRank > 0 ? `#${bestRank}` : "غير مصنف", inline: true },
+                    { name: "التتابع القادم", value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : "✅ متاح الآن!", inline: true },
+                    { name: "ينتهي خلال", value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : "غير متاح", inline: true },
+                    { name: "حالة التذكير", value: record.active ? (record.reminderSent ? "تم الإرسال" : "قيد الانتظار") : "غير متاح", inline: true },
                 )
                 .setColor(Colors.activity)
                 .setTimestamp();

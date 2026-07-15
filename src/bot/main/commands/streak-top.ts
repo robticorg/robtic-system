@@ -12,13 +12,13 @@ export function buildStreakTopButtons(activeMode: LeaderboardMode): ActionRowBui
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId("streak-top-current")
-            .setLabel("Current")
+            .setLabel("الحالي")
             .setEmoji("🔥")
             .setStyle(ButtonStyle.Primary)
             .setDisabled(activeMode === "current"),
         new ButtonBuilder()
             .setCustomId("streak-top-best")
-            .setLabel("Best Ever")
+            .setLabel("الأفضل على الإطلاق")
             .setEmoji("🏆")
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(activeMode === "best"),
