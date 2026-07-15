@@ -1,4 +1,5 @@
 import { Collection } from "discord.js";
+import { Logger } from "@core/libs";
 
 const cooldowns = new Collection<string, Collection<string, number>>();
 
@@ -17,9 +18,17 @@ export function isOnCooldown(userId: string, commandName: string, cooldownMs: nu
 
     const startedAt = timestamps.get(userId);
     if (startedAt !== undefined && now < startedAt + cooldownMs) {
+        Logger.debug(
+            `[cooldown-debug] BLOCKED key=${key} user=${userId} startedAt=${startedAt} now=${now} elapsedMs=${now - startedAt} cooldownMs=${cooldownMs} pid=${process.pid}`,
+            "cooldown"
+        );
         return true;
     }
 
+    Logger.debug(
+        `[cooldown-debug] SET key=${key} user=${userId} prevStartedAt=${startedAt ?? "none"} now=${now} pid=${process.pid}`,
+        "cooldown"
+    );
     timestamps.set(userId, now);
     return false;
 }
