@@ -29,6 +29,8 @@ export interface IServerConfig extends Document {
     /** @deprecated legacy single-channel field, replaced by lineChannelIds */
     lineChannelId?: string;
     lineChannelIds: string[];
+    /** Prefix for main-bot text commands in this guild (e.g. "!"). Falls back to DEFAULT_PREFIX when unset. */
+    prefix?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -66,6 +68,7 @@ const serverConfigSchema = new Schema<IServerConfig>(
         modmailChannelId: { type: String },
         lineChannelId: { type: String }, // legacy single-channel field, kept for migration fallback
         lineChannelIds: { type: [String], default: [] },
+        prefix: { type: String },
     },
     { timestamps: true }
 );

@@ -6,6 +6,9 @@ export const FULL_POWER_ROLE_IDS: string[] = BRANCH_CONFIG.roles.fullPower;
 /** Only this user may add/remove entries in the super user whitelist (/whitelist). */
 export const SUPER_ADMIN_ID = BRANCH_CONFIG.roles.superAdmin;
 
+/** Fallback prefix for main-bot text commands when a guild hasn't set its own via /set-prefix. */
+export const DEFAULT_PREFIX = "!";
+
 export const SUPPORTED_LANGUAGES = {
     en: {
         id: BRANCH_CONFIG.roles.lang.en,

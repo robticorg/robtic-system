@@ -15,21 +15,9 @@ export const BOT_DEFINITIONS: BotDefinition<GatewayIntentBits, Partials>[] = [
     ],
   },
   {
-        name: "ticket",
-        tokenKey: "TicketBotToken",
-        description: "Ticket management system",
-        intents: [
-            GatewayIntentBits.Guilds,
-            GatewayIntentBits.GuildMessages,
-            GatewayIntentBits.GuildMembers,
-            GatewayIntentBits.DirectMessages,
-            GatewayIntentBits.MessageContent,
-        ]
-   },
-  {
     name: "moderation",
     tokenKey: "ModerationBotToken",
-    description: "Moderation and punishment system",
+    description: "Moderation, punishment, and ticket system",
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMessages,

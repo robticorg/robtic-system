@@ -39,6 +39,19 @@ export class ServerConfigRepository {
         return config?.modmailChannelId ?? null;
     }
 
+    static async setPrefix(guildId: string, prefix: string): Promise<IServerConfig> {
+        return ServerConfig.findOneAndUpdate(
+            { guildId },
+            { $set: { prefix } },
+            { upsert: true, returnDocument: "after", new: true }
+        ) as Promise<IServerConfig>;
+    }
+
+    static async getPrefix(guildId: string): Promise<string | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.prefix ?? null;
+    }
+
     static async addLineChannel(guildId: string, channelId: string): Promise<IServerConfig> {
         return ServerConfig.findOneAndUpdate(
             { guildId },

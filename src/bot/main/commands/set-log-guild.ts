@@ -6,7 +6,11 @@ import {
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { Colors } from "@core/config";
+import { ClientManager } from "@core/ClientManager";
+import { Logger } from "@core/libs";
 import { GlobalConfigRepository } from "@database/repositories";
+import { SERVER_LOG_CHANNELS } from "@shared/config/server-log-channels";
+import { ensureServerLogChannels } from "@shared/utils/serverLogSetup";
 
 export default {
     data: new SlashCommandBuilder()
@@ -41,13 +45,39 @@ export default {
         const previous = await GlobalConfigRepository.get("server_log_guild");
         await GlobalConfigRepository.set("server_log_guild", guildId);
 
+        // Backfill: provision log categories/channels for every server the moderation bot is
+        // already in, not just ones it joins from now on.
+        const modClient = ClientManager.getInstance().getClient("moderation");
+        const logGuild = modClient?.guilds.cache.get(guildId);
+        let backfilled = 0;
+        if (logGuild) {
+            for (const sourceGuild of modClient!.guilds.cache.values()) {
+                if (sourceGuild.id === guildId) continue;
+                try {
+                    await ensureServerLogChannels(logGuild, sourceGuild.id, sourceGuild.name);
+                    backfilled++;
+                } catch (err) {
+                    Logger.error(`Failed to backfill log channels for guild ${sourceGuild.id}: ${err}`, "set-log-guild");
+                }
+            }
+        }
+
         const embed = new EmbedBuilder()
             .setTitle("✅ Server Log Guild Set")
             .setColor(Colors.success)
             .addFields(
                 { name: "Guild", value: `${guild.name} (\`${guildId}\`)` },
-                { name: "Categories", value: "Name each category after the server ID you want to log from", inline: false },
-                { name: "Channels", value: "Inside each category, create channels named:\n`member-join` `member-leave` `member-role-update`\n`role-create` `role-delete` `role-update`\n`channel-create` `channel-delete` `channel-update`\n`message-delete` `message-update`", inline: false },
+                { name: "Categories", value: "One category per server ID, created automatically the moment the moderation bot joins that server.", inline: false },
+                { name: "Channels", value: `Auto-created inside each category:\n${SERVER_LOG_CHANNELS.map(c => `\`${c}\``).join(" ")}`, inline: false },
+                {
+                    name: "Backfill",
+                    value: modClient
+                        ? logGuild
+                            ? `Provisioned ${backfilled} existing server(s) the moderation bot is already in.`
+                            : "⚠️ The moderation bot isn't in this guild — it needs to be a member here to create the log channels."
+                        : "⚠️ Moderation bot isn't running — backfill skipped, but new joins will still be provisioned automatically.",
+                    inline: false,
+                },
             )
             .setTimestamp();
 

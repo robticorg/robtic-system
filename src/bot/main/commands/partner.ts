@@ -21,6 +21,7 @@ export default {
         ),
 
     requiredPermission: 80,
+    modalOnly: true,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         const sub = interaction.options.getSubcommand();

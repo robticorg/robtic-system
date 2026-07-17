@@ -4,6 +4,9 @@ import {
     EmbedBuilder,
     ChannelType,
     MessageFlags,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { StreakSettingsRepository, StreakRepository, StreakRecoveryRepository } from "@database/repositories";
@@ -68,11 +71,19 @@ export default {
                 .addUserOption(opt =>
                     opt.setName("user").setDescription("The user to restore").setRequired(true)
                 )
+        )
+        .addSubcommand(sub =>
+            sub
+                .setName("sync")
+                .setDescription("Sync all streaks from another server the bot is in into this server")
+                .addStringOption(opt =>
+                    opt.setName("source-guild-id").setDescription("ID of the server to copy streaks from").setRequired(true)
+                )
         ),
 
     requiredPermission: 80,
 
-    async run(interaction: ChatInputCommandInteraction, _client: BotClient) {
+    async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const guildId = interaction.guildId!;
@@ -131,6 +142,50 @@ export default {
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });
+            return;
+        }
+
+        if (sub === "sync") {
+            const sourceGuildId = interaction.options.getString("source-guild-id", true).trim();
+
+            if (sourceGuildId === guildId) {
+                await interaction.editReply({ content: "لا يمكن مزامنة السيرفر مع نفسه." });
+                return;
+            }
+
+            const sourceGuild = client.guilds.cache.get(sourceGuildId);
+            if (!sourceGuild) {
+                await interaction.editReply({ content: "البوت غير موجود في السيرفر المصدر." });
+                return;
+            }
+
+            const count = await StreakRepository.countGuild(sourceGuildId);
+            if (count === 0) {
+                await interaction.editReply({ content: `لا يوجد أي تتابعات في **${sourceGuild.name}**.` });
+                return;
+            }
+
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`streak-sync-confirm_${interaction.user.id}_${sourceGuildId}`)
+                    .setLabel("تأكيد المزامنة")
+                    .setStyle(ButtonStyle.Danger),
+                new ButtonBuilder()
+                    .setCustomId(`streak-sync-cancel_${interaction.user.id}`)
+                    .setLabel("إلغاء")
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+            await interaction.editReply({
+                embeds: [new EmbedBuilder()
+                    .setTitle("⚠️ تأكيد مزامنة التتابع")
+                    .setColor(Colors.warning)
+                    .setDescription(
+                        `سيتم نسخ **${count}** تتابع من **${sourceGuild.name}** إلى هذا السيرفر.\n` +
+                        `عند تعارض البيانات سيتم الاحتفاظ بالقيمة الأعلى، وسيتم تحديث أدوار التتابع تلقائيًا.`
+                    )],
+                components: [row],
+            });
             return;
         }
 

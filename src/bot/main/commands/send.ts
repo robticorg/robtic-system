@@ -21,6 +21,8 @@ export default {
                 .setRequired(true)
         ),
 
+    modalOnly: true,
+
     async run(interaction: ChatInputCommandInteraction) {
 
         const channel = interaction.options.getChannel("channel");

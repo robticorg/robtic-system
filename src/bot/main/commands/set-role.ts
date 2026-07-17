@@ -33,6 +33,7 @@ export default {
 
     requiredPermission: 100,
     department: "Management" as Department,
+    modalOnly: true,
 
     async run(interaction: ChatInputCommandInteraction, _client: BotClient) {
         const type = interaction.options.getString("type", true);

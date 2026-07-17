@@ -103,6 +103,20 @@ export function moderationHelpEmbed(): EmbedBuilder {
                 ].join("\n"),
             },
             {
+                name: "Tickets",
+                value: [
+                    "`/ticket-panel <channel>` — Send the ticket-opening panel (Manager+)",
+                    "`/claim` — Claim the current ticket (staff only, in-ticket)",
+                    "`/rename <name>` — Rename the current ticket (staff only, in-ticket)",
+                    "`/add @user` — Add a user to the current ticket (staff only, in-ticket)",
+                    "`/remove @user` — Remove a user from the current ticket (staff only, in-ticket)",
+                    "`/escalate` — Grant the category's admin role access (staff only, in-ticket)",
+                    "`/close [reason]` — Close the current ticket and award category points (staff only, in-ticket)",
+                    "",
+                    "Categories, roles, and staff points are configured in `src/bot/moderation/config/ticket.ts`.",
+                ].join("\n"),
+            },
+            {
                 name: "Punishment System",
                 value: [
                     "Each punishment adds points to a user's level:",

@@ -16,6 +16,8 @@ export default {
             opt.setName("user").setDescription("The user to add a note for").setRequired(true)
         ),
 
+    modalOnly: true,
+
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         const targetUser = interaction.options.getUser("user", true);
 

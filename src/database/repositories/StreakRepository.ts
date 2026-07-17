@@ -98,4 +98,48 @@ export class StreakRepository {
     static async findAllActive(guildId: string): Promise<IStreak[]> {
         return Streak.find({ guildId, active: true });
     }
+
+    static async countGuild(guildId: string): Promise<number> {
+        return Streak.countDocuments({ guildId });
+    }
+
+    /**
+     * Copies every streak record from sourceGuildId into destGuildId. Where a destination record
+     * already exists, currentStreak/bestStreak are each kept at whichever side is higher, and the
+     * rest of the record (lastIncrement/active/etc.) is taken as a whole from whichever side "won"
+     * currentStreak, so the merged record's claim/expiry timing stays internally consistent.
+     */
+    static async bulkSyncFromGuild(
+        sourceGuildId: string,
+        destGuildId: string
+    ): Promise<Array<{ discordId: string; currentStreak: number; bestStreak: number }>> {
+        const sourceRecords = await Streak.find({ guildId: sourceGuildId });
+        const synced: Array<{ discordId: string; currentStreak: number; bestStreak: number }> = [];
+
+        for (const src of sourceRecords) {
+            const dest = await Streak.findOne({ discordId: src.discordId, guildId: destGuildId });
+            const base = !dest || src.currentStreak >= dest.currentStreak ? src : dest;
+            const currentStreak = Math.max(src.currentStreak, dest?.currentStreak ?? 0);
+            const bestStreak = Math.max(src.bestStreak, dest?.bestStreak ?? 0);
+
+            await Streak.findOneAndUpdate(
+                { discordId: src.discordId, guildId: destGuildId },
+                {
+                    username: base.username,
+                    currentStreak,
+                    bestStreak,
+                    lastIncrement: base.lastIncrement,
+                    lastMessageAt: base.lastMessageAt,
+                    lastMessageContent: base.lastMessageContent,
+                    reminderSent: base.reminderSent,
+                    active: base.active,
+                },
+                { upsert: true }
+            );
+
+            synced.push({ discordId: src.discordId, currentStreak, bestStreak });
+        }
+
+        return synced;
+    }
 }
