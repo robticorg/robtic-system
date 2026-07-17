@@ -131,7 +131,7 @@ export const ACTIVITY_OPTIONS: ActivityOption[] = [
 function activitySystemContent(): ContainerBuilder {
     const select = new StringSelectMenuBuilder()
         .setCustomId("activity_system_select")
-        .setPlaceholder("Choose a topic...")
+        .setPlaceholder("اخـتـر الـنـظـام الـذي تـريـده")
         .setOptions(
             ACTIVITY_OPTIONS.map(o => {
                 const opt = new StringSelectMenuOptionBuilder()
@@ -148,7 +148,7 @@ function activitySystemContent(): ContainerBuilder {
         .addSeparatorComponents(new SeparatorBuilder())
         .addTextDisplayComponents(td =>
             td.setContent(
-                "اقوى و افضل الانضمة الي يمكن تشوفها بس تعال اتفاعل و فوز يوميا معانا بجوايز و فعاليات ضخمة"
+                "اقوى و افضل الانضمة الي يمكن تشوفها بس تعال اتفاعل و فوز يوميا معانا بجوايز و فعاليات ضخمة فقط المطلوب منك التفاعل"
             )
         )
         .addActionRowComponents(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select));
