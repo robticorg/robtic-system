@@ -35,7 +35,7 @@ export const TICKET_CATEGORIES: TicketCategory[] = [
         staffPoints: 1,
     },
     {
-        id: "technical",
+        id: "اسـتـلام الـجائـزة",
         label: "Technical Support",
         description: "Help with technical difficulties.",
         emoji: "🛠️",
@@ -45,7 +45,7 @@ export const TICKET_CATEGORIES: TicketCategory[] = [
         staffPoints: 1,
     },
     {
-        id: "feature",
+        id: "تـوثـيـق بـنـات",
         label: "Feature Request",
         description: "Ask for a feature or improvement.",
         emoji: "💡",
@@ -55,7 +55,7 @@ export const TICKET_CATEGORIES: TicketCategory[] = [
         staffPoints: 1,
     },
     {
-        id: "bug",
+        id: "تـبـلـيـغ عـلـى اداري",
         label: "Bug Report",
         description: "Report bugs or mistakes.",
         emoji: "🐛",
