@@ -73,6 +73,13 @@ export class StreakRepository {
             .limit(limit);
     }
 
+    /** Best streak among users who incremented within `since` — backs /top's weekly/monthly streak periods. */
+    static async getBestLeaderboardSince(guildId: string, since: Date, limit = 5): Promise<IStreak[]> {
+        return Streak.find({ guildId, bestStreak: { $gt: 0 }, lastIncrement: { $gte: since } })
+            .sort({ bestStreak: -1 })
+            .limit(limit);
+    }
+
     static async getRank(discordId: string, guildId: string): Promise<number> {
         const user = await Streak.findOne({ discordId, guildId });
         if (!user || !user.active || user.currentStreak <= 0) return -1;

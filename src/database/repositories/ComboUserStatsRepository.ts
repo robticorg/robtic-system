@@ -20,6 +20,11 @@ export class ComboUserStatsRepository {
         return stats;
     }
 
+    /** All per-user aggregate stats for a guild — used to blend all-time bestComboScore into the Champion role sync. */
+    static async getAllForGuild(guildId: string): Promise<IComboUserStats[]> {
+        return ComboUserStats.find({ guildId });
+    }
+
     /** Applies one ended conversation's totals to both participants' aggregate stats, including the favorite-partner tally. */
     static async applyComboEnd(guildId: string, userAId: string, userBId: string, delta: ComboEndDelta): Promise<void> {
         for (const [userId, partnerId] of [[userAId, userBId], [userBId, userAId]] as const) {

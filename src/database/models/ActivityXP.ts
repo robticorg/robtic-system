@@ -7,6 +7,8 @@ export interface IActivityXP extends Document {
     totalXP: number;
     level: number;
     messageCount: number;
+    /** Total non-spam, non-short messages ever sent, counted everywhere (not gated by XP channels/cooldown/role). */
+    realMessageCount: number;
     lastMessageAt: Date;
     lastXPGrant: Date;
     spamCount: number;
@@ -37,6 +39,7 @@ const activityXPSchema = new Schema<IActivityXP>(
         totalXP: { type: Number, default: 0, index: true },
         level: { type: Number, default: 0 },
         messageCount: { type: Number, default: 0 },
+        realMessageCount: { type: Number, default: 0 },
         lastMessageAt: { type: Date, default: Date.now },
         lastXPGrant: { type: Date, default: new Date(0) },
         spamCount: { type: Number, default: 0 },

@@ -34,3 +34,5 @@ export * from "./ComboUserStatsRepository";
 export * from "./ComboServerRecordsRepository";
 export * from "./ComboLeaderboardRepository";
 export * from "./ComboSettingsRepository";
+export * from "./PeriodicStatRepository";
+export * from "./UserRepository";

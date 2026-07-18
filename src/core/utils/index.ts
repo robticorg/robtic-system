@@ -18,3 +18,4 @@ export * from "./dateKeys";
 export * from "./messageQuality";
 export * from "./comboLevel";
 export * from "./comboFavorite";
+export * from "./commandsChannel";

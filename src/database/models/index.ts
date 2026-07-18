@@ -30,3 +30,4 @@ export { ComboUserStats, type IComboUserStats, type IComboPartnerTally } from ".
 export { ComboServerRecords, type IComboServerRecords, type IComboRecordEntry } from "./ComboServerRecords";
 export { ComboLeaderboardEntry, type IComboLeaderboardEntry } from "./ComboLeaderboardEntry";
 export { ComboSettings, type IComboSettings } from "./ComboSettings";
+export { PeriodicStat, type IPeriodicStat, type PeriodicStatMetric } from "./PeriodicStat";

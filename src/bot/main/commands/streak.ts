@@ -2,11 +2,13 @@ import {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
     EmbedBuilder,
+    type GuildMember,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { Colors } from "@core/config";
 import { formatDuration } from "@core/utils";
 import { getStreakSummary } from "../services/streak-service";
+import { getUserLang, t } from "@shared/utils/lang";
 
 export default {
     data: new SlashCommandBuilder()
@@ -21,21 +23,25 @@ export default {
 
         const target = interaction.options.getUser("user") ?? interaction.user;
         const guildId = interaction.guildId!;
+        const lang = await getUserLang(interaction.member as GuildMember | null);
 
         const summary = await getStreakSummary(target.id, guildId, target.username);
         const { record, rank, expiresInMs, nextClaimMs } = summary;
 
+        const unranked = t("streak.unranked", lang);
+        const notAvailable = t("streak.not_available", lang);
+
         const embed = new EmbedBuilder()
-            .setTitle(`🔥 التتابع — ${target.username}`)
+            .setTitle(t("streak.title", lang, { username: target.username }))
             .setThumbnail(target.displayAvatarURL({ size: 256 }))
             .setColor(record.active ? Colors.activity : Colors.info)
             .addFields(
-                { name: "التتابع الحالي", value: `🔥 ${record.currentStreak}`, inline: true },
-                { name: "أفضل تتابع", value: `🏆 ${record.bestStreak}`, inline: true },
-                { name: "الترتيب", value: rank > 0 ? `📈 #${rank}` : "غير مصنف", inline: true },
-                { name: "التتابع القادم", value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : "✅ متاح الآن!", inline: true },
-                { name: "ينتهي خلال", value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : "غير متاح", inline: true },
-                { name: "التذكير", value: record.active ? (record.reminderSent ? "تم الإرسال" : "قيد الانتظار") : "غير متاح", inline: true },
+                { name: t("streak.current_streak", lang), value: `🔥 ${record.currentStreak}`, inline: true },
+                { name: t("streak.best_streak", lang), value: `🏆 ${record.bestStreak}`, inline: true },
+                { name: t("streak.rank", lang), value: rank > 0 ? `📈 #${rank}` : unranked, inline: true },
+                { name: t("streak.next_claim", lang), value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : t("streak.available_now", lang), inline: true },
+                { name: t("streak.expires_in", lang), value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : notAvailable, inline: true },
+                { name: t("streak.reminder_status", lang), value: record.active ? (record.reminderSent ? t("streak.reminder_sent", lang) : t("streak.reminder_pending", lang)) : notAvailable, inline: true },
             )
             .setTimestamp();
 

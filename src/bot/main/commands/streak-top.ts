@@ -4,21 +4,23 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
+    type GuildMember,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { getLeaderboard, buildLeaderboardEmbed, type LeaderboardMode } from "../services/streak-service";
+import { getUserLang, t, type Lang } from "@shared/utils/lang";
 
-export function buildStreakTopButtons(activeMode: LeaderboardMode): ActionRowBuilder<ButtonBuilder> {
+export function buildStreakTopButtons(activeMode: LeaderboardMode, lang: Lang): ActionRowBuilder<ButtonBuilder> {
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId("streak-top-current")
-            .setLabel("الحالي")
+            .setLabel(t("streakTop.button_current", lang))
             .setEmoji("🔥")
             .setStyle(ButtonStyle.Primary)
             .setDisabled(activeMode === "current"),
         new ButtonBuilder()
             .setCustomId("streak-top-best")
-            .setLabel("الأفضل على الإطلاق")
+            .setLabel(t("streakTop.button_best", lang))
             .setEmoji("🏆")
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(activeMode === "best"),
@@ -34,9 +36,10 @@ export default {
         await interaction.deferReply();
 
         const guildId = interaction.guildId!;
+        const lang = await getUserLang(interaction.member as GuildMember | null);
         const records = await getLeaderboard(guildId, "current");
-        const embed = buildLeaderboardEmbed(interaction.guild!.name, "current", records);
+        const embed = buildLeaderboardEmbed(interaction.guild!.name, "current", records, lang);
 
-        await interaction.editReply({ embeds: [embed], components: [buildStreakTopButtons("current")] });
+        await interaction.editReply({ embeds: [embed], components: [buildStreakTopButtons("current", lang)] });
     },
 };

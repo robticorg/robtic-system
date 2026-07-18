@@ -5,6 +5,7 @@ import { Colors, STREAK_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
 import { isClaimable, isStreakExpired, nextClaimAt, streakExpiresAt, isAcceptableMessage } from "@core/utils";
 import { applyStreakRole } from "../utils/streakRole";
+import { t, type Lang } from "@shared/utils/lang";
 
 const CTX = "main:streak";
 
@@ -106,13 +107,13 @@ export async function getLeaderboard(guildId: string, mode: LeaderboardMode, lim
         : StreakRepository.getBestLeaderboard(guildId, limit);
 }
 
-export function buildLeaderboardEmbed(guildName: string, mode: LeaderboardMode, records: IStreak[]): EmbedBuilder {
+export function buildLeaderboardEmbed(guildName: string, mode: LeaderboardMode, records: IStreak[], lang: Lang): EmbedBuilder {
     const lines = records.length
         ? records.map((r, i) => `**${i + 1}.** <@${r.discordId}> — ${mode === "current" ? r.currentStreak : r.bestStreak} 🔥`).join("\n")
-        : "لا يوجد تتابع مسجل بعد.";
+        : t("streakTop.no_entries", lang);
 
     return new EmbedBuilder()
-        .setTitle(mode === "current" ? "🔥 لوحة متصدري التتابع الحالي" : "🏆 لوحة متصدري أفضل تتابع")
+        .setTitle(t(mode === "current" ? "streakTop.title_current" : "streakTop.title_best", lang, { guild: guildName }))
         .setDescription(lines)
         .setColor(Colors.activity)
         .setFooter({ text: guildName })

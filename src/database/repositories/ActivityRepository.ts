@@ -47,6 +47,15 @@ export class ActivityRepository {
         );
     }
 
+    static async incrementRealMessageCount(discordId: string, guildId: string, username: string): Promise<IActivityXP | null> {
+        await ActivityRepository.findOrCreate(discordId, guildId, username);
+        return ActivityXP.findOneAndUpdate(
+            { discordId, guildId },
+            { $inc: { realMessageCount: 1 } },
+            { returnDocument: "after" }
+        );
+    }
+
     static async incrementSpamCount(discordId: string, guildId: string): Promise<IActivityXP | null> {
         return ActivityXP.findOneAndUpdate(
             { discordId, guildId },

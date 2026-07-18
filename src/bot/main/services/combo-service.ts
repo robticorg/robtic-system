@@ -1,6 +1,6 @@
 import type { Guild, Message } from "discord.js";
 import type { ICombo } from "@database/models";
-import { ComboRepository, ComboUserStatsRepository } from "@database/repositories";
+import { ComboRepository, ComboUserStatsRepository, PunishmentRepository } from "@database/repositories";
 import { COMBO_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
 import { isAcceptableMessage } from "@core/utils";
@@ -110,9 +110,16 @@ export async function processComboMessage(message: Message): Promise<void> {
     const elapsedSinceLast = pair.messages === 0 ? 0 : now - pair.lastMessageAt.getTime();
     const alternating = pair.lastMessageBy !== "" && pair.lastMessageBy !== authorId;
     const heat = computeHeat(pair.heat, elapsedSinceLast, alternating, confidence);
-    const scoreGain = Math.round(
+    let scoreGain = Math.round(
         COMBO_CONFIG.minScorePerMessage + (COMBO_CONFIG.maxScorePerMessage - COMBO_CONFIG.minScorePerMessage) * confidence
     );
+
+    // A high punishment level makes it harder (not impossible) for that user to grow shared combo score.
+    const punishmentLevel = await PunishmentRepository.getPunishmentLevel(authorId);
+    if (punishmentLevel >= COMBO_CONFIG.punishmentGateThreshold) {
+        scoreGain = Math.max(1, Math.round(scoreGain * COMBO_CONFIG.punishmentGateMultiplier));
+    }
+
     const durationDelta = Math.min(elapsedSinceLast, COMBO_CONFIG.expireMs);
     const wordCount = content.split(/\s+/).filter(Boolean).length;
     const characterCount = content.length;

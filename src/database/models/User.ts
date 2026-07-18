@@ -9,6 +9,10 @@ export interface IUser extends Document {
     punishmentLevel: number;
     isBanned: boolean;
     notes: string[];
+    /** Explicit self-service language override (set via /profile Settings), takes priority over guild-role-based detection. */
+    preferredLang?: "en" | "ar";
+    /** Bot-tracked cosmetic display name override (not a real Discord nickname) shown in profile/leaderboards. */
+    displayName?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -23,6 +27,8 @@ const userSchema = new Schema<IUser>(
         punishmentLevel: { type: Number, default: 0 },
         isBanned: { type: Boolean, default: false },
         notes: [{ type: String }],
+        preferredLang: { type: String, enum: ["en", "ar"] },
+        displayName: { type: String },
     },
     { timestamps: true }
 );

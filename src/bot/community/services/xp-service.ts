@@ -2,6 +2,7 @@ import { ActivityRepository } from "@database/repositories/ActivityRepository";
 import { XPSettingsRepository } from "@database/repositories/XPSettingsRepository";
 import { ActivityLogRepository } from "@database/repositories/ActivityLogRepository";
 import { LevelRewardRepository } from "@database/repositories/LevelRewardRepository";
+import { PeriodicStatRepository } from "@database/repositories/PeriodicStatRepository";
 import { XP_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
 import { analyzeActivity } from "@core/ai";
@@ -9,12 +10,27 @@ import type { GuildMember, Guild } from "discord.js";
 
 const CTX = "community:xp";
 
-export function calculateLevel(totalXP: number): number {
-    return Math.floor(totalXP / XP_CONFIG.levelMultiplier);
+/** XP cost of going from level-1 to level (level 1 = levelBaseXP, each level after costs levelGrowthRate times more). */
+function xpIncrementForLevel(level: number): number {
+    return Math.round(XP_CONFIG.levelBaseXP * Math.pow(XP_CONFIG.levelGrowthRate, level - 1));
 }
 
+/** Cumulative XP required to reach `level` from 0. */
 export function xpForLevel(level: number): number {
-    return level * XP_CONFIG.levelMultiplier;
+    let total = 0;
+    for (let i = 1; i <= level; i++) total += xpIncrementForLevel(i);
+    return total;
+}
+
+export function calculateLevel(totalXP: number): number {
+    let level = 0;
+    let cumulative = 0;
+    while (true) {
+        const next = cumulative + xpIncrementForLevel(level + 1);
+        if (next > totalXP) return level;
+        cumulative = next;
+        level++;
+    }
 }
 
 export function randomXP(): number {
@@ -74,6 +90,8 @@ export async function grantXP(
         Logger.debug(`Failed to update XP for ${username} (${discordId})`, CTX);
         return null;
     }
+
+    await PeriodicStatRepository.incrementAllPeriods(guildId, "xp", discordId, xp);
 
     const newLevel = calculateLevel(updated.totalXP);
     const leveledUp = newLevel > record.level;

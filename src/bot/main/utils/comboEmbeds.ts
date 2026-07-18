@@ -8,6 +8,7 @@ import { getFavoritePartner } from "../services/combo-favorite-partner";
 import { getHistoryForUser } from "../services/combo-history-service";
 import { getLeaderboard } from "../services/combo-leaderboard-service";
 import { getServerRecords } from "../services/combo-record-service";
+import { t, type Lang } from "@shared/utils/lang";
 
 export interface ComboTarget {
     id: string;
@@ -52,23 +53,23 @@ async function favoritePartnerLine(guildId: string, userId: string): Promise<str
     return `<@${favorite.partnerId}> — ${favorite.conversations} محادثة`;
 }
 
-export async function buildStatusEmbed(guild: Guild, target: ComboTarget): Promise<EmbedBuilder> {
+export async function buildStatusEmbed(guild: Guild, target: ComboTarget, lang: Lang = "ar"): Promise<EmbedBuilder> {
     const highest = await getUserHighestCombo(guild.id, target.id);
     const rank = await getUserComboRank(guild.id, target.id);
     const activeCombos = await ComboRepository.findActiveForUser(guild.id, target.id);
     const favoriteLine = await favoritePartnerLine(guild.id, target.id);
 
-    const embed = baseEmbed(`🔥 حالة الكومبو — ${target.username}`).setThumbnail(target.avatarUrl);
+    const embed = baseEmbed(t("combo.status_title", lang, { username: target.username })).setThumbnail(target.avatarUrl);
 
     if (highest) {
         embed.addFields(
-            { name: "أعلى كومبو حالي", value: `**${highest.pair.currentScore}** مع <@${highest.partnerId}>`, inline: true },
-            { name: "المستوى", value: translateLevel(highest.pair.level), inline: true },
-            { name: "الحرارة", value: `🔥 ${Math.round(highest.pair.heat)}% — ${heatStatusLabel(highest.pair.heat)}`, inline: true },
-            { name: "تتابع المحادثة", value: `${highest.pair.streakCurrent} يوم (الأفضل ${highest.pair.streakBest})`, inline: true },
+            { name: t("combo.current_combo", lang), value: `**${highest.pair.currentScore}** مع <@${highest.partnerId}>`, inline: true },
+            { name: t("combo.level", lang), value: translateLevel(highest.pair.level), inline: true },
+            { name: t("combo.heat", lang), value: `🔥 ${Math.round(highest.pair.heat)}% — ${heatStatusLabel(highest.pair.heat)}`, inline: true },
+            { name: t("combo.conversation_streak", lang), value: `${highest.pair.streakCurrent} ${t("combo.days", lang, { best: `${highest.pair.streakBest}` })}`, inline: true },
         );
     } else {
-        embed.addFields({ name: "أعلى كومبو حالي", value: "لا يوجد كومبو نشط حالياً." });
+        embed.addFields({ name: t("combo.current_combo", lang), value: t("combo.no_active_combo", lang) });
     }
 
     embed.addFields(

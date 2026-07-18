@@ -295,7 +295,14 @@ export const XP_CONFIG = {
     minPerMessage: 5,
     maxPerMessage: 15,
     cooldownMs: 60_000,
-    levelMultiplier: 100,
+    /** XP cost of level 1. Each subsequent level costs levelGrowthRate times the previous level's cost. */
+    levelBaseXP: 100,
+    levelGrowthRate: 1.2,
+} as const;
+
+/** Gate for the "real message" counter (/top Messages, ActivityXP.realMessageCount) — counts everywhere, not just XP channels. */
+export const MESSAGE_STATS_CONFIG = {
+    minMessageLength: 5,
 } as const;
 
 export const STAFF_POINTS = {
@@ -370,6 +377,10 @@ export const COMBO_CONFIG = {
     leaderboardLimit: 10,
     /** Cap on distinct partners tracked per user for Favorite Partner, to bound document growth. */
     maxTrackedPartners: 25,
+    /** Punishment-level (0-100, see PunishmentRepository) at/above which a message author's combo score gain is dampened. */
+    punishmentGateThreshold: 50,
+    /** Multiplier applied to scoreGain once punishmentGateThreshold is met — dampened, not zeroed. */
+    punishmentGateMultiplier: 0.4,
 } as const;
 
 export type ComboLeaderboardPeriod = "daily" | "weekly" | "monthly" | "alltime";

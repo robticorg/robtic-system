@@ -10,8 +10,11 @@ import type { ComponentHandler } from "@core/config";
 import { calculateLevel, xpForLevel } from "../../community/services/xp-service";
 import { getStaffActivity, getSupportStats, getActivityLogs } from "@shared/utils/staff-activity";
 import { getStreakSummary } from "../services/streak-service";
+import { buildStatusEmbed } from "../utils/comboEmbeds";
+import { buildProfileSettingsRow, buildSettingsEmbed } from "./profileSettingsButtons";
 import { formatDuration } from "@core/utils";
 import { isStaff } from "@shared/utils/access";
+import { getUserLang, t } from "@shared/utils/lang";
 import type { GuildMember } from "discord.js";
 import emoji from "@shared/emojis.json";
 
@@ -19,14 +22,29 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
     customId: /^profile_menu_\d+$/,
 
     async run(interaction: StringSelectMenuInteraction, client: BotClient) {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
         const targetId = interaction.customId.split("_")[2];
         const selected = interaction.values[0];
         const guildId = interaction.guildId!;
 
+        if (selected === "settings") {
+            if (interaction.user.id !== targetId) {
+                await interaction.deferUpdate();
+                return;
+            }
+            const member = interaction.member as GuildMember | null;
+            const lang = await getUserLang(member);
+            const embed = await buildSettingsEmbed(interaction.user, lang);
+
+            await interaction.update({ embeds: [embed], components: [buildProfileSettingsRow(targetId, lang)] });
+            return;
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const user = await client.users.fetch(targetId).catch(() => null);
         const putUser = interaction.user.id === targetId && "— " + user?.username || "";
+        const member = interaction.member as GuildMember | null;
+        const lang = await getUserLang(member);
 
         if (selected === "activity") {
             const record = await ActivityRepository.findOrCreate(targetId, guildId, "unknown");
@@ -51,6 +69,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                     { name: "Total XP", value: `${record.totalXP}`, inline: true },
                     { name: "Rank", value: `#${rank}`, inline: true },
                     { name: "Messages", value: `${record.messageCount}`, inline: true },
+                    { name: "Real Messages", value: `${record.realMessageCount}`, inline: true },
                     { name: "Progress", value: `${"█".repeat(Math.round((progress / needed) * 10))}${"░".repeat(10 - Math.round((progress / needed) * 10))} \`${progress}/${needed}\``, inline: false },
                     { name: "Decay", value: decayStatus, inline: false },
                     { name: "Recent Activity", value: recentLines.slice(0, 1024) },
@@ -66,16 +85,19 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
             const summary = await getStreakSummary(targetId, guildId, user?.username ?? "unknown");
             const { record, rank, bestRank, expiresInMs, nextClaimMs } = summary;
 
+            const unranked = t("profile.streak_unranked", lang);
+            const notAvailable = t("profile.streak_not_available", lang);
+
             const embed = new EmbedBuilder()
-                .setTitle(`🔥 التتابع ${putUser}`)
+                .setTitle(`🔥 ${t("profile.field_streak", lang)} ${putUser}`)
                 .addFields(
-                    { name: "التتابع الحالي", value: `🔥 ${record.currentStreak}`, inline: true },
-                    { name: "أفضل تتابع", value: `🏆 ${record.bestStreak}`, inline: true },
-                    { name: "الترتيب الحالي", value: rank > 0 ? `#${rank}` : "غير مصنف", inline: true },
-                    { name: "أفضل ترتيب", value: bestRank > 0 ? `#${bestRank}` : "غير مصنف", inline: true },
-                    { name: "التتابع القادم", value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : "✅ متاح الآن!", inline: true },
-                    { name: "ينتهي خلال", value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : "غير متاح", inline: true },
-                    { name: "حالة التذكير", value: record.active ? (record.reminderSent ? "تم الإرسال" : "قيد الانتظار") : "غير متاح", inline: true },
+                    { name: t("profile.streak_current_label", lang), value: `🔥 ${record.currentStreak}`, inline: true },
+                    { name: t("profile.streak_best_label", lang), value: `🏆 ${record.bestStreak}`, inline: true },
+                    { name: t("profile.streak_rank_label", lang), value: rank > 0 ? `#${rank}` : unranked, inline: true },
+                    { name: t("profile.streak_best_rank_label", lang), value: bestRank > 0 ? `#${bestRank}` : unranked, inline: true },
+                    { name: t("profile.streak_next_claim_label", lang), value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : t("profile.streak_available_now", lang), inline: true },
+                    { name: t("profile.streak_expires_label", lang), value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : notAvailable, inline: true },
+                    { name: t("profile.streak_reminder_label", lang), value: record.active ? (record.reminderSent ? t("profile.streak_reminder_sent", lang) : t("profile.streak_reminder_pending", lang)) : notAvailable, inline: true },
                 )
                 .setColor(Colors.activity)
                 .setTimestamp();
@@ -84,9 +106,21 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
             return;
         }
 
+        if (selected === "combo") {
+            const target = user ?? { id: targetId, username: "unknown", displayAvatarURL: () => "" };
+            const embed = await buildStatusEmbed(interaction.guild!, {
+                id: targetId,
+                username: target.username,
+                avatarUrl: user?.displayAvatarURL({ size: 256 }) ?? "",
+            }, lang);
+
+            await interaction.editReply({ embeds: [embed] });
+            return;
+        }
+
         if (selected === "staff_activity") {
-            const member = interaction.guild?.members.cache.get(targetId) ?? await interaction.guild?.members.fetch(targetId).catch(() => null);
-            if (!member || !isStaff(member as GuildMember)) {
+            const guildMember = interaction.guild?.members.cache.get(targetId) ?? await interaction.guild?.members.fetch(targetId).catch(() => null);
+            if (!guildMember || !isStaff(guildMember as GuildMember)) {
                 await interaction.editReply({ content: "This user is not a staff member." });
                 return;
             }
@@ -103,8 +137,8 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                     { name: "Staff Chat Points", value: `${staffData.staffChatPoints}`, inline: true },
                     { name: "Penalties", value: `${staffData.penalties}`, inline: true },
                     { name: "Total Staff Points", value: `**${staffData.totalStaffPoints}**`, inline: true },
-                    { name: "\u200b", value: "\u200b", inline: true },
-                    { name: "\u200b", value: "**── Support Performance ──**" },
+                    { name: "​", value: "​", inline: true },
+                    { name: "​", value: "**── Support Performance ──**" },
                     { name: "Sessions Claimed", value: `${supportStats.totalClaimed}`, inline: true },
                     { name: "Sessions Resolved", value: `${supportStats.totalResolved}`, inline: true },
                     { name: "Avg Response Time", value: avgResponse, inline: true },

@@ -31,6 +31,8 @@ export interface IServerConfig extends Document {
     lineChannelIds: string[];
     /** Prefix for main-bot text commands in this guild (e.g. "!"). Falls back to DEFAULT_PREFIX when unset. */
     prefix?: string;
+    /** Channel where plain chat is auto-deleted, keeping it command-only (see commands-channel-guard.ts). */
+    commandsChannelId?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -69,6 +71,7 @@ const serverConfigSchema = new Schema<IServerConfig>(
         lineChannelId: { type: String }, // legacy single-channel field, kept for migration fallback
         lineChannelIds: { type: [String], default: [] },
         prefix: { type: String },
+        commandsChannelId: { type: String },
     },
     { timestamps: true }
 );

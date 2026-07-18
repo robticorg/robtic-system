@@ -2,6 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, type GuildMember } fr
 import type { BotClient } from "@core/BotClient";
 import { buildStatusEmbed } from "../utils/comboEmbeds";
 import { buildComboNavRow, isComboAdmin } from "../utils/comboComponents";
+import { getUserLang, t } from "@shared/utils/lang";
 
 export default {
     data: new SlashCommandBuilder()
@@ -12,8 +13,9 @@ export default {
         await interaction.deferReply();
 
         const guild = interaction.guild;
+        const lang = await getUserLang(interaction.member as GuildMember | null);
         if (!guild) {
-            await interaction.editReply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر." });
+            await interaction.editReply({ content: t("combo.guild_only", lang) });
             return;
         }
 
@@ -24,7 +26,7 @@ export default {
             id: interaction.user.id,
             username: interaction.user.username,
             avatarUrl: interaction.user.displayAvatarURL({ size: 256 }),
-        });
+        }, lang);
 
         const nav = buildComboNavRow(interaction.user.id, isAdmin);
 

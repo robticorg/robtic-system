@@ -1,7 +1,7 @@
 import type { Client, Guild } from "discord.js";
 import { COMBO_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
-import { ComboRepository } from "@database/repositories";
+import { ComboRepository, ComboUserStatsRepository } from "@database/repositories";
 import { finalizeExpiredCombos } from "./combo-service";
 import { computeHeat } from "./combo-heat";
 import { snapshotActivePairs } from "./combo-leaderboard-service";
@@ -31,6 +31,14 @@ async function processGuildCombos(guild: Guild): Promise<void> {
 
     if (stillActive.length > 0) {
         await snapshotActivePairs(guild.id, stillActive);
+    }
+
+    // Blend in each user's stored all-time best so the Champion role reflects a genuine "best combo
+    // ever" — not just whoever happens to be mid-conversation right now — while still updating live
+    // if someone's currently in the middle of setting a new personal record.
+    const allTimeStats = await ComboUserStatsRepository.getAllForGuild(guild.id);
+    for (const stat of allTimeStats) {
+        scoreByUser.set(stat.discordId, Math.max(scoreByUser.get(stat.discordId) ?? 0, stat.bestComboScore));
     }
 
     await syncChampionRole(guild, scoreByUser);

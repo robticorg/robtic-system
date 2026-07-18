@@ -52,6 +52,19 @@ export class ServerConfigRepository {
         return config?.prefix ?? null;
     }
 
+    static async setCommandsChannel(guildId: string, channelId: string): Promise<IServerConfig> {
+        return ServerConfig.findOneAndUpdate(
+            { guildId },
+            { $set: { commandsChannelId: channelId } },
+            { upsert: true, returnDocument: "after", new: true }
+        ) as Promise<IServerConfig>;
+    }
+
+    static async getCommandsChannel(guildId: string): Promise<string | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.commandsChannelId ?? null;
+    }
+
     static async addLineChannel(guildId: string, channelId: string): Promise<IServerConfig> {
         return ServerConfig.findOneAndUpdate(
             { guildId },
