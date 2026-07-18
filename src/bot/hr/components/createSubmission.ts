@@ -57,17 +57,17 @@ export default {
             .setColor(Colors.hr)
             .setTimestamp();
 
-        const acceptBtn = new ButtonBuilder()
-            .setCustomId(`staff-accept_${type.key}_${interaction.user.id}`)
-            .setLabel("Accept")
-            .setStyle(ButtonStyle.Success);
+        const interviewBtn = new ButtonBuilder()
+            .setCustomId(`staff-interview_${type.key}_${interaction.user.id}`)
+            .setLabel("Interview")
+            .setStyle(ButtonStyle.Primary);
 
         const rejectBtn = new ButtonBuilder()
             .setCustomId(`staff-reject_${type.key}_${interaction.user.id}`)
             .setLabel("Reject")
             .setStyle(ButtonStyle.Danger);
 
-        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(acceptBtn, rejectBtn);
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(interviewBtn, rejectBtn);
 
         const ping = type.managerRoleIds.map(id => `<@&${id}>`).join(" ");
 

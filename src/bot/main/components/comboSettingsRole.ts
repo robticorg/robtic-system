@@ -3,7 +3,7 @@ import type { ComponentHandler } from "@core/config";
 import type { BotClient } from "@core/BotClient";
 import { ComboSettingsRepository } from "@database/repositories";
 import { buildSettingsEmbed } from "../utils/comboEmbeds";
-import { buildComboNavRow, buildComboSettingsRow, verifyInvoker, isComboAdmin } from "../utils/comboComponents";
+import { buildComboNavRow, buildComboSettingsRow, buildComboPointsButtonRow, verifyInvoker, isComboAdmin } from "../utils/comboComponents";
 
 export const comboSettingsRoleHandler: ComponentHandler<RoleSelectMenuInteraction> = {
     customId: /^combo:settings-role:\d+$/,
@@ -32,7 +32,8 @@ export const comboSettingsRoleHandler: ComponentHandler<RoleSelectMenuInteractio
         const embed = await buildSettingsEmbed(guild);
         const nav = buildComboNavRow(invokerId, true);
         const settingsRow = buildComboSettingsRow(invokerId);
+        const pointsRow = buildComboPointsButtonRow(invokerId);
 
-        await interaction.editReply({ embeds: [embed], components: [nav, settingsRow] });
+        await interaction.editReply({ embeds: [embed], components: [nav, settingsRow, pointsRow] });
     },
 };

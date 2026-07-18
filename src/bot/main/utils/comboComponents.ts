@@ -2,10 +2,13 @@ import {
     ActionRowBuilder,
     StringSelectMenuBuilder,
     RoleSelectMenuBuilder,
+    ButtonBuilder,
+    ButtonStyle,
     MessageFlags,
     type GuildMember,
     type StringSelectMenuInteraction,
     type RoleSelectMenuInteraction,
+    type ButtonInteraction,
 } from "discord.js";
 import { COMBO_LEADERBOARD_PERIODS, SUPER_ADMIN_ID, type ComboLeaderboardPeriod, type ComboLeaderboardType } from "@core/config";
 import { SuperUserRepository } from "@database/repositories";
@@ -37,7 +40,7 @@ export async function isComboAdmin(userId: string, member: GuildMember | null): 
 
 /** Only the invoking user may operate their own /combo message's components. */
 export async function verifyInvoker(
-    interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction,
+    interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction | ButtonInteraction,
     invokerId: string,
 ): Promise<boolean> {
     if (interaction.user.id === invokerId) return true;
@@ -95,4 +98,14 @@ export function buildComboSettingsRow(invokerId: string): ActionRowBuilder<RoleS
         .setMaxValues(1);
 
     return new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(roleSelect);
+}
+
+export function buildComboPointsButtonRow(invokerId: string): ActionRowBuilder<ButtonBuilder> {
+    return new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`combo:settings-points-open:${invokerId}`)
+            .setLabel("تعديل نقاط الكومبو")
+            .setEmoji("🎯")
+            .setStyle(ButtonStyle.Secondary),
+    );
 }

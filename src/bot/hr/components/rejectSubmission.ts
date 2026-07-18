@@ -42,11 +42,11 @@ export default {
       .components[0] as ActionRow<MessageActionRowComponent>;
     const components = firstRow.components;
 
-    const acceptBtn = components[0];
+    const interviewBtn = components[0];
     const rejectBtn = components[1];
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      ButtonBuilder.from(acceptBtn as ButtonComponent).setDisabled(true),
+      ButtonBuilder.from(interviewBtn as ButtonComponent).setDisabled(true),
       ButtonBuilder.from(rejectBtn as ButtonComponent).setDisabled(true),
     );
     await interaction.editReply({ components: [row] });

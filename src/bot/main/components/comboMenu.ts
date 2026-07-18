@@ -13,6 +13,7 @@ import {
     buildComboNavRow,
     buildComboLeaderboardRows,
     buildComboSettingsRow,
+    buildComboPointsButtonRow,
     verifyInvoker,
     isComboAdmin,
     type ComboPage,
@@ -80,7 +81,8 @@ export const comboMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
             case "settings": {
                 const embed = await buildSettingsEmbed(guild);
                 const settingsRow = buildComboSettingsRow(invokerId);
-                await interaction.editReply({ embeds: [embed], components: [nav, settingsRow] });
+                const pointsRow = buildComboPointsButtonRow(invokerId);
+                await interaction.editReply({ embeds: [embed], components: [nav, settingsRow, pointsRow] });
                 return;
             }
         }

@@ -18,4 +18,13 @@ export class ComboSettingsRepository {
             { upsert: true, returnDocument: "after" }
         ) as Promise<IComboSettings>;
     }
+
+    /** Pass null/null to reset back to COMBO_CONFIG's defaults. */
+    static async setScoreRange(guildId: string, min: number | null, max: number | null): Promise<IComboSettings> {
+        return ComboSettings.findOneAndUpdate(
+            { guildId },
+            { $set: { minScorePerMessage: min, maxScorePerMessage: max } },
+            { upsert: true, returnDocument: "after" }
+        ) as Promise<IComboSettings>;
+    }
 }

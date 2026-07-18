@@ -110,7 +110,8 @@
             "name_updated": "✅ Display name updated to **{name}**."
         },
         "commandsChannel": {
-            "deleted_notice": "{user} please use commands only in this channel."
+            "deleted_notice": "{user} please use commands only in this channel.",
+            "wrong_channel_notice": "{user} commands can only be used in {channel}."
         },
         "streak": {
             "title": "🔥 Streak — {username}",
@@ -277,7 +278,8 @@
             "name_updated": "✅ تم تحديث الاسم المعروض إلى **{name}**."
         },
         "commandsChannel": {
-            "deleted_notice": "{user} يرجى استخدام الأوامر فقط في هذه القناة."
+            "deleted_notice": "{user} يرجى استخدام الأوامر فقط في هذه القناة.",
+            "wrong_channel_notice": "{user} لا يمكن استخدام الأوامر إلا في {channel}."
         },
         "streak": {
             "title": "🔥 التتابع — {username}",

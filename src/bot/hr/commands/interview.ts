@@ -59,11 +59,18 @@ export default {
     }
 
     if (sub === "accept") {
-      await member?.roles.add([
-        ...(type?.grantRoleIds ?? []),
-        STAFF_TEAM_ROLE_ID,
-        STAFF_TRAINEE_ROLE_ID,
-      ]);
+      try {
+        await member?.roles.add([
+          ...(type?.grantRoleIds ?? []),
+          STAFF_TEAM_ROLE_ID,
+          STAFF_TRAINEE_ROLE_ID,
+        ]);
+      } catch (err) {
+        await interaction.editReply({
+          content: "❌ | I couldn't grant one of the roles — my role is likely positioned too low in Server Settings → Roles (my role must sit above every role I grant), or I'm missing the Manage Roles permission. The submission was left untouched, so you can retry after fixing this.",
+        });
+        return;
+      }
 
       await StaffRepository.deleteSubmission(data.userId);
 

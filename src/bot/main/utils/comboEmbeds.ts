@@ -1,5 +1,5 @@
 import { EmbedBuilder, type Guild } from "discord.js";
-import { Colors, type ComboLeaderboardPeriod, type ComboLeaderboardType } from "@core/config";
+import { Colors, COMBO_CONFIG, type ComboLeaderboardPeriod, type ComboLeaderboardType } from "@core/config";
 import { formatDuration } from "@core/utils";
 import { ComboSettingsRepository, ComboRepository, ComboUserStatsRepository } from "@database/repositories";
 import { getUserHighestCombo, getUserComboRank } from "../services/combo-service";
@@ -155,8 +155,12 @@ export async function buildSettingsEmbed(guild: Guild): Promise<EmbedBuilder> {
     const roleId = settings?.championRoleId;
     const role = roleId ? guild.roles.cache.get(roleId) : null;
 
-    return baseEmbed("⚙️ إعدادات الكومبو").addFields({
-        name: "رتبة البطل",
-        value: role ? `${role}` : "غير مُعدة",
-    });
+    const min = settings?.minScorePerMessage ?? COMBO_CONFIG.minScorePerMessage;
+    const max = settings?.maxScorePerMessage ?? COMBO_CONFIG.maxScorePerMessage;
+    const isCustom = settings?.minScorePerMessage != null || settings?.maxScorePerMessage != null;
+
+    return baseEmbed("⚙️ إعدادات الكومبو").addFields(
+        { name: "رتبة البطل", value: role ? `${role}` : "غير مُعدة" },
+        { name: "نقاط الكومبو لكل رسالة", value: `${min} — ${max}${isCustom ? "" : " (افتراضي)"}` },
+    );
 }

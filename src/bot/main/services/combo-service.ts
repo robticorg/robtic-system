@@ -1,6 +1,6 @@
 import type { Guild, Message } from "discord.js";
 import type { ICombo } from "@database/models";
-import { ComboRepository, ComboUserStatsRepository, PunishmentRepository } from "@database/repositories";
+import { ComboRepository, ComboUserStatsRepository, ComboSettingsRepository, PunishmentRepository } from "@database/repositories";
 import { COMBO_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
 import { isAcceptableMessage } from "@core/utils";
@@ -39,6 +39,33 @@ function cachePartners(guildId: string, userAId: string, userBId: string, score:
 
 function isStale(pair: ICombo, now: number): boolean {
     return pair.status === "ended" || now - pair.lastMessageAt.getTime() > COMBO_CONFIG.expireMs;
+}
+
+interface ScoreRange {
+    min: number;
+    max: number;
+}
+
+/** Short-TTL cache so the per-guild-configurable score range doesn't cost a Mongo read on every message. */
+const SCORE_RANGE_CACHE_TTL_MS = 60_000;
+const scoreRangeCache = new Map<string, { range: ScoreRange; expiresAt: number }>();
+
+async function getScoreRange(guildId: string): Promise<ScoreRange> {
+    const cached = scoreRangeCache.get(guildId);
+    if (cached && cached.expiresAt > Date.now()) return cached.range;
+
+    const settings = await ComboSettingsRepository.get(guildId);
+    const range: ScoreRange = {
+        min: settings?.minScorePerMessage ?? COMBO_CONFIG.minScorePerMessage,
+        max: settings?.maxScorePerMessage ?? COMBO_CONFIG.maxScorePerMessage,
+    };
+    scoreRangeCache.set(guildId, { range, expiresAt: Date.now() + SCORE_RANGE_CACHE_TTL_MS });
+    return range;
+}
+
+/** Called after an admin updates the per-guild score range so the new values take effect immediately. */
+export function invalidateScoreRangeCache(guildId: string): void {
+    scoreRangeCache.delete(guildId);
 }
 
 /**
@@ -110,9 +137,8 @@ export async function processComboMessage(message: Message): Promise<void> {
     const elapsedSinceLast = pair.messages === 0 ? 0 : now - pair.lastMessageAt.getTime();
     const alternating = pair.lastMessageBy !== "" && pair.lastMessageBy !== authorId;
     const heat = computeHeat(pair.heat, elapsedSinceLast, alternating, confidence);
-    let scoreGain = Math.round(
-        COMBO_CONFIG.minScorePerMessage + (COMBO_CONFIG.maxScorePerMessage - COMBO_CONFIG.minScorePerMessage) * confidence
-    );
+    const { min: minScore, max: maxScore } = await getScoreRange(guildId);
+    let scoreGain = Math.round(minScore + (maxScore - minScore) * confidence);
 
     // A high punishment level makes it harder (not impossible) for that user to grow shared combo score.
     const punishmentLevel = await PunishmentRepository.getPunishmentLevel(authorId);
