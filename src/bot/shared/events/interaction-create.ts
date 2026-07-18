@@ -37,7 +37,7 @@ export default {
             const hasPerms = await checkPermissions(interaction, command);
             if (!hasPerms) return;
 
-            const canProceed = await cooldowns(interaction, command);
+            const canProceed = await cooldowns(interaction, command, client);
             if (!canProceed) return;
 
             try {
@@ -45,7 +45,7 @@ export default {
             } catch (error) {
                 // The command didn't actually complete (e.g. threw before/while replying,
                 // interaction expired) — don't charge the cooldown for a no-op attempt.
-                releaseCooldown(interaction);
+                releaseCooldown(interaction, client);
                 throw error;
             }
         } catch (error) {

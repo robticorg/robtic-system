@@ -41,13 +41,13 @@ export default {
             const hasPerms = await checkPermissions(interaction, command);
             if (!hasPerms) return;
 
-            const canProceed = await cooldowns(interaction, command);
+            const canProceed = await cooldowns(interaction, command, client);
             if (!canProceed) return;
 
             try {
                 await command.run(interaction, client);
             } catch (err) {
-                releaseCooldown(interaction);
+                releaseCooldown(interaction, client);
                 throw err;
             }
         } catch (err) {

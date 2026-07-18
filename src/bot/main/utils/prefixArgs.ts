@@ -145,9 +145,16 @@ function buildFakeInteraction(
             fake.replied = true;
             await sendOrEdit(opts);
         },
+        async deleteReply() {
+            if (sentMessage) {
+                await sentMessage.delete().catch(() => null);
+                sentMessage = null;
+            }
+        },
         async followUp(opts: any) {
             const { flags: _flags, ...rest } = opts ?? {};
-            if (message.channel.isSendable()) await message.channel.send(rest).catch(() => null);
+            if (!message.channel.isSendable()) return null;
+            return message.channel.send(rest).catch(() => null);
         },
     };
 
