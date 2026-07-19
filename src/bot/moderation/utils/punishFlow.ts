@@ -20,7 +20,7 @@ import { getLogChannel } from "@shared/utils/getLogChannel";
 
 export type PunishType = "warn" | "mute" | "ban";
 
-/** getUploadedFiles()/getTextInputValue() throw if the customId wasn't part of the submitted modal at all — these two modal variants (old ActionRow-only vs the proof-extended Label version) don't always include the same fields. */
+/** discord.js throws if customId wasn't part of the submitted modal — the two modal variants don't always share fields. */
 export function getOptionalUploadedFileUrl(fields: ModalSubmitFields, customId: string): string | null {
     try {
         return fields.getUploadedFiles(customId, false)?.first()?.url ?? null;
@@ -48,25 +48,19 @@ const TITLES: Record<PunishType, string> = {
     ban: "🔨 Ban",
 };
 
-// Kept short ("punish_proof_"/"punish_shortcut_" rather than spelling out every word) since a
-// Discord customId caps at 100 chars and this one packs five IDs/slugs into a single string.
+// Kept short — a Discord customId caps at 100 chars and this packs five IDs/slugs into one string.
 export function proofModalCustomId(type: PunishType, guildId: string, targetId: string, reasonKey: string, moderatorId: string, extra = "none"): string {
     return `punish_proof_${type}_${guildId}_${targetId}_${reasonKey}_${moderatorId}_${extra}`;
 }
 
 export function parseProofCustomId(customId: string): { type: PunishType; guildId: string; targetId: string; reasonKey: string; moderatorId: string; extra: string } | null {
     const parts = customId.split("_");
-    // punish_proof_{type}_{guildId}_{targetId}_{reasonKey}_{moderatorId}_{extra}
     if (parts.length < 8) return null;
     const [, , type, guildId, targetId, reasonKey, moderatorId, extra] = parts;
     return { type: type as PunishType, guildId, targetId, reasonKey, moderatorId, extra: extra ?? "none" };
 }
 
-/**
- * Built with the new Label-based modal API (docs/modal.md) — LabelBuilder wraps each field.
- * `guildId` is embedded in the customId (not just read from the interaction) because this same
- * modal can be shown from a DM button click (see sendShortcutProofDM), where there is no guild context.
- */
+/** `guildId` is embedded since this modal can also be shown from a DM button (no guild context there). */
 export function buildProofModal(type: PunishType, guildId: string, targetId: string, reasonKey: string, moderatorId: string, extra = "none"): ModalBuilder {
     const modal = new ModalBuilder()
         .setCustomId(proofModalCustomId(type, guildId, targetId, reasonKey, moderatorId, extra))
@@ -109,11 +103,7 @@ interface ApprovalParams {
     proofUrl?: string;
 }
 
-/**
- * Shared by ban.ts/mute.ts/warn.ts/punishModal.ts/punishProofModal.ts — posts the
- * senior-approval request (score <= 20 band) to the punishments_case channel with the
- * existing punish_approve/punish_deny buttons, now optionally showing a proof image.
- */
+/** Shared senior-approval request (score <= 20 band), posted to punishments_case with the approve/deny buttons. */
 export async function requestApproval(params: ApprovalParams): Promise<void> {
     const { client, type, targetId, reasonKey, reasonLabel, requesterId, extra, proofUrl } = params;
 
@@ -191,18 +181,12 @@ export function shortcutButtonCustomId(type: PunishType, guildId: string, target
 
 export function parseShortcutButtonCustomId(customId: string): { type: PunishType; guildId: string; targetId: string; reasonKey: string; moderatorId: string; extra: string } | null {
     const parts = customId.split("_");
-    // punish_shortcut_{type}_{guildId}_{targetId}_{reasonKey}_{moderatorId}_{extra}
     if (parts.length < 8) return null;
     const [, , type, guildId, targetId, reasonKey, moderatorId, extra] = parts;
     return { type: type as PunishType, guildId, targetId, reasonKey, moderatorId, extra: extra ?? "none" };
 }
 
-/**
- * A plain MessageCreate-triggered "fake" interaction can't call showModal() — Discord only allows
- * that as the first response to a genuine Interaction. So when a shortcut-invoked ban/mute/warn
- * needs proof, we DM the moderator a button instead; clicking it is a real ButtonInteraction that
- * *can* show the proof modal (handled by punishShortcutDM.ts).
- */
+/** A fake prefix interaction can't showModal() — DM a real button instead, which can (see punishShortcutDM.ts). */
 export async function sendShortcutProofDM(client: BotClient, moderatorId: string, type: PunishType, guildId: string, targetId: string, reasonKey: string, extra = "none"): Promise<boolean> {
     const moderator = await client.users.fetch(moderatorId).catch(() => null);
     if (!moderator) return false;

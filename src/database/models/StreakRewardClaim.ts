@@ -1,10 +1,6 @@
 import { Schema, model, type Document } from "mongoose";
 
-/**
- * Tracks, per user per threshold, whether the reward announcement was already sent and whether
- * they've claimed it — the mere existence of this record (regardless of `claimed`) is what stops
- * the log-channel announcement from firing again if the user loses and re-earns the same streak.
- */
+/** The mere existence of a record (regardless of `claimed`) is what stops a repeat announcement if the user loses and re-earns the same streak. */
 export interface IStreakRewardClaim extends Document {
     guildId: string;
     discordId: string;

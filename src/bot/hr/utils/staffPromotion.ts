@@ -13,10 +13,7 @@ export function categoryLabel(score: number): string {
     return "Staff";
 }
 
-/**
- * Moves a staff member one rung up/down their department's StaffTier ladder (ordered by score),
- * swapping the Discord roles bound to each rung and updating their StaffMember.position.
- */
+/** Moves a staff member one rung up/down their department's StaffTier ladder, swapping roles and updating StaffMember.position. */
 export async function moveStaffTier(
     guild: Guild,
     targetMember: GuildMember,

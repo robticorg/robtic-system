@@ -35,9 +35,7 @@ export default {
         const requireProof = await needsProof(interaction.member as GuildMember);
 
         if (requireProof) {
-            // Below Manager+ — combine reason/duration/proof into a single Label-based modal
-            // (mixing the legacy ActionRow text-input style with the new Label/FileUpload style
-            // in one modal isn't something to risk, so this branch stays fully Label-based).
+            // Below Manager+ — fully Label-based rather than mixing with the legacy ActionRow style.
             const reasonLabel = new LabelBuilder()
                 .setLabel("Reason for Ban")
                 .setDescription("Enter the reason or reason key")

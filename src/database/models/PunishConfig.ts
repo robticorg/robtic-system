@@ -1,12 +1,6 @@
 import { Schema, model, type Document } from "mongoose";
 
-/**
- * Per-guild settings for the ban/mute/warn shortcut + proof-of-evidence workflow.
- * `shortcutRoleIds` gates who may trigger ban/mute/warn via the text-prefix shortcut
- * (see punish-shortcut.ts); `pointsPerAction` is how many staff points a warn/mute
- * awards the moderator; `proofChannelId` is where evidence images get posted,
- * kept separate from the existing punishments_notice log channel.
- */
+/** Per-guild settings for the ban/mute/warn shortcut + proof-of-evidence workflow. */
 export interface IPunishConfig extends Document {
     guildId: string;
     shortcutRoleIds: string[];

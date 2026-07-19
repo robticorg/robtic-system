@@ -1,5 +1,8 @@
 import { ServerConfig, type IServerConfig, type ISentPanel, type IShortcut, type IServerRoles } from "@database/models/ServerConfig";
 
+const PREFIX_CACHE_TTL_MS = 60_000;
+const prefixCache = new Map<string, { prefix: string | null; expiresAt: number }>();
+
 export class ServerConfigRepository {
     static async find(guildId: string): Promise<IServerConfig | null> {
         return ServerConfig.findOne({ guildId });
@@ -40,16 +43,24 @@ export class ServerConfigRepository {
     }
 
     static async setPrefix(guildId: string, prefix: string): Promise<IServerConfig> {
-        return ServerConfig.findOneAndUpdate(
+        const config = await ServerConfig.findOneAndUpdate(
             { guildId },
             { $set: { prefix } },
             { upsert: true, returnDocument: "after", new: true }
-        ) as Promise<IServerConfig>;
+        ) as IServerConfig;
+        prefixCache.set(guildId, { prefix: config.prefix ?? null, expiresAt: Date.now() + PREFIX_CACHE_TTL_MS });
+        return config;
     }
 
+    /** Hot-path entry point — called on every guild message by every bot's shortcut/prefix listener, so this is cached rather than hitting Mongo per message. */
     static async getPrefix(guildId: string): Promise<string | null> {
+        const cached = prefixCache.get(guildId);
+        if (cached && cached.expiresAt > Date.now()) return cached.prefix;
+
         const config = await ServerConfig.findOne({ guildId });
-        return config?.prefix ?? null;
+        const prefix = config?.prefix ?? null;
+        prefixCache.set(guildId, { prefix, expiresAt: Date.now() + PREFIX_CACHE_TTL_MS });
+        return prefix;
     }
 
     static async setCommandsChannel(guildId: string, channelId: string): Promise<IServerConfig> {

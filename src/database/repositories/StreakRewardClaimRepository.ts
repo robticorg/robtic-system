@@ -1,12 +1,7 @@
 import { StreakRewardClaim, type IStreakRewardClaim } from "@database/models/StreakRewardClaim";
 
 export class StreakRewardClaimRepository {
-    /**
-     * Attempts to record the "user was notified about this threshold" marker. Returns the created
-     * record, or `null` if one already existed (duplicate key on the unique index) — the caller uses
-     * that to decide whether to post the announcement, so a user can never be notified twice for the
-     * same threshold even under concurrent streak-message processing.
-     */
+    /** Returns null if already notified (duplicate key) — caller uses that to skip re-announcing. */
     static async tryCreateNotification(guildId: string, discordId: string, threshold: number): Promise<IStreakRewardClaim | null> {
         try {
             return await StreakRewardClaim.create({ guildId, discordId, threshold });

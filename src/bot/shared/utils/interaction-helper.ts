@@ -3,7 +3,7 @@ import { FULL_POWER_ROLE_IDS, SUPER_ADMIN_ID } from "@core/config";
 import { isOnCooldown, getRemainingCooldown, clearCooldown, errorEmbed } from "@core/utils";
 import { ChatInputCommandInteraction, MessageFlags, type GuildMember, type Interaction, type InteractionReplyOptions } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { BotError, handleError } from "@core/handlers";
+import { BotError, handleError, classifyError } from "@core/handlers";
 import { getMemberLevel, isInDepartment } from "@shared/utils/access";
 import { hasCommandAccessGrant } from "@shared/utils/commandAccess";
 import { SuperUserRepository } from "@database/repositories";
@@ -27,14 +27,19 @@ export const HandlingComponent = async (interaction: Interaction, client: BotCli
                 try {
                     await handler.run(interaction as any, client);
                 } catch (error) {
+                    const classified = classifyError(error);
                     handleError(
-                        new BotError(`Error handling component "${customId}": ${error}`, "EVENT"),
+                        new BotError(`[${classified.label}] Error handling component "${customId}": ${classified.detail}`, "EVENT"),
                         `${client.botName}/InteractionCreate`
                     );
+
+                    // Interaction token already dead — replying would just fail the same way.
+                    if (classified.category === "interaction_expired") return true;
+
                     try {
                         if (!interaction.replied && !interaction.deferred) {
                             await interaction.reply({
-                                embeds: [errorEmbed("Something went wrong.")],
+                                embeds: [errorEmbed(classified.userMessage)],
                                 flags: MessageFlags.Ephemeral,
                             });
                         }
@@ -65,9 +70,17 @@ export const checkPermissions = async (intract: Interaction, command: CommandCon
     let interaction = intract as ChatInputCommandInteraction;
 
     if (interaction.user.id === SUPER_ADMIN_ID) return true;
-    if (await SuperUserRepository.isWhitelisted(interaction.user.id)) return true;
 
     const member = interaction.member as GuildMember | null;
+
+    // Run concurrently — every ms here before the command's own deferReply() eats into Discord's
+    // ~3s ack window. Precedence below is unchanged from the old sequential version.
+    const [isWhitelisted, hasGrant] = await Promise.all([
+        SuperUserRepository.isWhitelisted(interaction.user.id),
+        member && interaction.guildId ? hasCommandAccessGrant(interaction.guildId, interaction.commandName, member) : Promise.resolve(false),
+    ]);
+
+    if (isWhitelisted) return true;
 
     if (!member) {
         await interaction.reply({
@@ -80,9 +93,8 @@ export const checkPermissions = async (intract: Interaction, command: CommandCon
 
     if (FULL_POWER_ROLE_IDS.some(id => member.roles.cache.has(id))) return true;
 
-    // Per-guild /command-access grant (role or StaffTier category) — an additional way in,
-    // checked before the hardcoded requiredPermission/department fallback below.
-    if (interaction.guildId && await hasCommandAccessGrant(interaction.guildId, interaction.commandName, member)) return true;
+    // Per-guild /command-access grant — an additional way in, on top of the check below.
+    if (hasGrant) return true;
 
     const { score } = await getMemberLevel(member);
 
@@ -109,12 +121,7 @@ export const checkPermissions = async (intract: Interaction, command: CommandCon
     return true;
 }
 
-/**
- * Cooldown keys are namespaced by bot name — the cooldown store (`@core/utils/cooldown`) is a single
- * process-wide singleton shared by every BotClient, so without this, two *different* commands from
- * *different* bots that happen to share a literal name (e.g. moderation's `/mod` and modmail's `/mod`)
- * would falsely share a cooldown timer for the same user.
- */
+/** Namespaced by bot name — the cooldown store is a single shared singleton, so e.g. moderation's /mod and modmail's /mod don't share a timer. */
 function getCooldownKey(interaction: ChatInputCommandInteraction, client: BotClient): string {
     const parts = [client.botName, interaction.commandName];
     try {
@@ -163,14 +170,18 @@ export const releaseCooldown = (intract: Interaction, client: BotClient): void =
 
 export const commandError = async (error: unknown, intract: Interaction, client: BotClient) => {
     let interaction = intract as ChatInputCommandInteraction;
+    const classified = classifyError(error);
 
     handleError(
-        new BotError(`Error running "${interaction.commandName}": ${error}`, "COMMAND"),
+        new BotError(`[${classified.label}] Error running "${interaction.commandName}": ${classified.detail}`, "COMMAND"),
         `${client.botName}/InteractionCreate`
     );
 
+    // Already dead — a reply attempt would just fail the same way and add a misleading second log.
+    if (classified.category === "interaction_expired") return;
+
     const reply: InteractionReplyOptions = {
-        embeds: [errorEmbed("Something went wrong while executing this command.")],
+        embeds: [errorEmbed(classified.userMessage)],
         flags: MessageFlags.Ephemeral,
     };
 

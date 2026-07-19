@@ -13,12 +13,7 @@ import { executeMute } from "../commands/mute";
 import { executeBan } from "../commands/ban";
 import { parseProofCustomId, postProof, requestApproval, getOptionalUploadedFileUrl, getOptionalText } from "../utils/punishFlow";
 
-/**
- * Handles submission of the standalone proof modal (built by buildProofModal) — reached either
- * directly from ban/mute/warn's run() (below-Manager+ slash invocation) or via the DM button flow
- * (below-Manager+ shortcut invocation, see punishShortcutDM.ts). Both funnel into the same
- * execute-or-request-approval decision the old inline code in ban.ts/mute.ts/warn.ts used to make.
- */
+// Handles the standalone proof modal — reached from ban/mute/warn's run() directly, or via the DM button flow (punishShortcutDM.ts).
 export default {
     customId: /^punish_proof_(warn|mute|ban)_/,
 

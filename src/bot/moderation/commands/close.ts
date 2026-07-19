@@ -31,9 +31,7 @@ export default {
         const reason = interaction.options.getString("reason") ?? "No reason provided";
         const closed = await TicketRepository.close(ticket.ticketId, interaction.user.id);
         if (!closed) {
-            // Someone else's /close beat this one to it (or the ticket was already closed) —
-            // the guarded filter in TicketRepository.close makes this the safe outcome instead
-            // of double-closing and double-awarding staff points.
+            // Someone else's /close beat this one to it — avoids double-closing/double-awarding points.
             await interaction.editReply({ content: "This ticket was already closed." });
             return;
         }

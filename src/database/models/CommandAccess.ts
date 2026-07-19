@@ -1,11 +1,6 @@
 import { Schema, model, type Document } from "mongoose";
 
-/**
- * Per-guild, per-command access grant — lets an admin allow a specific role or StaffTier
- * category (by key) to use a command, independent of that command's hardcoded
- * requiredPermission/department score check. This is an *additional* way in: a member
- * granted here bypasses the normal check, but the normal check still works for everyone else.
- */
+/** Per-guild, per-command access grant (role or StaffTier category) — an additional way in, on top of the command's normal permission check. */
 export interface ICommandAccess extends Document {
     guildId: string;
     commandName: string;

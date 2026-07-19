@@ -97,13 +97,7 @@ export async function processStreakMessage(message: Message): Promise<void> {
     await checkStreakRewards(message.guild, message.author, guildId, updated.currentStreak);
 }
 
-/**
- * Announces any newly-crossed reward thresholds to the rewards_log channel with a claim button.
- * Uses `<=` (not `=== newCurrent`) so a streak jump from /streak-config sync|return still catches up
- * on any threshold it skipped over, while StreakRewardClaimRepository's unique index guarantees each
- * (user, threshold) pair is only ever notified once, ever — losing and re-earning the same streak
- * value later does not re-trigger the announcement.
- */
+/** `<=` (not `===`) so a streak jump from /streak-config sync|return still catches up on skipped thresholds; the unique index stops repeat announcements. */
 async function checkStreakRewards(guild: Guild, user: User, guildId: string, currentStreak: number): Promise<void> {
     const rewards = await StreakRewardRepository.list(guildId);
     const eligible = rewards.filter(r => r.threshold <= currentStreak);

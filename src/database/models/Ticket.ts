@@ -18,12 +18,7 @@ export interface ITicket extends Document {
     closedBy: string | null;
     closedAt: Date | null;
     transcript: string | null;
-    /**
-     * Set to `true` only by the support-panel creation flow (ticketOpenModal.ts) and unset on
-     * close — backs the partial unique index below so a user can't have two open panel-created
-     * tickets at once. Deliberately NOT set by other Ticket.create() callers (e.g. the ads-order
-     * flow in adsOrderDecision.ts), which legitimately create multiple concurrent tickets per user.
-     */
+    /** Set only by the support-panel flow, not by other Ticket.create() callers like the ads-order flow — backs the partial unique index below. */
     openLock?: true;
     createdAt: Date;
     updatedAt: Date;

@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, type Message, type User, type GuildBasedChannel } from "discord.js";
+import { ApplicationCommandOptionType, type Message, type User, type Role, type GuildBasedChannel } from "discord.js";
 import type { CommandConfig } from "@core/config";
 import type { BotClient } from "@core/BotClient";
 
@@ -62,6 +62,15 @@ async function resolveOptionValue(message: Message, opt: OptionJSON, token: stri
             return user ?? undefined;
         }
 
+        case ApplicationCommandOptionType.Role: {
+            const match = token.match(/^<@&(\d+)>$/);
+            const id = match ? match[1] : token;
+            if (!/^\d{15,25}$/.test(id)) return undefined;
+            const role: Role | null | undefined =
+                message.guild?.roles.cache.get(id) ?? (await message.guild?.roles.fetch(id).catch(() => null));
+            return role ?? undefined;
+        }
+
         case ApplicationCommandOptionType.Channel: {
             const match = token.match(/^<#(\d+)>$/);
             const id = match ? match[1] : token;
@@ -117,9 +126,7 @@ function buildFakeInteraction(
         client,
         deferred: false,
         replied: false,
-        // Not a genuine Interaction — showModal() can't be called on it (Discord only allows
-        // showModal as the first response to a real interaction). Commands check this flag to
-        // fall back to a DM+button flow instead of showModal() when invoked via text shortcut.
+        // Not a genuine Interaction — can't showModal(). Commands check this flag to fall back to a DM+button flow instead.
         isPrefix: true,
 
         options: {
@@ -136,6 +143,7 @@ function buildFakeInteraction(
             getBoolean: (name: string, required = false) => getValue(name, required),
             getUser: (name: string, required = false) => getValue(name, required),
             getChannel: (name: string, required = false) => getValue(name, required),
+            getRole: (name: string, required = false) => getValue(name, required),
         },
 
         async deferReply() {

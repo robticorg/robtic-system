@@ -3,11 +3,7 @@ import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
 import { parseShortcutButtonCustomId, buildProofModal } from "../utils/punishFlow";
 
-/**
- * Clicking the "Submit Proof" button DMed by sendShortcutProofDM — this IS a genuine
- * ButtonInteraction (unlike the shortcut message that triggered it), so it can legally
- * call showModal() as its first response.
- */
+// A real ButtonInteraction (unlike the shortcut message that triggered the DM), so it can showModal().
 export default {
     customId: /^punish_shortcut_(warn|mute|ban)_/,
 

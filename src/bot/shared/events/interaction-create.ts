@@ -4,6 +4,7 @@ import {
 } from "discord.js";
 import type { BotClient } from "@core/BotClient.ts";
 import { Logger } from "@core/libs";
+import { classifyError } from "@core/handlers";
 import { checkPermissions, commandError, cooldowns, releaseCooldown, HandlingComponent } from "../utils/interaction-helper";
 
 export default {
@@ -18,7 +19,8 @@ export default {
                 try {
                     await command.autocomplete(interaction, client);
                 } catch (error) {
-                    Logger.warn(`Autocomplete error for "${interaction.commandName}": ${error}`, client.botName);
+                    const classified = classifyError(error);
+                    Logger.warn(`[${classified.label}] Autocomplete error for "${interaction.commandName}": ${classified.detail}`, client.botName);
                 }
             }
             return;

@@ -99,8 +99,7 @@ export const ticketOpenModalHandler: ComponentHandler<ModalSubmitInteraction> = 
                 openLock: true,
             });
         } catch (err) {
-            // Duplicate-key on the openLock index — user opened a second ticket concurrently
-            // and lost the race. Clean up the now-orphaned channel instead of leaking it.
+            // Duplicate-key on openLock — lost a concurrent-open race. Clean up the orphaned channel.
             if ((err as { code?: number }).code === 11000) {
                 await channel.delete().catch(() => null);
                 const stillOpen = await TicketRepository.findOpenByUser(interaction.user.id, guild.id);

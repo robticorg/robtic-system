@@ -5,19 +5,13 @@ interface RecentAuthorMessage {
     timestamp: number;
 }
 
-/**
- * Per-(guild, author) rolling history of recent message content, used purely to detect repeated/
- * spammy sending patterns for combo scoring. In-memory + TTL-pruned (see pruneStaleSpamGuardEntries,
- * called from the combo scheduler), matching the same pattern combo-conversation-detector.ts already
- * uses for its channel buffers rather than persisting this to Mongo.
- */
+// In-memory, TTL-pruned (see pruneStaleSpamGuardEntries) — matches combo-conversation-detector.ts's channel buffers.
 const recentByAuthor = new Map<string, RecentAuthorMessage[]>();
 
 function key(guildId: string, authorId: string): string {
     return `${guildId}:${authorId}`;
 }
 
-/** Drops authors with no recent activity — call periodically from the scheduler so this map stays bounded. */
 export function pruneStaleSpamGuardEntries(now: number = Date.now()): void {
     for (const [k, entries] of recentByAuthor) {
         const fresh = entries.filter(e => now - e.timestamp <= COMBO_CONFIG.spamRepeatWindowMs);
@@ -28,15 +22,7 @@ export function pruneStaleSpamGuardEntries(now: number = Date.now()): void {
 
 export type ComboMessageQuality = "ignored" | "spammy" | "normal";
 
-/**
- * Classifies an already length/emoji-gated message (isAcceptableMessage already passed) for combo
- * spam resistance:
- * - "ignored": the same content repeated 3+ times in a row within the window — pure spam, doesn't
- *   touch the combo's state at all (no score, no expiry refresh).
- * - "spammy": single-word messages, or a message repeating the author's immediately preceding one —
- *   still keeps the combo alive, but on the short `spamExpireMs` clock with dampened score.
- * - "normal": everything else — full score range, full `expireMs` window.
- */
+/** "ignored" = 3+ repeats, doesn't touch combo state at all. "spammy" = one-word or a repeat, short expiry + dampened score. */
 export function classifyComboMessage(guildId: string, authorId: string, content: string, now: number): ComboMessageQuality {
     const k = key(guildId, authorId);
     const history = recentByAuthor.get(k) ?? [];

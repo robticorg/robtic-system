@@ -45,7 +45,7 @@ export async function getTopEntries(guildId: string, category: TopCategory, peri
 const CATEGORY_EMOJI: Record<TopCategory, string> = { streak: "🔥", combo: "💬", xp: "⭐", messages: "📨" };
 
 const TOP_DISPLAY_LIMIT = 5;
-/** How far to scan for the viewer's own rank when they're outside the top 5 — a dedicated per-category, per-period rank query doesn't exist for every combination, so this reuses the same getTopEntries() call with a larger limit. */
+/** How far to scan for the viewer's own rank when outside the top 5 — reuses getTopEntries() with a larger limit. */
 const VIEWER_RANK_SCAN_LIMIT = 100;
 
 function formatEntry(rank: number, entry: TopEntry, unit: string, isViewer: boolean): string {
@@ -53,7 +53,7 @@ function formatEntry(rank: number, entry: TopEntry, unit: string, isViewer: bool
     return isViewer ? `**${line}**` : line;
 }
 
-/** `viewerId`, when given, bolds that member's own line — inline if they're in the top 5, otherwise appended below (directly at rank 6, or after a "...." separator beyond that). */
+/** `viewerId` bolds that member's line — inline in the top 5, or appended below (with a "...." separator past rank 6). */
 export async function buildTopEmbed(guild: Guild, category: TopCategory, period: ComboLeaderboardPeriod, lang: Lang, viewerId?: string): Promise<EmbedBuilder> {
     const entries = await getTopEntries(guild.id, category, period, TOP_DISPLAY_LIMIT);
     const unit = t(`top.unit_${category}`, lang);

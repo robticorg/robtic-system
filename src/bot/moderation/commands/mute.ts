@@ -175,8 +175,7 @@ export default {
             const durationHours = interaction.options.getInteger("duration") ?? 24;
             const modMember = interaction.member as GuildMember;
 
-            // showModal() must be the FIRST response to a real interaction, so this check
-            // has to happen before any deferReply()/reply() — see punishFlow.ts for why.
+            // Must precede any deferReply()/reply() — showModal() has to be the first response.
             if (await needsProof(modMember)) {
                 if ((interaction as any).isPrefix) {
                     const sent = await sendShortcutProofDM(client, interaction.user.id, "mute", interaction.guildId!, target.id, reasonKey, String(durationHours));
