@@ -36,7 +36,7 @@ async function render(interaction: StringSelectMenuInteraction, invokerId: strin
     await interaction.deferUpdate();
 
     const lang = await getUserLang(interaction.member as GuildMember | null);
-    const embed = await buildTopEmbed(guild, category, period, lang);
+    const embed = await buildTopEmbed(guild, category, period, lang, invokerId);
 
     await interaction.editReply({
         embeds: [embed],

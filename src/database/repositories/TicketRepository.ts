@@ -23,10 +23,11 @@ export class TicketRepository {
         return Ticket.find(query).sort({ createdAt: -1 });
     }
 
+    /** Filter excludes already-closed tickets so two concurrent /close calls can't both succeed (and double-award staff points). */
     static async close(ticketId: string, closedBy: string): Promise<ITicket | null> {
         return Ticket.findOneAndUpdate(
-            { ticketId },
-            { status: "closed", closedBy, closedAt: new Date() },
+            { ticketId, status: { $ne: "closed" } },
+            { $set: { status: "closed", closedBy, closedAt: new Date() }, $unset: { openLock: "" } },
             { returnDocument: "after" }
         );
     }

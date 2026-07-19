@@ -44,13 +44,34 @@ export async function getTopEntries(guildId: string, category: TopCategory, peri
 
 const CATEGORY_EMOJI: Record<TopCategory, string> = { streak: "🔥", combo: "💬", xp: "⭐", messages: "📨" };
 
-export async function buildTopEmbed(guild: Guild, category: TopCategory, period: ComboLeaderboardPeriod, lang: Lang): Promise<EmbedBuilder> {
-    const entries = await getTopEntries(guild.id, category, period);
+const TOP_DISPLAY_LIMIT = 5;
+/** How far to scan for the viewer's own rank when they're outside the top 5 — a dedicated per-category, per-period rank query doesn't exist for every combination, so this reuses the same getTopEntries() call with a larger limit. */
+const VIEWER_RANK_SCAN_LIMIT = 100;
+
+function formatEntry(rank: number, entry: TopEntry, unit: string, isViewer: boolean): string {
+    const line = `#${rank} <@${entry.discordId}> — ${entry.value} ${unit}`;
+    return isViewer ? `**${line}**` : line;
+}
+
+/** `viewerId`, when given, bolds that member's own line — inline if they're in the top 5, otherwise appended below (directly at rank 6, or after a "...." separator beyond that). */
+export async function buildTopEmbed(guild: Guild, category: TopCategory, period: ComboLeaderboardPeriod, lang: Lang, viewerId?: string): Promise<EmbedBuilder> {
+    const entries = await getTopEntries(guild.id, category, period, TOP_DISPLAY_LIMIT);
     const unit = t(`top.unit_${category}`, lang);
 
-    const description = entries.length
-        ? entries.map((e, i) => `**#${i + 1}** <@${e.discordId}> — **${e.value}** ${unit}`).join("\n")
-        : t("top.no_entries", lang);
+    const lines = entries.map((e, i) => formatEntry(i + 1, e, unit, e.discordId === viewerId));
+
+    if (viewerId && !entries.some(e => e.discordId === viewerId)) {
+        const scanned = await getTopEntries(guild.id, category, period, VIEWER_RANK_SCAN_LIMIT);
+        const viewerIndex = scanned.findIndex(e => e.discordId === viewerId);
+
+        if (viewerIndex !== -1) {
+            const rank = viewerIndex + 1;
+            if (rank > TOP_DISPLAY_LIMIT + 1) lines.push("....");
+            lines.push(formatEntry(rank, scanned[viewerIndex], unit, true));
+        }
+    }
+
+    const description = lines.length ? lines.join("\n") : t("top.no_entries", lang);
 
     return new EmbedBuilder()
         .setTitle(t("top.title", lang, {

@@ -6,6 +6,7 @@ import { finalizeExpiredCombos } from "./combo-service";
 import { computeHeat } from "./combo-heat";
 import { snapshotActivePairs } from "./combo-leaderboard-service";
 import { pruneStaleChannelBuffers } from "./combo-conversation-detector";
+import { pruneStaleSpamGuardEntries } from "./combo-spam-guard";
 import { syncChampionRole } from "../utils/comboChampionRole";
 
 const CTX = "main:combo-scheduler";
@@ -51,6 +52,7 @@ export async function runComboCycle(client: Client): Promise<void> {
         );
     }
     pruneStaleChannelBuffers();
+    pruneStaleSpamGuardEntries();
 }
 
 let comboInterval: ReturnType<typeof setInterval> | null = null;

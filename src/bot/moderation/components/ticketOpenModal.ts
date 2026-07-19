@@ -81,21 +81,38 @@ export const ticketOpenModalHandler: ComponentHandler<ModalSubmitInteraction> = 
 
         const ticketId = makeTicketId(guild.id, channel.id);
 
-        await TicketRepository.create({
-            ticketId,
-            guildId: guild.id,
-            channelId: channel.id,
-            userId: interaction.user.id,
-            category: categoryId,
-            subject,
-            status: "open",
-            priority: "medium",
-            messages: [],
-            assignedTo: null,
-            closedBy: null,
-            closedAt: null,
-            transcript: null,
-        });
+        try {
+            await TicketRepository.create({
+                ticketId,
+                guildId: guild.id,
+                channelId: channel.id,
+                userId: interaction.user.id,
+                category: categoryId,
+                subject,
+                status: "open",
+                priority: "medium",
+                messages: [],
+                assignedTo: null,
+                closedBy: null,
+                closedAt: null,
+                transcript: null,
+                openLock: true,
+            });
+        } catch (err) {
+            // Duplicate-key on the openLock index — user opened a second ticket concurrently
+            // and lost the race. Clean up the now-orphaned channel instead of leaking it.
+            if ((err as { code?: number }).code === 11000) {
+                await channel.delete().catch(() => null);
+                const stillOpen = await TicketRepository.findOpenByUser(interaction.user.id, guild.id);
+                await interaction.editReply({
+                    content: stillOpen.length
+                        ? `You already have an open ticket: <#${stillOpen[0].channelId}>`
+                        : "You already have an open ticket.",
+                });
+                return;
+            }
+            throw err;
+        }
 
         const cardString = ticketCard(interaction.user.id, categoryId, subject);
 

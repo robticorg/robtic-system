@@ -40,3 +40,5 @@ export * from "./StaffTierRepository";
 export * from "./PunishConfigRepository";
 export * from "./HrConfigRepository";
 export * from "./CommandAccessRepository";
+export * from "./StreakRewardRepository";
+export * from "./StreakRewardClaimRepository";

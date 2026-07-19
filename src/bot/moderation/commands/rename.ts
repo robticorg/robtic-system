@@ -14,9 +14,14 @@ export default {
         if (!(await requireTicketStaff(interaction, resolved.category))) return;
 
         const rawName = interaction.options.getString("name", true);
+        // Discord channel names support Unicode (this deployment's ticket categories are
+        // Arabic) — only collapse whitespace/punctuation into dashes, don't strip letters
+        // outside a-z like the old regex did.
         const sanitized = rawName
+            .trim()
             .toLowerCase()
-            .replace(/[^a-z0-9-]+/g, "-")
+            .replace(/\s+/g, "-")
+            .replace(/[^\p{L}\p{N}-]+/gu, "-")
             .replace(/-+/g, "-")
             .replace(/^-|-$/g, "")
             .slice(0, 90);

@@ -5,6 +5,7 @@ import { COMBO_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
 import { isAcceptableMessage } from "@core/utils";
 import { detectConversationPartner, type ActivePartnerInfo } from "./combo-conversation-detector";
+import { classifyComboMessage } from "./combo-spam-guard";
 import { computeHeat } from "./combo-heat";
 import { checkLiveRecords, checkFinalRecords } from "./combo-record-service";
 import { recordEndedCombo } from "./combo-history-service";
@@ -37,8 +38,11 @@ function cachePartners(guildId: string, userAId: string, userBId: string, score:
     activePartnerCache.set(cacheKey(guildId, userBId), { partnerId: userAId, score, expiresAt });
 }
 
-function isStale(pair: ICombo, now: number): boolean {
-    return pair.status === "ended" || now - pair.lastMessageAt.getTime() > COMBO_CONFIG.expireMs;
+/** Spam-tier last activity expires on the short clock; a genuine message keeps the normal window. Exported so the scheduler's sweep (finalizeExpiredCombos) uses the exact same rule as the hot path. */
+export function isStale(pair: ICombo, now: number): boolean {
+    if (pair.status === "ended") return true;
+    const expiry = pair.lastMessageQuality === "spammy" ? COMBO_CONFIG.spamExpireMs : COMBO_CONFIG.expireMs;
+    return now - pair.lastMessageAt.getTime() > expiry;
 }
 
 interface ScoreRange {
@@ -134,11 +138,23 @@ export async function processComboMessage(message: Message): Promise<void> {
         return;
     }
 
+    const quality = classifyComboMessage(guildId, authorId, content, now);
+    if (quality === "ignored") {
+        // Repeated spam — doesn't touch the combo's state at all, not even the expiry clock.
+        cachePartners(guildId, authorId, partnerId, pair.currentScore);
+        return;
+    }
+
     const elapsedSinceLast = pair.messages === 0 ? 0 : now - pair.lastMessageAt.getTime();
     const alternating = pair.lastMessageBy !== "" && pair.lastMessageBy !== authorId;
     const heat = computeHeat(pair.heat, elapsedSinceLast, alternating, confidence);
     const { min: minScore, max: maxScore } = await getScoreRange(guildId);
     let scoreGain = Math.round(minScore + (maxScore - minScore) * confidence);
+
+    // Single-word / repeated messages still count, but contribute sharply less score.
+    if (quality === "spammy") {
+        scoreGain = Math.max(0, Math.round(scoreGain * COMBO_CONFIG.spamScoreMultiplier));
+    }
 
     // A high punishment level makes it harder (not impossible) for that user to grow shared combo score.
     const punishmentLevel = await PunishmentRepository.getPunishmentLevel(authorId);
@@ -151,7 +167,7 @@ export async function processComboMessage(message: Message): Promise<void> {
     const characterCount = content.length;
 
     const updated = await ComboRepository.applyMessage(
-        guildId, authorId, partnerId, authorId, scoreGain, heat, durationDelta, wordCount, characterCount, new Date(now),
+        guildId, authorId, partnerId, authorId, scoreGain, heat, durationDelta, wordCount, characterCount, new Date(now), quality,
     );
     if (!updated) return;
 
@@ -194,7 +210,7 @@ export async function finalizeExpiredCombos(guild: Guild): Promise<ICombo[]> {
     const stillActive: ICombo[] = [];
 
     for (const pair of active) {
-        if (now - pair.lastMessageAt.getTime() > COMBO_CONFIG.expireMs) {
+        if (isStale(pair, now)) {
             await finalizeCombo(pair);
         } else {
             stillActive.push(pair);

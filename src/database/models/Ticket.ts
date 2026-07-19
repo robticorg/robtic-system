@@ -18,6 +18,13 @@ export interface ITicket extends Document {
     closedBy: string | null;
     closedAt: Date | null;
     transcript: string | null;
+    /**
+     * Set to `true` only by the support-panel creation flow (ticketOpenModal.ts) and unset on
+     * close — backs the partial unique index below so a user can't have two open panel-created
+     * tickets at once. Deliberately NOT set by other Ticket.create() callers (e.g. the ads-order
+     * flow in adsOrderDecision.ts), which legitimately create multiple concurrent tickets per user.
+     */
+    openLock?: true;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -52,11 +59,17 @@ const ticketSchema = new Schema<ITicket>(
         closedBy: { type: String, default: null },
         closedAt: { type: Date, default: null },
         transcript: { type: String, default: null },
+        openLock: { type: Boolean },
     },
     { timestamps: true }
 );
 
 ticketSchema.index({ guildId: 1, status: 1 });
 ticketSchema.index({ userId: 1, status: 1 });
+// One open panel-created ticket per user per guild — see the `openLock` doc comment above.
+ticketSchema.index(
+    { guildId: 1, userId: 1, openLock: 1 },
+    { unique: true, partialFilterExpression: { openLock: { $eq: true } } }
+);
 
 export const Ticket = model<ITicket>("Ticket", ticketSchema);

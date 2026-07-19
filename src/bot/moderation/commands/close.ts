@@ -31,7 +31,10 @@ export default {
         const reason = interaction.options.getString("reason") ?? "No reason provided";
         const closed = await TicketRepository.close(ticket.ticketId, interaction.user.id);
         if (!closed) {
-            await interaction.editReply({ content: "There was a problem closing this ticket." });
+            // Someone else's /close beat this one to it (or the ticket was already closed) —
+            // the guarded filter in TicketRepository.close makes this the safe outcome instead
+            // of double-closing and double-awarding staff points.
+            await interaction.editReply({ content: "This ticket was already closed." });
             return;
         }
 
@@ -49,7 +52,9 @@ export default {
         }
 
         const channel = interaction.channel as TextChannel;
-        await channel.permissionOverwrites.edit(ticket.userId, { SendMessages: false }).catch(() => null);
+        await channel.permissionOverwrites.edit(ticket.userId, { SendMessages: false }).catch((error) => {
+            Logger.error(`Failed to lock ticket channel ${channel.id} on close: ${error}`, "moderation:ticket");
+        });
 
         const closedAtStr = closed.closedAt ? `${Math.floor(closed.closedAt.getTime() / 1000)}` : null;
         const cardString = ticketCard(closed.userId, closed.category, closed.subject);

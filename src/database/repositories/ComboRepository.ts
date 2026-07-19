@@ -40,6 +40,7 @@ export class ComboRepository {
                     startedAt: now,
                     lastMessageAt: now,
                     lastMessageBy: "",
+                    lastMessageQuality: "normal",
                 },
             },
             { upsert: true, returnDocument: "after" }
@@ -58,6 +59,7 @@ export class ComboRepository {
         wordCount: number,
         characterCount: number,
         now: Date,
+        quality: "normal" | "spammy" = "normal",
     ): Promise<ICombo | null> {
         const [userLowId, userHighId] = pairKey(userAId, userBId);
         return Combo.findOneAndUpdate(
@@ -73,6 +75,7 @@ export class ComboRepository {
                         heat,
                         lastMessageBy: senderId,
                         lastMessageAt: now,
+                        lastMessageQuality: quality,
                         status: "active",
                     },
                 },

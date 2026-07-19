@@ -35,3 +35,5 @@ export { StaffTier, type IStaffTier } from "./StaffTier";
 export { PunishConfig, type IPunishConfig } from "./PunishConfig";
 export { HrConfig, type IHrConfig } from "./HrConfig";
 export { CommandAccess, type ICommandAccess } from "./CommandAccess";
+export { StreakReward, type IStreakReward } from "./StreakReward";
+export { StreakRewardClaim, type IStreakRewardClaim } from "./StreakRewardClaim";

@@ -22,7 +22,7 @@ export default {
         const category = "streak" as const;
         const period = "daily" as const;
 
-        const embed = await buildTopEmbed(guild, category, period, lang);
+        const embed = await buildTopEmbed(guild, category, period, lang, interaction.user.id);
 
         await interaction.editReply({
             embeds: [embed],

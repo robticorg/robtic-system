@@ -1,9 +1,19 @@
-import { EmbedBuilder, type Message, type User } from "discord.js";
-import { StreakRepository, StreakSettingsRepository } from "@database/repositories";
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    EmbedBuilder,
+    type Guild,
+    type Message,
+    type TextChannel,
+    type User,
+} from "discord.js";
+import { StreakRepository, StreakSettingsRepository, StreakRewardRepository, StreakRewardClaimRepository } from "@database/repositories";
 import type { IStreak, IStreakSettings } from "@database/models";
 import { Colors, STREAK_CONFIG } from "@core/config";
 import { Logger } from "@core/libs";
 import { isClaimable, isStreakExpired, nextClaimAt, streakExpiresAt, isAcceptableMessage } from "@core/utils";
+import { getLogChannel } from "@shared/utils/getLogChannel";
 import { applyStreakRole } from "../utils/streakRole";
 import { t, type Lang } from "@shared/utils/lang";
 
@@ -84,6 +94,46 @@ export async function processStreakMessage(message: Message): Promise<void> {
 
     await sendPublicReply(message, updated);
     await sendStreakDM(message.author, updated);
+    await checkStreakRewards(message.guild, message.author, guildId, updated.currentStreak);
+}
+
+/**
+ * Announces any newly-crossed reward thresholds to the rewards_log channel with a claim button.
+ * Uses `<=` (not `=== newCurrent`) so a streak jump from /streak-config sync|return still catches up
+ * on any threshold it skipped over, while StreakRewardClaimRepository's unique index guarantees each
+ * (user, threshold) pair is only ever notified once, ever — losing and re-earning the same streak
+ * value later does not re-trigger the announcement.
+ */
+async function checkStreakRewards(guild: Guild, user: User, guildId: string, currentStreak: number): Promise<void> {
+    const rewards = await StreakRewardRepository.list(guildId);
+    const eligible = rewards.filter(r => r.threshold <= currentStreak);
+    if (!eligible.length) return;
+
+    for (const reward of eligible) {
+        const created = await StreakRewardClaimRepository.tryCreateNotification(guildId, user.id, reward.threshold);
+        if (!created) continue;
+
+        const logChannel = await getLogChannel(guild.client, "rewards_log") as TextChannel | null;
+        if (!logChannel) continue;
+
+        const embed = new EmbedBuilder()
+            .setTitle("🎁 مكافأة تتابع جديدة!")
+            .setColor(Colors.activity)
+            .setDescription(`<@${user.id}> وصل إلى **${reward.threshold}** يوم تتابع متواصل! 🔥\nالمكافأة: ${reward.offer}`)
+            .setTimestamp();
+
+        const button = new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`streak_reward_claim_${user.id}_${reward.threshold}`)
+                .setLabel("مطالبة بالمكافأة")
+                .setStyle(ButtonStyle.Success)
+                .setEmoji("🎁"),
+        );
+
+        await logChannel.send({ embeds: [embed], components: [button] }).catch(err =>
+            Logger.error(`Failed to post streak reward announcement for ${user.id} (threshold ${reward.threshold}): ${err}`, CTX)
+        );
+    }
 }
 
 async function sendPublicReply(message: Message, streak: IStreak): Promise<void> {
