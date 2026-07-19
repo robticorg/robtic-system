@@ -14,10 +14,10 @@ import type { BotClient } from "@core/BotClient";
 import { BRANCH_CONFIG, Colors, MembersPunishments, PunishmentsSystem } from "@core/config";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
 import { errorEmbed } from "@core/utils";
-import { getMemberLevel } from "@shared/utils/access";
 import { getUserLang, t } from "@shared/utils/lang";
 import { getLogChannel } from "@shared/utils/getLogChannel";
 import { recordSecurityEvent } from "../utils/security";
+import { needsProof, buildProofModal, sendShortcutProofDM } from "../utils/punishFlow";
 
 export async function executeBan(
     client: BotClient,
@@ -188,65 +188,48 @@ export default {
     department: "Moderation" as Department,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
-        await interaction.deferReply();
-
         const sub = interaction.options.getSubcommand();
         const target = interaction.options.getUser("target", true);
-        const guildId = interaction.guildId!;
-        const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
 
         if (sub === "add") {
             const reasonKey = interaction.options.getString("reason", true);
-            const reasonDoc = await ReasonRepository.findByKey(reasonKey);
-            const reason = reasonDoc?.label ?? reasonKey;
-            const reasonAr = reasonDoc?.labelAr ?? reason;
             const permanent = interaction.options.getBoolean("permanent") ?? false;
             const durationDays = interaction.options.getInteger("duration") ?? 7;
-
             const modMember = interaction.member as GuildMember;
-            const modLevel = getMemberLevel(modMember);
+            const extra = permanent ? "perm" : String(durationDays);
 
-            if (modLevel.score <= 20) {
-                const approvalEmbed = new EmbedBuilder()
-                    .setTitle("🔨 Ban Approval Required")
-                    .setColor(Colors.moderation)
-                    .addFields(
-                        { name: "Target", value: `<@${target.id}>`, inline: true },
-                        { name: "Requested By", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Reason", value: reason },
-                        { name: "Type", value: permanent ? "Permanent Ban" : `Temp Ban (${durationDays} day(s))`, inline: true },
-                    )
-                    .setTimestamp();
-
-                const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`punish_approve_ban_${target.id}_${reasonKey}_${interaction.user.id}_${permanent ? "perm" : durationDays}`)
-                        .setLabel("Approve")
-                        .setStyle(ButtonStyle.Success)
-                        .setEmoji("✅"),
-                    new ButtonBuilder()
-                        .setCustomId(`punish_deny_ban_${target.id}_${reasonKey}_${interaction.user.id}`)
-                        .setLabel("Deny")
-                        .setStyle(ButtonStyle.Danger)
-                        .setEmoji("❌"),
-                );
-
-                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
-                if (approvalChannel) {
-                    await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
+            // showModal() must be the FIRST response to a real interaction, so this check
+            // has to happen before any deferReply()/reply() — see punishFlow.ts for why.
+            if (await needsProof(modMember)) {
+                if ((interaction as any).isPrefix) {
+                    const sent = await sendShortcutProofDM(client, interaction.user.id, "ban", interaction.guildId!, target.id, reasonKey, extra);
+                    await interaction.reply({
+                        content: sent
+                            ? "📩 Check your DMs — submit proof there to finalize this ban."
+                            : "❌ Couldn't DM you to collect proof (check your privacy settings) — ask a Manager+ to run this instead.",
+                    });
+                    return;
                 }
 
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({
-                    embeds: [new EmbedBuilder().setDescription("⏳ Your ban request has been sent for approval by a senior moderator.").setColor(Colors.info)],
-                    flags: MessageFlags.Ephemeral,
-                });
+                await interaction.showModal(buildProofModal("ban", interaction.guildId!, target.id, reasonKey, interaction.user.id, extra));
                 return;
             }
 
+            await interaction.deferReply();
+            const guildId = interaction.guildId!;
+            const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
+            const reasonDoc = await ReasonRepository.findByKey(reasonKey);
+            const reason = reasonDoc?.label ?? reasonKey;
+            const reasonAr = reasonDoc?.labelAr ?? reason;
+
             const result = await executeBan(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, permanent, durationDays, interaction.guild);
             await interaction.editReply({ embeds: [result.embed] });
+            return;
         }
+
+        await interaction.deferReply();
+        const guildId = interaction.guildId!;
+        const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
 
         if (sub === "remove") {
             const caseId = interaction.options.getString("case", true);

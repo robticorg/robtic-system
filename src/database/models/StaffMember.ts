@@ -7,6 +7,10 @@ export interface IStaffMember extends Document {
     position: string;
     hiredAt: Date;
     status: "active" | "on-leave" | "suspended" | "terminated";
+    /** Manual bio fields — filled in via /staff-data, not derived from the accept flow. */
+    realName?: string;
+    age?: number;
+    country?: string;
     warnings: {
         reason: string;
         issuedBy: string;
@@ -30,6 +34,9 @@ const staffMemberSchema = new Schema<IStaffMember>(
             default: "active",
             index: true,
         },
+        realName: { type: String },
+        age: { type: Number },
+        country: { type: String },
         warnings: [
             {
                 reason: { type: String, required: true },

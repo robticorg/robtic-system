@@ -25,9 +25,9 @@ const reportAction: ComponentHandler<ButtonInteraction> = {
         const lang = parts[3] as "en" | "ar";
 
         const modMember = interaction.member as GuildMember;
-        const modLevel = getMemberLevel(modMember);
+        const modLevel = await getMemberLevel(modMember);
 
-        if (modLevel.score < 60 || !isInDepartment(modMember, "Moderation")) {
+        if (modLevel.score < 60 || !(await isInDepartment(modMember, "Moderation"))) {
             await interaction.reply({
                 embeds: [new EmbedBuilder().setDescription("❌ Only Expert+ moderators can handle reports.").setColor(Colors.error)],
                 flags: MessageFlags.Ephemeral,

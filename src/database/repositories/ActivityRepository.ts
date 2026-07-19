@@ -104,6 +104,19 @@ export class ActivityRepository {
         );
     }
 
+    static async addModerationPoints(discordId: string, guildId: string, username: string, amount: number): Promise<IActivityXP | null> {
+        await this.findOrCreate(discordId, guildId, username);
+        return ActivityXP.findOneAndUpdate(
+            { discordId, guildId },
+            {
+                $inc: { "staff.moderationPoints": amount },
+                "decay.lastActiveAt": new Date(),
+                "decay.inactiveDays": 0,
+            },
+            { returnDocument: "after" }
+        );
+    }
+
     static async addStaffPenalty(discordId: string, guildId: string, amount: number): Promise<IActivityXP | null> {
         return ActivityXP.findOneAndUpdate(
             { discordId, guildId },

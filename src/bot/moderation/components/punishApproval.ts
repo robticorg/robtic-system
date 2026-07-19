@@ -25,9 +25,9 @@ export default {
         const extra = parts[6];
 
         const modMember = interaction.member as GuildMember;
-        const modLevel = getMemberLevel(modMember);
+        const modLevel = await getMemberLevel(modMember);
 
-        if (modLevel.score < 60 || !isInDepartment(modMember, "Moderation")) {
+        if (modLevel.score < 60 || !(await isInDepartment(modMember, "Moderation"))) {
             await interaction.reply({
                 embeds: [new EmbedBuilder().setDescription("❌ Only Expert+ moderators can approve or deny punishment requests.").setColor(Colors.error)],
                 flags: MessageFlags.Ephemeral,

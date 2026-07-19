@@ -33,7 +33,7 @@ export async function trackPublicChat(
     username: string,
     messageContent?: string,
 ): Promise<number | null> {
-    if (!isStaff(member)) {
+    if (!(await isStaff(member))) {
         Logger.debug(`${username} (${member.id}) is not staff, skipping public chat track`, CTX);
         return null;
     }
@@ -76,7 +76,7 @@ export async function trackStaffChat(
     username: string,
     messageContent?: string,
 ): Promise<number | null> {
-    if (!isStaff(member)) return null;
+    if (!(await isStaff(member))) return null;
 
     const isStaffCh = await isStaffChannel(guildId, channelId);
     if (!isStaffCh) {

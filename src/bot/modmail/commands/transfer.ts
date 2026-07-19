@@ -39,7 +39,7 @@ export default {
         }
 
         const member = interaction.member as GuildMember;
-        const isDeptAuthority = hasDepartmentAuthority(member, "Moderation");
+        const isDeptAuthority = await hasDepartmentAuthority(member, "Moderation");
 
         if (modmail.claimedBy !== interaction.user.id && !isDeptAuthority) {
             await interaction.deleteReply().catch(() => {});

@@ -18,6 +18,7 @@ export interface IActivityXP extends Document {
         supportPoints: number;
         publicChatPoints: number;
         staffChatPoints: number;
+        moderationPoints: number;
         penalties: number;
     };
 
@@ -49,6 +50,7 @@ const activityXPSchema = new Schema<IActivityXP>(
             supportPoints: { type: Number, default: 0 },
             publicChatPoints: { type: Number, default: 0 },
             staffChatPoints: { type: Number, default: 0 },
+            moderationPoints: { type: Number, default: 0 },
             penalties: { type: Number, default: 0 },
         },
 

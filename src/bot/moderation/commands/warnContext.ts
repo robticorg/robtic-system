@@ -6,9 +6,13 @@ import {
     TextInputBuilder,
     TextInputStyle,
     ActionRowBuilder,
-    MessageFlags
+    LabelBuilder,
+    FileUploadBuilder,
+    MessageFlags,
+    type GuildMember,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
+import { needsProof } from "../utils/punishFlow";
 
 export default {
     data: new ContextMenuCommandBuilder()
@@ -28,16 +32,36 @@ export default {
             .setCustomId(`punish_modal_warn_${interaction.targetId}`)
             .setTitle(`Warn ${interaction.targetUser.username}`);
 
-        const reasonInput = new TextInputBuilder()
-            .setCustomId("reason")
-            .setLabel("Reason for Warning")
-            .setPlaceholder("Enter the reason or reason key...")
-            .setStyle(TextInputStyle.Paragraph)
-            .setRequired(true)
-            .setMaxLength(500);
+        const requireProof = await needsProof(interaction.member as GuildMember);
 
-        const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
-        modal.addComponents(actionRow);
+        if (requireProof) {
+            const reasonLabel = new LabelBuilder()
+                .setLabel("Reason for Warning")
+                .setDescription("Enter the reason or reason key")
+                .setTextInputComponent(
+                    new TextInputBuilder().setCustomId("reason").setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(500)
+                );
+
+            const proofLabel = new LabelBuilder()
+                .setLabel("Proof image")
+                .setDescription("Attach a screenshot/image showing the reason for this action")
+                .setFileUploadComponent(
+                    new FileUploadBuilder().setCustomId("proof").setMinValues(1).setMaxValues(1).setRequired(true)
+                );
+
+            modal.addLabelComponents(reasonLabel, proofLabel);
+        } else {
+            const reasonInput = new TextInputBuilder()
+                .setCustomId("reason")
+                .setLabel("Reason for Warning")
+                .setPlaceholder("Enter the reason or reason key...")
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true)
+                .setMaxLength(500);
+
+            const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
+            modal.addComponents(actionRow);
+        }
 
         await interaction.showModal(modal);
     }

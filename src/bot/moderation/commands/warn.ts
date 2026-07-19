@@ -8,15 +8,13 @@ import {
     ButtonBuilder,
     ButtonStyle,
     type GuildMember,
-    type TextChannel,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { BRANCH_CONFIG, Colors, MembersPunishments, PunishmentsSystem } from "@core/config";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
 import { errorEmbed } from "@core/utils";
-import { getMemberLevel } from "@shared/utils/access";
 import { getUserLang, t } from "@shared/utils/lang";
-import { getLogChannel } from "@shared/utils/getLogChannel";
+import { needsProof, buildProofModal, sendShortcutProofDM, awardPunishPoints } from "../utils/punishFlow";
 
 export async function executeWarn(
     client: BotClient,
@@ -94,6 +92,9 @@ export async function executeWarn(
         )
         .setTimestamp();
 
+    const moderator = await client.users.fetch(moderatorId).catch(() => null);
+    await awardPunishPoints(guildId, moderatorId, moderator?.username ?? moderatorId, "warn");
+
     return { embed, caseId, newLevel, levelInfo };
 }
 
@@ -136,63 +137,45 @@ export default {
     department: "Moderation" as Department,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
-        await interaction.deferReply();
-
         const sub = interaction.options.getSubcommand();
         const target = interaction.options.getUser("target", true);
-        const guildId = interaction.guildId!;
-        const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
 
         if (sub === "add") {
             const reasonKey = interaction.options.getString("reason", true);
+            const modMember = interaction.member as GuildMember;
+
+            // showModal() must be the FIRST response to a real interaction, so this check
+            // has to happen before any deferReply()/reply() — see punishFlow.ts for why.
+            if (await needsProof(modMember)) {
+                if ((interaction as any).isPrefix) {
+                    const sent = await sendShortcutProofDM(client, interaction.user.id, "warn", interaction.guildId!, target.id, reasonKey);
+                    await interaction.reply({
+                        content: sent
+                            ? "📩 Check your DMs — submit proof there to finalize this warning."
+                            : "❌ Couldn't DM you to collect proof (check your privacy settings) — ask a Manager+ to run this instead.",
+                    });
+                    return;
+                }
+
+                await interaction.showModal(buildProofModal("warn", interaction.guildId!, target.id, reasonKey, interaction.user.id));
+                return;
+            }
+
+            await interaction.deferReply();
+            const guildId = interaction.guildId!;
+            const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
             const reasonDoc = await ReasonRepository.findByKey(reasonKey);
             const reason = reasonDoc?.label ?? reasonKey;
             const reasonAr = reasonDoc?.labelAr ?? reason;
 
-            const modMember = interaction.member as GuildMember;
-            const modLevel = getMemberLevel(modMember);
-
-            if (modLevel.score <= 20) {
-                const approvalEmbed = new EmbedBuilder()
-                    .setTitle("⚠️ Warning Approval Required")
-                    .setColor(Colors.warning)
-                    .addFields(
-                        { name: "Target", value: `<@${target.id}>`, inline: true },
-                        { name: "Requested By", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Reason", value: reason },
-                        { name: "Type", value: "Warning", inline: true },
-                    )
-                    .setTimestamp();
-
-                const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`punish_approve_warn_${target.id}_${reasonKey}_${interaction.user.id}`)
-                        .setLabel("Approve")
-                        .setStyle(ButtonStyle.Success)
-                        .setEmoji("✅"),
-                    new ButtonBuilder()
-                        .setCustomId(`punish_deny_warn_${target.id}_${reasonKey}_${interaction.user.id}`)
-                        .setLabel("Deny")
-                        .setStyle(ButtonStyle.Danger)
-                        .setEmoji("❌"),
-                );
-
-                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
-                if (approvalChannel) {
-                    await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
-                }
-
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({
-                    embeds: [new EmbedBuilder().setDescription("⏳ Your warning request has been sent for approval by a senior moderator.").setColor(Colors.info)],
-                    flags: MessageFlags.Ephemeral,
-                });
-                return;
-            }
-
             const result = await executeWarn(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member);
             await interaction.editReply({ embeds: [result.embed] });
+            return;
         }
+
+        await interaction.deferReply();
+        const guildId = interaction.guildId!;
+        const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
 
         if (sub === "appeal") {
             const caseId = interaction.options.getString("case", true);

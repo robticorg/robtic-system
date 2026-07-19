@@ -74,6 +74,18 @@ export default {
 
       await StaffRepository.deleteSubmission(data.userId);
 
+      const existingStaff = await StaffRepository.findByDiscordId(data.userId);
+      if (!existingStaff) {
+        await StaffRepository.create({
+          discordId: data.userId,
+          username: user.username,
+          department: data.department,
+          position: "Staff",
+          hiredAt: new Date(),
+          status: "active",
+        });
+      }
+
       await interaction.editReply({
         content: "✅ | Submission accepted",
       });

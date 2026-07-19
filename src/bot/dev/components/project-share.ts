@@ -38,11 +38,11 @@ let typeStr = "other";
 
         const member = interaction.member as GuildMember;
         let pType: ProjectType = ProjectType.Member;
-        let isSystem = isOwner(member) || hasFullPower(member);
+        let isSystem = (await isOwner(member)) || hasFullPower(member);
 
         if (isSystem) {
             pType = ProjectType.System;
-        } else if (isInDepartment(member, "Dev")) {
+        } else if (await isInDepartment(member, "Dev")) {
             pType = ProjectType.Developer;
         }
 

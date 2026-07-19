@@ -41,7 +41,7 @@ export async function handleTagCommand(message: Message, modmail: IModMailThread
     const member = staffGuild
         ? await staffGuild.members.fetch(message.author.id).catch(() => null)
         : null;
-    const isDeptAuthority = member ? hasDepartmentAuthority(member as GuildMember, "Moderation") : false;
+    const isDeptAuthority = member ? await hasDepartmentAuthority(member as GuildMember, "Moderation") : false;
 
     if (modmail.claimedBy !== message.author.id && !isDeptAuthority) {
         await message.delete().catch(() => null);

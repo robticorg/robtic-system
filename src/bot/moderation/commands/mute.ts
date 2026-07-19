@@ -14,9 +14,9 @@ import type { BotClient } from "@core/BotClient";
 import { BRANCH_CONFIG, Colors, MembersPunishments, PunishmentsSystem } from "@core/config";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
 import { errorEmbed } from "@core/utils";
-import { getMemberLevel } from "@shared/utils/access";
 import { getUserLang, t } from "@shared/utils/lang";
 import { getLogChannel } from "@shared/utils/getLogChannel";
+import { needsProof, buildProofModal, sendShortcutProofDM, awardPunishPoints } from "../utils/punishFlow";
 
 export async function executeMute(
     client: BotClient,
@@ -106,6 +106,9 @@ export async function executeMute(
         await noticeChannel.send({ embeds: [logEmbed] }).catch(() => null);
     }
 
+    const moderator = await client.users.fetch(moderatorId).catch(() => null);
+    await awardPunishPoints(guildId, moderatorId, moderator?.username ?? moderatorId, "mute");
+
     return { embed: logEmbed, caseId, newLevel, levelInfo };
 }
 
@@ -164,66 +167,47 @@ export default {
     department: "Moderation" as Department,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
-        await interaction.deferReply();
-
         const sub = interaction.options.getSubcommand();
         const target = interaction.options.getUser("target", true);
-        const guildId = interaction.guildId!;
-        const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
 
         if (sub === "add") {
             const reasonKey = interaction.options.getString("reason", true);
-            const reasonDoc = await ReasonRepository.findByKey(reasonKey);
-            const reason = reasonDoc?.label ?? reasonKey;
-            const reasonAr = reasonDoc?.labelAr ?? reason;
             const durationHours = interaction.options.getInteger("duration") ?? 24;
-            const durationMs = durationHours * 60 * 60 * 1000;
-
             const modMember = interaction.member as GuildMember;
-            const modLevel = getMemberLevel(modMember);
 
-            if (modLevel.score <= 20) {
-                const approvalEmbed = new EmbedBuilder()
-                    .setTitle("🔇 Mute Approval Required")
-                    .setColor(Colors.moderation)
-                    .addFields(
-                        { name: "Target", value: `<@${target.id}>`, inline: true },
-                        { name: "Requested By", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Reason", value: reason },
-                        { name: "Duration", value: `${durationHours} hour(s)`, inline: true },
-                        { name: "Type", value: "Mute", inline: true },
-                    )
-                    .setTimestamp();
-
-                const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`punish_approve_mute_${target.id}_${reasonKey}_${interaction.user.id}_${durationHours}`)
-                        .setLabel("Approve")
-                        .setStyle(ButtonStyle.Success)
-                        .setEmoji("✅"),
-                    new ButtonBuilder()
-                        .setCustomId(`punish_deny_mute_${target.id}_${reasonKey}_${interaction.user.id}`)
-                        .setLabel("Deny")
-                        .setStyle(ButtonStyle.Danger)
-                        .setEmoji("❌"),
-                );
-
-                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
-                if (approvalChannel) {
-                    await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
+            // showModal() must be the FIRST response to a real interaction, so this check
+            // has to happen before any deferReply()/reply() — see punishFlow.ts for why.
+            if (await needsProof(modMember)) {
+                if ((interaction as any).isPrefix) {
+                    const sent = await sendShortcutProofDM(client, interaction.user.id, "mute", interaction.guildId!, target.id, reasonKey, String(durationHours));
+                    await interaction.reply({
+                        content: sent
+                            ? "📩 Check your DMs — submit proof there to finalize this mute."
+                            : "❌ Couldn't DM you to collect proof (check your privacy settings) — ask a Manager+ to run this instead.",
+                    });
+                    return;
                 }
 
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({
-                    embeds: [new EmbedBuilder().setDescription("⏳ Your mute request has been sent for approval by a senior moderator.").setColor(Colors.info)],
-                    flags: MessageFlags.Ephemeral,
-                });
+                await interaction.showModal(buildProofModal("mute", interaction.guildId!, target.id, reasonKey, interaction.user.id, String(durationHours)));
                 return;
             }
 
+            await interaction.deferReply();
+            const guildId = interaction.guildId!;
+            const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
+            const durationMs = durationHours * 60 * 60 * 1000;
+            const reasonDoc = await ReasonRepository.findByKey(reasonKey);
+            const reason = reasonDoc?.label ?? reasonKey;
+            const reasonAr = reasonDoc?.labelAr ?? reason;
+
             const result = await executeMute(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, durationMs, interaction.guild);
             await interaction.editReply({ embeds: [result.embed] });
+            return;
         }
+
+        await interaction.deferReply();
+        const guildId = interaction.guildId!;
+        const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
 
         if (sub === "remove") {
             const caseId = interaction.options.getString("case", true);

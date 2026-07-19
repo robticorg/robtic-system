@@ -55,8 +55,8 @@ function parseActions(raw: string): SecurityActionType[] {
     return actions.length > 0 ? Array.from(new Set(actions)) : ["send_alert"];
 }
 
-function managerOnly(member: GuildMember): boolean {
-    const { score } = getMemberLevel(member);
+async function managerOnly(member: GuildMember): Promise<boolean> {
+    const { score } = await getMemberLevel(member);
     if (score >= 90) return true;
     return isManagerOf(member, "Moderation");
 }
@@ -247,7 +247,7 @@ export default {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const member = interaction.member as GuildMember;
-        if (!managerOnly(member)) {
+        if (!(await managerOnly(member))) {
             await interaction.editReply({
                 embeds: [errorEmbed("Only Moderation Department Managers can use this command.")],
             });

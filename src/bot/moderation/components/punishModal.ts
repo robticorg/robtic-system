@@ -3,20 +3,16 @@ import {
     EmbedBuilder,
     MessageFlags,
     type GuildMember,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    type TextChannel,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import type { ComponentHandler } from "@core/config";
 import { Colors } from "@core/config";
 import { ReasonRepository } from "@database/repositories";
 import { getMemberLevel } from "@shared/utils/access";
-import { getLogChannel } from "@shared/utils/getLogChannel";
 import { executeWarn } from "../commands/warn";
 import { executeMute } from "../commands/mute";
 import { executeBan } from "../commands/ban";
+import { requestApproval, postProof, getOptionalUploadedFileUrl, getOptionalText } from "../utils/punishFlow";
 
 export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^punish_modal_(warn|mute|ban)_(\d+)$/,
@@ -24,7 +20,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
     async run(interaction: ModalSubmitInteraction, client: BotClient) {
         const parts = interaction.customId.match(/^punish_modal_(warn|mute|ban)_(\d+)$/);
         if (!parts) return;
-        
+
         const type = parts[1] as "warn" | "mute" | "ban";
         const targetId = parts[2];
         const guildId = interaction.guildId!;
@@ -41,13 +37,13 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             return;
         }
 
-        const reasonRaw = interaction.fields.getTextInputValue("reason").trim();
+        const reasonRaw = getOptionalText(interaction.fields, "reason").trim();
         // Since modals can't do autocomplete, we'll try to find a reason key
         // If not found, we use the raw text as both key and label.
         let reason = reasonRaw;
         let reasonAr = reasonRaw;
         let reasonKey = reasonRaw;
-        
+
         const reasonDoc = await ReasonRepository.findByKey(reasonRaw.toLowerCase());
         if (reasonDoc) {
             reasonKey = reasonDoc.key;
@@ -55,39 +51,23 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             reasonAr = reasonDoc.labelAr;
         }
 
-        const modLevel = getMemberLevel(modMember);
+        // Only present when the context-menu command included the proof file-upload label
+        // (banContext.ts/muteContext.ts/warnContext.ts add it for below-Manager+ moderators).
+        const proofUrl = getOptionalUploadedFileUrl(interaction.fields, "proof");
+        const proofNote = getOptionalText(interaction.fields, "note");
+        if (proofUrl) {
+            await postProof(client, guildId, { type, targetId, moderatorId: interaction.user.id, note: proofNote, attachmentUrl: proofUrl });
+        }
+
+        const modLevel = await getMemberLevel(modMember);
         const needsApproval = modLevel.score <= 20;
 
         if (type === "warn") {
             if (needsApproval) {
-                const approvalEmbed = new EmbedBuilder()
-                    .setTitle("⚠️ Warning Approval Required")
-                    .setColor(Colors.warning)
-                    .addFields(
-                        { name: "Target", value: `<@${targetId}>`, inline: true },
-                        { name: "Requested By", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Reason", value: reason },
-                        { name: "Type", value: "Warning", inline: true },
-                    )
-                    .setTimestamp();
-
-                const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`punish_approve_warn_${targetId}_${reasonKey}_${interaction.user.id}`)
-                        .setLabel("Approve")
-                        .setStyle(ButtonStyle.Success)
-                        .setEmoji("✅"),
-                    new ButtonBuilder()
-                        .setCustomId(`punish_deny_warn_${targetId}_${reasonKey}_${interaction.user.id}`)
-                        .setLabel("Deny")
-                        .setStyle(ButtonStyle.Danger)
-                        .setEmoji("❌"),
-                );
-
-                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
-                if (approvalChannel) {
-                    await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
-                }
+                await requestApproval({
+                    client, type: "warn", targetId, reasonKey, reasonLabel: reason,
+                    requesterId: interaction.user.id, proofUrl: proofUrl ?? undefined,
+                });
 
                 await interaction.deleteReply().catch(() => {});
                 await interaction.followUp({
@@ -101,42 +81,17 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             await interaction.editReply({ embeds: [result.embed] });
         } else if (type === "mute") {
             let durationHours = 24;
-            const durationInput = interaction.fields.getTextInputValue("duration");
+            const durationInput = getOptionalText(interaction.fields, "duration");
             if (durationInput && !isNaN(Number(durationInput))) {
                 durationHours = Number(durationInput);
             }
             const durationMs = durationHours * 60 * 60 * 1000;
 
             if (needsApproval) {
-                const approvalEmbed = new EmbedBuilder()
-                    .setTitle("🔇 Mute Approval Required")
-                    .setColor(Colors.moderation)
-                    .addFields(
-                        { name: "Target", value: `<@${targetId}>`, inline: true },
-                        { name: "Requested By", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Reason", value: reason },
-                        { name: "Duration", value: `${durationHours} hour(s)`, inline: true },
-                        { name: "Type", value: "Mute", inline: true },
-                    )
-                    .setTimestamp();
-
-                const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`punish_approve_mute_${targetId}_${reasonKey}_${interaction.user.id}_${durationHours}`)
-                        .setLabel("Approve")
-                        .setStyle(ButtonStyle.Success)
-                        .setEmoji("✅"),
-                    new ButtonBuilder()
-                        .setCustomId(`punish_deny_mute_${targetId}_${reasonKey}_${interaction.user.id}`)
-                        .setLabel("Deny")
-                        .setStyle(ButtonStyle.Danger)
-                        .setEmoji("❌"),
-                );
-
-                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
-                if (approvalChannel) {
-                    await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
-                }
+                await requestApproval({
+                    client, type: "mute", targetId, reasonKey, reasonLabel: reason,
+                    requesterId: interaction.user.id, extra: String(durationHours), proofUrl: proofUrl ?? undefined,
+                });
 
                 await interaction.deleteReply().catch(() => {});
                 await interaction.followUp({
@@ -149,7 +104,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             const result = await executeMute(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember, durationMs, interaction.guild!);
             await interaction.editReply({ embeds: [result.embed] });
         } else if (type === "ban") {
-            const durationInput = interaction.fields.getTextInputValue("duration")?.toLowerCase() || "perm";
+            const durationInput = getOptionalText(interaction.fields, "duration").toLowerCase() || "perm";
             const permanent = durationInput === "perm";
             let durationDays = 0;
             if (!permanent && !isNaN(Number(durationInput))) {
@@ -157,34 +112,10 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
             }
 
             if (needsApproval) {
-                const approvalEmbed = new EmbedBuilder()
-                    .setTitle("🔨 Ban Approval Required")
-                    .setColor(Colors.moderation)
-                    .addFields(
-                        { name: "Target", value: `<@${targetId}>`, inline: true },
-                        { name: "Requested By", value: `<@${interaction.user.id}>`, inline: true },
-                        { name: "Reason", value: reason },
-                        { name: "Type", value: permanent ? "Permanent Ban" : `Temp Ban (${durationDays} days)`, inline: true },
-                    )
-                    .setTimestamp();
-
-                const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`punish_approve_ban_${targetId}_${reasonKey}_${interaction.user.id}_${permanent ? "perm" : durationDays}`)
-                        .setLabel("Approve")
-                        .setStyle(ButtonStyle.Success)
-                        .setEmoji("✅"),
-                    new ButtonBuilder()
-                        .setCustomId(`punish_deny_ban_${targetId}_${reasonKey}_${interaction.user.id}`)
-                        .setLabel("Deny")
-                        .setStyle(ButtonStyle.Danger)
-                        .setEmoji("❌"),
-                );
-
-                const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
-                if (approvalChannel) {
-                    await approvalChannel.send({ embeds: [approvalEmbed], components: [buttons] });
-                }
+                await requestApproval({
+                    client, type: "ban", targetId, reasonKey, reasonLabel: reason,
+                    requesterId: interaction.user.id, extra: permanent ? "perm" : String(durationDays), proofUrl: proofUrl ?? undefined,
+                });
 
                 await interaction.deleteReply().catch(() => {});
                 await interaction.followUp({

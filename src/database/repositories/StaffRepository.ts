@@ -53,6 +53,22 @@ export class StaffRepository {
     );
   }
 
+  static async updateBio(
+    discordId: string,
+    bio: { realName?: string; age?: number; country?: string },
+  ): Promise<IStaffMember | null> {
+    const $set: Record<string, unknown> = {};
+    if (bio.realName !== undefined) $set.realName = bio.realName;
+    if (bio.age !== undefined) $set.age = bio.age;
+    if (bio.country !== undefined) $set.country = bio.country;
+
+    return StaffMember.findOneAndUpdate(
+      { discordId },
+      { $set },
+      { returnDocument: "after" },
+    );
+  }
+
   static async terminate(discordId: string): Promise<IStaffMember | null> {
     return StaffMember.findOneAndUpdate(
       { discordId },

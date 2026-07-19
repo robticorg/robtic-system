@@ -11,11 +11,13 @@ export async function getStaffActivity(userId: string, guildId: string) {
         supportPoints: record.staff.supportPoints,
         publicChatPoints: record.staff.publicChatPoints,
         staffChatPoints: record.staff.staffChatPoints,
+        moderationPoints: record.staff.moderationPoints,
         penalties: record.staff.penalties,
         totalStaffPoints:
             record.staff.supportPoints +
             record.staff.publicChatPoints +
-            record.staff.staffChatPoints -
+            record.staff.staffChatPoints +
+            record.staff.moderationPoints -
             record.staff.penalties,
     };
 }

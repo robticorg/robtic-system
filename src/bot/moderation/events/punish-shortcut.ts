@@ -1,15 +1,22 @@
 import { Events, type Message, type GuildMember } from "discord.js";
 import type { BotClient } from "@core/BotClient";
-import { DEFAULT_PREFIX, STREAK_CONFIG } from "@core/config";
-import { ServerConfigRepository } from "@database/repositories";
+import { DEFAULT_PREFIX } from "@core/config";
+import { ServerConfigRepository, PunishConfigRepository } from "@database/repositories";
 import { checkPermissions, cooldowns, commandError, releaseCooldown } from "@shared/utils/interaction-helper";
 import { buildPrefixInteraction } from "@shared/utils/prefixArgs";
-import { getUserLang, t } from "@shared/utils/lang";
 
+const SHORTCUT_COMMANDS = new Set(["ban", "mute", "warn"]);
+
+/**
+ * A separate MessageCreate listener from message-create.ts's ChatUtils shortcut dispatcher —
+ * discord.js allows multiple listeners per event, so this coexists safely. Only ban/mute/warn are
+ * prefix-invokable here, and only for members holding one of PunishConfig's shortcutRoleIds; the
+ * command's own requiredPermission/department checks still apply on top via checkPermissions.
+ */
 export default {
     name: Events.MessageCreate,
     async execute(message: Message, client: BotClient) {
-        if (message.author.bot || !message.guild) return;
+        if (message.author.bot || !message.guild || !message.member) return;
 
         const prefix = (await ServerConfigRepository.getPrefix(message.guild.id)) ?? DEFAULT_PREFIX;
         if (!message.content.startsWith(prefix)) return;
@@ -17,40 +24,16 @@ export default {
         const withoutPrefix = message.content.slice(prefix.length);
         const spaceIdx = withoutPrefix.search(/\s/);
         const commandName = (spaceIdx === -1 ? withoutPrefix : withoutPrefix.slice(0, spaceIdx)).toLowerCase();
-        if (!commandName) return;
+        if (!SHORTCUT_COMMANDS.has(commandName)) return;
         const argString = spaceIdx === -1 ? "" : withoutPrefix.slice(spaceIdx + 1);
+
+        const config = await PunishConfigRepository.getCached(message.guild.id);
+        const member = message.member as GuildMember;
+        const allowed = config.shortcutRoleIds.some(id => member.roles.cache.has(id));
+        if (!allowed) return;
 
         const command = client.commands.get(commandName);
         if (!command) return;
-
-        // Main-bot commands are only allowed in the configured commands channel, if one is set —
-        // anywhere else, the triggering message is removed instead of running the command.
-        const commandsChannelId = await ServerConfigRepository.getCommandsChannel(message.guild.id);
-        if (commandsChannelId && message.channel.id !== commandsChannelId) {
-            await message.delete().catch(() => null);
-
-            if (message.channel.isSendable()) {
-                const lang = await getUserLang(message.member as GuildMember | null);
-                const notice = await message.channel
-                    .send({ content: t("commandsChannel.wrong_channel_notice", lang, { user: `<@${message.author.id}>`, channel: `<#${commandsChannelId}>` }) })
-                    .catch(() => null);
-                if (notice) {
-                    setTimeout(() => {
-                        notice.delete().catch(() => null);
-                    }, STREAK_CONFIG.autoDeleteMs);
-                }
-            }
-            return;
-        }
-
-        if (command.modalOnly) {
-            await message
-                .reply({ content: `\`${commandName}\` needs its form fields — use \`/${commandName}\` instead.`, allowedMentions: { repliedUser: false } })
-                .catch(() => null);
-            return;
-        }
-
-        if (typeof (command.data as any).toJSON !== "function") return;
 
         const { interaction, error } = await buildPrefixInteraction(message, client, command, argString, prefix);
         if (error) {

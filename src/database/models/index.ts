@@ -31,3 +31,7 @@ export { ComboServerRecords, type IComboServerRecords, type IComboRecordEntry } 
 export { ComboLeaderboardEntry, type IComboLeaderboardEntry } from "./ComboLeaderboardEntry";
 export { ComboSettings, type IComboSettings } from "./ComboSettings";
 export { PeriodicStat, type IPeriodicStat, type PeriodicStatMetric } from "./PeriodicStat";
+export { StaffTier, type IStaffTier } from "./StaffTier";
+export { PunishConfig, type IPunishConfig } from "./PunishConfig";
+export { HrConfig, type IHrConfig } from "./HrConfig";
+export { CommandAccess, type ICommandAccess } from "./CommandAccess";

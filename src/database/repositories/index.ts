@@ -36,3 +36,7 @@ export * from "./ComboLeaderboardRepository";
 export * from "./ComboSettingsRepository";
 export * from "./PeriodicStatRepository";
 export * from "./UserRepository";
+export * from "./StaffTierRepository";
+export * from "./PunishConfigRepository";
+export * from "./HrConfigRepository";
+export * from "./CommandAccessRepository";

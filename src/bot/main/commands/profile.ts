@@ -35,7 +35,7 @@ export default {
         const currentUser = interaction.guild?.members.cache.get(interaction.user.id) ?? await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
         const isSelf = target.id === interaction.user.id;
 
-        if(target !== interaction.user && isStaff(member as GuildMember) && !isStaff(currentUser as GuildMember)) return await interaction.editReply({ content: "You cannot view the profile of another staff member." });
+        if(target !== interaction.user && member && await isStaff(member as GuildMember) && !(currentUser && await isStaff(currentUser as GuildMember))) return await interaction.editReply({ content: "You cannot view the profile of another staff member." });
 
         const lang = await getUserLang(currentUser as GuildMember | null);
 
@@ -45,8 +45,8 @@ export default {
         const activePunishments = allPunishments.filter(p => p.active && !p.appealed);
         const notes = await NoteRepository.findByUser(target.id);
 
-        const staffLevel = member ? getMemberLevel(member) : null;
-        const memberIsStaff = member ? isStaff(member) : false;
+        const staffLevel = member ? await getMemberLevel(member) : null;
+        const memberIsStaff = member ? await isStaff(member) : false;
         const roles = member?.roles.cache
             .filter(r => r.id !== guildId)
             .sort((a, b) => b.position - a.position)

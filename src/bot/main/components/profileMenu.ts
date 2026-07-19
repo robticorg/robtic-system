@@ -120,7 +120,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
 
         if (selected === "staff_activity") {
             const guildMember = interaction.guild?.members.cache.get(targetId) ?? await interaction.guild?.members.fetch(targetId).catch(() => null);
-            if (!guildMember || !isStaff(guildMember as GuildMember)) {
+            if (!guildMember || !(await isStaff(guildMember as GuildMember))) {
                 await interaction.editReply({ content: "This user is not a staff member." });
                 return;
             }
@@ -135,6 +135,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                     { name: "Support Points", value: `${staffData.supportPoints}`, inline: true },
                     { name: "Public Chat Points", value: `${staffData.publicChatPoints}`, inline: true },
                     { name: "Staff Chat Points", value: `${staffData.staffChatPoints}`, inline: true },
+                    { name: "Moderation Points", value: `${staffData.moderationPoints}`, inline: true },
                     { name: "Penalties", value: `${staffData.penalties}`, inline: true },
                     { name: "Total Staff Points", value: `**${staffData.totalStaffPoints}**`, inline: true },
                     { name: "​", value: "​", inline: true },

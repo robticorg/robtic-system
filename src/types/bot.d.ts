@@ -40,35 +40,12 @@ interface ModuleDefinition {
     onUnload?: () => Promise<void>;
 }
 
-type Department =
-    | "Dev"
-    | "Design"
-    | "Moderation"
-    | "Community"
-    | "Events"
-    | "Support"
-    | "HR";
-
-type PermissionLevel =
-    | "Owner"
-    | "LeadDev"
-    | "LeadDesign"
-    | "LeadModerator"
-    | "LeadCommunity"
-    | "LeadSupport"
-    | "StaffLead"
-    | "SeniorStaffLead"
-    | "PrincipalStaff"
-    | "DevManager"
-    | "DesignManager"
-    | "CommunityManager"
-    | "EventManager"
-    | "SupportManager"
-    | "ModerationManager"
-    | "HRManager"
-    | "ContentManager"
-    | "OperationManager"
-    | "Expert"
-    | "Professional"
-    | "Associate"
-    | "Member";
+/**
+ * Both used to be fixed unions (one Department/PermissionLevel set for every server). Now that
+ * staff tiers/departments are per-guild data (see StaffTier model), these are free-form guild-defined
+ * strings — kept as named type aliases purely for readability at call sites, not for compile-time
+ * enumeration. The old fixed value sets (Dev/Design/Moderation/... and Owner/LeadDev/DevManager/...)
+ * still exist as real string values, they're just no longer statically enforced.
+ */
+type Department = string;
+type PermissionLevel = string;

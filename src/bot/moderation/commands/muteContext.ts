@@ -6,9 +6,13 @@ import {
     TextInputBuilder,
     TextInputStyle,
     ActionRowBuilder,
-    MessageFlags
+    LabelBuilder,
+    FileUploadBuilder,
+    MessageFlags,
+    type GuildMember,
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
+import { needsProof } from "../utils/punishFlow";
 
 export default {
     data: new ContextMenuCommandBuilder()
@@ -28,26 +32,53 @@ export default {
             .setCustomId(`punish_modal_mute_${interaction.targetId}`)
             .setTitle(`Mute ${interaction.targetUser.username}`);
 
-        const reasonInput = new TextInputBuilder()
-            .setCustomId("reason")
-            .setLabel("Reason for Mute")
-            .setPlaceholder("Enter the reason or reason key...")
-            .setStyle(TextInputStyle.Paragraph)
-            .setRequired(true)
-            .setMaxLength(500);
+        const requireProof = await needsProof(interaction.member as GuildMember);
 
-        const durationInput = new TextInputBuilder()
-            .setCustomId("duration")
-            .setLabel("Duration (in hours)")
-            .setPlaceholder("e.g. 24")
-            .setStyle(TextInputStyle.Short)
-            .setRequired(false)
-            .setValue("24");
+        if (requireProof) {
+            const reasonLabel = new LabelBuilder()
+                .setLabel("Reason for Mute")
+                .setDescription("Enter the reason or reason key")
+                .setTextInputComponent(
+                    new TextInputBuilder().setCustomId("reason").setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(500)
+                );
 
-        const act1 = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
-        const act2 = new ActionRowBuilder<TextInputBuilder>().addComponents(durationInput);
+            const durationLabel = new LabelBuilder()
+                .setLabel("Duration (in hours)")
+                .setDescription("e.g. 24")
+                .setTextInputComponent(
+                    new TextInputBuilder().setCustomId("duration").setStyle(TextInputStyle.Short).setRequired(false).setValue("24")
+                );
 
-        modal.addComponents(act1, act2);
+            const proofLabel = new LabelBuilder()
+                .setLabel("Proof image")
+                .setDescription("Attach a screenshot/image showing the reason for this action")
+                .setFileUploadComponent(
+                    new FileUploadBuilder().setCustomId("proof").setMinValues(1).setMaxValues(1).setRequired(true)
+                );
+
+            modal.addLabelComponents(reasonLabel, durationLabel, proofLabel);
+        } else {
+            const reasonInput = new TextInputBuilder()
+                .setCustomId("reason")
+                .setLabel("Reason for Mute")
+                .setPlaceholder("Enter the reason or reason key...")
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true)
+                .setMaxLength(500);
+
+            const durationInput = new TextInputBuilder()
+                .setCustomId("duration")
+                .setLabel("Duration (in hours)")
+                .setPlaceholder("e.g. 24")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(false)
+                .setValue("24");
+
+            const act1 = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
+            const act2 = new ActionRowBuilder<TextInputBuilder>().addComponents(durationInput);
+
+            modal.addComponents(act1, act2);
+        }
 
         await interaction.showModal(modal);
     }

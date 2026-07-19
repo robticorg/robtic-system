@@ -117,6 +117,10 @@ function buildFakeInteraction(
         client,
         deferred: false,
         replied: false,
+        // Not a genuine Interaction — showModal() can't be called on it (Discord only allows
+        // showModal as the first response to a real interaction). Commands check this flag to
+        // fall back to a DM+button flow instead of showModal() when invoked via text shortcut.
+        isPrefix: true,
 
         options: {
             getSubcommand: (required = true) => {

@@ -203,7 +203,7 @@ export default {
             }
 
             const member = interaction.member as GuildMember;
-            if (!hasDepartmentAuthority(member, "Moderation")) {
+            if (!(await hasDepartmentAuthority(member, "Moderation"))) {
                 await interaction.deleteReply().catch(() => {});
                 await interaction.followUp({
                     content: messages.errors.only_manager_can_reopen,

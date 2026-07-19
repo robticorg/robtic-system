@@ -5,6 +5,7 @@ import { ChatInputCommandInteraction, MessageFlags, type GuildMember, type Inter
 import type { BotClient } from "@core/BotClient";
 import { BotError, handleError } from "@core/handlers";
 import { getMemberLevel, isInDepartment } from "@shared/utils/access";
+import { hasCommandAccessGrant } from "@shared/utils/commandAccess";
 import { SuperUserRepository } from "@database/repositories";
 
 export const HandlingComponent = async (interaction: Interaction, client: BotClient): Promise<boolean> => {
@@ -79,7 +80,11 @@ export const checkPermissions = async (intract: Interaction, command: CommandCon
 
     if (FULL_POWER_ROLE_IDS.some(id => member.roles.cache.has(id))) return true;
 
-    const { score } = getMemberLevel(member);
+    // Per-guild /command-access grant (role or StaffTier category) — an additional way in,
+    // checked before the hardcoded requiredPermission/department fallback below.
+    if (interaction.guildId && await hasCommandAccessGrant(interaction.guildId, interaction.commandName, member)) return true;
+
+    const { score } = await getMemberLevel(member);
 
     if (score >= 90) return true;
 
@@ -92,7 +97,7 @@ export const checkPermissions = async (intract: Interaction, command: CommandCon
         return false;
     }
 
-    if (command.department && !isInDepartment(member, command.department)) {
+    if (command.department && !(await isInDepartment(member, command.department))) {
         await interaction.reply({
             embeds: [errorEmbed(`This command is restricted to the ${command.department} department.`)],
             flags: MessageFlags.Ephemeral,

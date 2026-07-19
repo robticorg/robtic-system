@@ -27,7 +27,7 @@ const appealDecision: ComponentHandler<ButtonInteraction> = {
         const caseId = (embedCaseId && embedCaseId !== "N/A") ? embedCaseId : customCaseId;
 
         const modMember = interaction.member as GuildMember;
-        if (!FULL_POWER_ROLE_IDS.some(id => modMember.roles.cache.has(id)) && getMemberLevel(modMember).score < 80) {
+        if (!FULL_POWER_ROLE_IDS.some(id => modMember.roles.cache.has(id)) && (await getMemberLevel(modMember)).score < 80) {
             await interaction.reply({
                 embeds: [new EmbedBuilder().setDescription("❌ Only Manager+ can handle appeals.").setColor(Colors.error)],
                 flags: MessageFlags.Ephemeral,

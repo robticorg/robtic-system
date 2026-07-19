@@ -173,7 +173,7 @@ export default {
                 Logger.debug(`[activity] Support channel detected for ${username}`, client.botName);
                 const normalizedContent = normalizeElongated(content);
 
-                if (isStaff(member)) {
+                if (await isStaff(member)) {
                     const claimResult = await autoClaimSession(channelId, member.id, guildId);
 
                     if (claimResult.takeover) {
@@ -351,7 +351,7 @@ export default {
                 }
             }
 
-            if (isStaff(member)) {
+            if (await isStaff(member)) {
                 Logger.debug(`[activity] Staff member ${username}, tracking staff activity`, client.botName);
                 const staffResult = await trackStaffChat(member, guildId, channelId, username, content);
                 if (staffResult) {

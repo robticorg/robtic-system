@@ -22,7 +22,7 @@ export async function handleModMailStaff(message: Message, client: BotClient) {
         : null;
 
     const isDeptAuthority = member
-        ? hasDepartmentAuthority(member as GuildMember, "Moderation")
+        ? await hasDepartmentAuthority(member as GuildMember, "Moderation")
         : false;
 
     if (modmail.paused) {
