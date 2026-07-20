@@ -107,7 +107,14 @@
             "modal_title": "Edit Display Name",
             "modal_label": "Display Name",
             "modal_placeholder": "How the bot should refer to you",
-            "name_updated": "✅ Display name updated to **{name}**."
+            "name_updated": "✅ Display name updated to **{name}**.",
+            "private_profile_field": "Private Profile",
+            "private_profile_on": "On — others only see limited info",
+            "private_profile_off": "Off — others see your full profile",
+            "button_privacy_on": "🔒 Private Profile: On",
+            "button_privacy_off": "🔓 Private Profile: Off",
+            "privacy_updated_on": "✅ Your profile is now **private**. Other users will only see limited info.",
+            "privacy_updated_off": "✅ Your profile is now **public**. Other users will see your full profile."
         },
         "commandsChannel": {
             "deleted_notice": "{user} please use commands only in this channel.",
@@ -275,7 +282,14 @@
             "modal_title": "تعديل الاسم المعروض",
             "modal_label": "الاسم المعروض",
             "modal_placeholder": "كيف يجب أن يشير إليك البوت",
-            "name_updated": "✅ تم تحديث الاسم المعروض إلى **{name}**."
+            "name_updated": "✅ تم تحديث الاسم المعروض إلى **{name}**.",
+            "private_profile_field": "الملف الشخصي الخاص",
+            "private_profile_on": "مفعّل — الآخرون يرون معلومات محدودة فقط",
+            "private_profile_off": "غير مفعّل — الآخرون يرون ملفك الشخصي كاملاً",
+            "button_privacy_on": "🔒 الملف الخاص: مفعّل",
+            "button_privacy_off": "🔓 الملف الخاص: غير مفعّل",
+            "privacy_updated_on": "✅ أصبح ملفك الشخصي **خاصًا**. سيرى المستخدمون الآخرون معلومات محدودة فقط.",
+            "privacy_updated_off": "✅ أصبح ملفك الشخصي **عامًا**. سيرى المستخدمون الآخرون ملفك الشخصي كاملاً."
         },
         "commandsChannel": {
             "deleted_notice": "{user} يرجى استخدام الأوامر فقط في هذه القناة.",

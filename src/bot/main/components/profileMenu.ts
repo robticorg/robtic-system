@@ -5,7 +5,7 @@ import {
 } from "discord.js";
 import type { BotClient } from "@core/BotClient";
 import { Colors } from "@core/config";
-import { PunishmentRepository, NoteRepository, ActivityRepository, ProjectsRepository } from "@database/repositories";
+import { PunishmentRepository, NoteRepository, ActivityRepository, ProjectsRepository, UserRepository } from "@database/repositories";
 import type { ComponentHandler } from "@core/config";
 import { calculateLevel, xpForLevel } from "../../community/services/xp-service";
 import { getStaffActivity, getSupportStats, getActivityLogs } from "@shared/utils/staff-activity";
@@ -33,9 +33,10 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
             }
             const member = interaction.member as GuildMember | null;
             const lang = await getUserLang(member);
+            const privateProfile = await UserRepository.getPrivateProfile(targetId);
             const embed = await buildSettingsEmbed(interaction.user, lang);
 
-            await interaction.update({ embeds: [embed], components: [buildProfileSettingsRow(targetId, lang)] });
+            await interaction.update({ embeds: [embed], components: [buildProfileSettingsRow(targetId, lang, privateProfile)] });
             return;
         }
 

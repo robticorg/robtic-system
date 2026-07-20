@@ -13,6 +13,8 @@ export interface IUser extends Document {
     preferredLang?: "en" | "ar";
     /** Bot-tracked cosmetic display name override (not a real Discord nickname) shown in profile/leaderboards. */
     displayName?: string;
+    /** When true, other users viewing this member's /profile only see a minimal field set (name, xp, account age, join date, combo, streak). */
+    privateProfile?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -29,6 +31,7 @@ const userSchema = new Schema<IUser>(
         notes: [{ type: String }],
         preferredLang: { type: String, enum: ["en", "ar"] },
         displayName: { type: String },
+        privateProfile: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

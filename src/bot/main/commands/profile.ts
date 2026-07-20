@@ -39,14 +39,16 @@ export default {
 
         const lang = await getUserLang(currentUser as GuildMember | null);
 
-        const punishmentLevel = await PunishmentRepository.getPunishmentLevel(target.id);
-        const levelInfo = PunishmentRepository.getLevelInfo(punishmentLevel);
-        const allPunishments = await PunishmentRepository.findByUser(target.id, guildId);
-        const activePunishments = allPunishments.filter(p => p.active && !p.appealed);
-        const notes = await NoteRepository.findByUser(target.id);
+        const isPrivate = !isSelf && await UserRepository.getPrivateProfile(target.id);
 
-        const staffLevel = member ? await getMemberLevel(member) : null;
-        const memberIsStaff = member ? await isStaff(member) : false;
+        const punishmentLevel = !isPrivate ? await PunishmentRepository.getPunishmentLevel(target.id) : 0;
+        const levelInfo = PunishmentRepository.getLevelInfo(punishmentLevel);
+        const allPunishments = !isPrivate ? await PunishmentRepository.findByUser(target.id, guildId) : [];
+        const activePunishments = allPunishments.filter(p => p.active && !p.appealed);
+        const notes = !isPrivate ? await NoteRepository.findByUser(target.id) : [];
+
+        const staffLevel = member && !isPrivate ? await getMemberLevel(member) : null;
+        const memberIsStaff = member && !isPrivate ? await isStaff(member) : false;
         const roles = member?.roles.cache
             .filter(r => r.id !== guildId)
             .sort((a, b) => b.position - a.position)
@@ -82,7 +84,7 @@ export default {
         const embed = new EmbedBuilder()
             .setTitle(`${emoji.user} ${t("profile.title", lang, { username: displayName })}`)
             .setThumbnail(target.displayAvatarURL({ size: 256 }))
-            .setColor(punishmentLevel >= 60 ? Colors.moderation : punishmentLevel >= 20 ? Colors.warning : Colors.info)
+            .setColor(!isPrivate && punishmentLevel >= 60 ? Colors.moderation : !isPrivate && punishmentLevel >= 20 ? Colors.warning : Colors.info)
             .addFields(
                 { name: t("profile.field_user", lang), value: `<@${target.id}>`, inline: true },
                 { name: t("profile.field_account_created", lang), value: `<t:${Math.floor(target.createdTimestamp / 1000)}:R>`, inline: true },
@@ -92,7 +94,7 @@ export default {
                 { name: t("profile.field_total_xp", lang), value: `${xpRecord.totalXP}`, inline: true },
                 { name: t("profile.field_streak", lang), value: t("profile.streak_value", lang, { current: `${streak.record.currentStreak}`, best: `${streak.record.bestStreak}` }), inline: true },
                 { name: t("profile.field_combo", lang), value: comboValue, inline: true },
-                { name: t("profile.field_roles", lang), value: roles },
+                ...(!isPrivate ? [{ name: t("profile.field_roles", lang), value: roles }] : []),
             );
 
         if (memberIsStaff) {
@@ -107,13 +109,21 @@ export default {
             );
         }
 
-        embed.addFields(
-            { name: "​", value: `**${emoji.scan} ${t("profile.punishment_section", lang)}**` },
-            { name: t("profile.field_punishment_level", lang), value: `${levelBar}\n\`${punishmentLevel}/100\` — **${levelInfo.name}**` },
-            { name: t("profile.field_active_punishments", lang), value: `${activePunishments.length}`, inline: true },
-            { name: t("profile.field_total_records", lang), value: `${allPunishments.length}`, inline: true },
-            { name: t("profile.field_notes", lang), value: `${notes.length}`, inline: true },
-        ).setTimestamp();
+        if (!isPrivate) {
+            embed.addFields(
+                { name: "​", value: `**${emoji.scan} ${t("profile.punishment_section", lang)}**` },
+                { name: t("profile.field_punishment_level", lang), value: `${levelBar}\n\`${punishmentLevel}/100\` — **${levelInfo.name}**` },
+                { name: t("profile.field_active_punishments", lang), value: `${activePunishments.length}`, inline: true },
+                { name: t("profile.field_total_records", lang), value: `${allPunishments.length}`, inline: true },
+                { name: t("profile.field_notes", lang), value: `${notes.length}`, inline: true },
+            );
+        }
+
+        embed.setTimestamp();
+
+        if (isPrivate) {
+            embed.setFooter({ text: "🔒 This profile is private" });
+        }
 
         const menuOptions = [
             { label: t("profile.menu_activity", lang), description: t("profile.menu_activity_desc", lang), value: "activity", emoji: emoji.status },
@@ -129,7 +139,8 @@ export default {
         const selectMenu = new StringSelectMenuBuilder()
             .setCustomId(`profile_menu_${target.id}`)
             .setPlaceholder(t("profile.menu_placeholder", lang))
-            .addOptions(menuOptions);
+            .addOptions(menuOptions)
+            .setDisabled(!isSelf);
 
         const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu);
 

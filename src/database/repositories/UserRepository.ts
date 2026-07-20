@@ -34,4 +34,17 @@ export class UserRepository {
             { upsert: true, returnDocument: "after", new: true }
         ) as Promise<IUser>;
     }
+
+    static async getPrivateProfile(discordId: string): Promise<boolean> {
+        const user = await User.findOne({ discordId });
+        return user?.privateProfile ?? false;
+    }
+
+    static async setPrivateProfile(discordId: string, username: string, value: boolean): Promise<IUser> {
+        return User.findOneAndUpdate(
+            { discordId },
+            { $set: { privateProfile: value }, $setOnInsert: { username } },
+            { upsert: true, returnDocument: "after", new: true }
+        ) as Promise<IUser>;
+    }
 }
