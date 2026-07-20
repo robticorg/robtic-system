@@ -1,10 +1,16 @@
 import { SavedRoles, type ISavedRoles } from "@database/models/SavedRoles";
 
+export interface SaveRolesInput {
+    staffRoles: string[];
+    otherRoles: string[];
+    wasStaff: boolean;
+}
+
 export class SavedRolesRepository {
-    static async save(guildId: string, userId: string, roles: string[]): Promise<ISavedRoles> {
+    static async save(guildId: string, userId: string, input: SaveRolesInput): Promise<ISavedRoles> {
         return SavedRoles.findOneAndUpdate(
             { guildId, userId },
-            { $set: { roles, leftAt: new Date() } },
+            { $set: { roles: [], ...input, leftAt: new Date() } },
             { upsert: true, returnDocument: "after", new: true }
         ) as Promise<ISavedRoles>;
     }

@@ -7,7 +7,7 @@ export interface IStaffPromotion extends Document {
     newPosition: string;
     previousDepartment: string;
     newDepartment: string;
-    type: "promotion" | "demotion" | "transfer";
+    type: "promotion" | "demotion" | "transfer" | "termination";
     reason: string;
     approvedBy: string;
     createdAt: Date;
@@ -23,7 +23,7 @@ const staffPromotionSchema = new Schema<IStaffPromotion>(
         newDepartment: { type: String, required: true },
         type: {
             type: String,
-            enum: ["promotion", "demotion", "transfer"],
+            enum: ["promotion", "demotion", "transfer", "termination"],
             required: true,
         },
         reason: { type: String, required: true },

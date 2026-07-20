@@ -11,6 +11,7 @@ import type { BotClient } from "@core/BotClient";
 import { Colors, SUPER_ADMIN_ID } from "@core/config";
 import { StaffRepository, HrConfigRepository } from "@database/repositories";
 import { hasFullPower, hasDepartmentAuthority } from "@shared/utils/access";
+import { syncStaffWarnRole } from "../utils/staffWarnRole";
 
 export default {
     data: new SlashCommandBuilder()
@@ -105,6 +106,11 @@ export default {
             }
 
             const warningCount = updated?.warnings.length ?? 0;
+
+            const targetMember = interaction.guild?.members.cache.get(target.id)
+                ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
+            if (targetMember) await syncStaffWarnRole(targetMember, warningCount);
+
             const config = await HrConfigRepository.getCached(interaction.guildId);
             const logChannel = config.staffWarnLogChannelId
                 ? (client.channels.cache.get(config.staffWarnLogChannelId) as TextChannel | undefined)

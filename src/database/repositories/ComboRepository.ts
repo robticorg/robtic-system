@@ -39,6 +39,8 @@ export class ComboRepository {
                     level: COMBO_LEVELS[0].name,
                     startedAt: now,
                     lastMessageAt: now,
+                    lastMessageAtLow: now,
+                    lastMessageAtHigh: now,
                     lastMessageBy: "",
                     lastMessageQuality: "normal",
                 },
@@ -62,6 +64,7 @@ export class ComboRepository {
         quality: "normal" | "spammy" = "normal",
     ): Promise<ICombo | null> {
         const [userLowId, userHighId] = pairKey(userAId, userBId);
+        const senderTimestampField = senderId === userLowId ? "lastMessageAtLow" : "lastMessageAtHigh";
         return Combo.findOneAndUpdate(
             { guildId, userLowId, userHighId },
             [
@@ -75,6 +78,7 @@ export class ComboRepository {
                         heat,
                         lastMessageBy: senderId,
                         lastMessageAt: now,
+                        [senderTimestampField]: now,
                         lastMessageQuality: quality,
                         status: "active",
                     },
