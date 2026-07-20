@@ -165,6 +165,11 @@ export class ClientManager {
         return this.clients.get(name);
     }
 
+    /** Every live BotClient, deduped (two bot definitions sharing a token merge into one client instance). */
+    getAllClients(): BotClient[] {
+        return [...new Set(this.clients.values())];
+    }
+
     getBotStatus(name: BotName): BotStatus | null {
         const client = this.clients.get(name);
         if (!client) return null;

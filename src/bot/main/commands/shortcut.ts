@@ -6,24 +6,39 @@ import {
     PermissionFlagsBits,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import { ClientManager } from "@core/ClientManager";
 import { ServerConfigRepository } from "@database/repositories/ServerConfigRepository";
-import { ChatUtils } from "../utils/chat";
 import { Colors } from "@core/config";
 
-const chatUtilCommands = Object.keys(ChatUtils);
+// Executed only by moderation bot's message-create.ts (the ChatUtils utility actions) — listed
+// here just so /shortcut's autocomplete/labeling knows about them without importing moderation's
+// chat.ts across bot boundaries.
+const CHAT_UTIL_COMMANDS = ["lock", "unlock", "hide", "show", "slowmode", "clear"];
+
+function getAllCommandNames(): string[] {
+    const names = new Set<string>(CHAT_UTIL_COMMANDS);
+    for (const client of ClientManager.getInstance().getAllClients()) {
+        for (const name of client.commands.keys()) names.add(name);
+    }
+    return [...names];
+}
+
+function commandExists(command: string): boolean {
+    if (CHAT_UTIL_COMMANDS.includes(command)) return true;
+    return ClientManager.getInstance().getAllClients().some(client => client.commands.has(command));
+}
 
 export default {
     data: new SlashCommandBuilder()
         .setName("shortcut")
-        .setDescription("Manage message shortcuts for moderation commands")
+        .setDescription("Manage custom message-trigger shortcuts, for any bot's commands")
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
         .addSubcommand(sub =>
             sub.setName("add")
                 .setDescription("Add a new shortcut")
                 .addStringOption(opt =>
                     opt.setName("command")
-                        .setDescription("The moderation command to execute")
+                        .setDescription("The command to execute (any bot)")
                         .setRequired(true)
                         .setAutocomplete(true)
                 )
@@ -48,14 +63,14 @@ export default {
                 .setDescription("List current shortcuts")
         ),
 
-    async autocomplete(interaction: AutocompleteInteraction, client: BotClient) {
+    async autocomplete(interaction: AutocompleteInteraction) {
         const focused = interaction.options.getFocused(true);
         if (focused.name === "command") {
-            const allCommands = [...new Set([...chatUtilCommands, ...client.commands.keys()])];
-            const items = allCommands
+            const items = getAllCommandNames()
                 .filter(c => c.toLowerCase().startsWith(focused.value.toLowerCase()))
+                .sort()
                 .slice(0, 25);
-            await interaction.respond(items.map(c => ({ name: chatUtilCommands.includes(c) ? `${c} (chat)` : c, value: c })));
+            await interaction.respond(items.map(c => ({ name: CHAT_UTIL_COMMANDS.includes(c) ? `${c} (chat)` : c, value: c })));
         } else if (focused.name === "msg") {
             if (!interaction.guildId) return;
             const shortcuts = await ServerConfigRepository.getShortcuts(interaction.guildId);
@@ -64,7 +79,7 @@ export default {
         }
     },
 
-    async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+    async run(interaction: ChatInputCommandInteraction) {
         if (!interaction.guildId) return;
         await interaction.deferReply();
 
@@ -75,8 +90,7 @@ export default {
             const command = interaction.options.getString("command", true);
             const trigger = interaction.options.getString("msg", true);
 
-            const isChatUtil = chatUtilCommands.includes(command);
-            if (!isChatUtil && !client.commands.has(command)) {
+            if (!commandExists(command)) {
                 await interaction.deleteReply().catch(() => {});
                 await interaction.followUp({ content: `Unknown command \`${command}\` — pick a suggestion from autocomplete.`, flags: MessageFlags.Ephemeral });
                 return;
@@ -84,6 +98,7 @@ export default {
 
             await ServerConfigRepository.addShortcut(guildId, command, trigger);
 
+            const isChatUtil = CHAT_UTIL_COMMANDS.includes(command);
             await interaction.deleteReply().catch(() => {});
             await interaction.followUp({
                 content: `Shortcut added! Typing "${trigger}" will now execute "${isChatUtil ? `/chat ${command}` : `/${command}`}".`,
@@ -112,8 +127,8 @@ export default {
             }
 
             const embed = new EmbedBuilder()
-                .setTitle("Moderation Shortcuts")
-                .setDescription(shortcuts.map(s => `• \`${s.trigger}\` → \`${chatUtilCommands.includes(s.command) ? `/chat ${s.command}` : `/${s.command}`}\``).join("\n"))
+                .setTitle("Shortcuts")
+                .setDescription(shortcuts.map(s => `• \`${s.trigger}\` → \`${CHAT_UTIL_COMMANDS.includes(s.command) ? `/chat ${s.command}` : `/${s.command}`}\``).join("\n"))
                 .setColor(Colors.info || 0x3498DB);
 
             await interaction.editReply({ embeds: [embed] });
