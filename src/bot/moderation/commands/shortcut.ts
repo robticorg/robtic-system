@@ -6,11 +6,12 @@ import {
     PermissionFlagsBits,
     MessageFlags,
 } from "discord.js";
+import type { BotClient } from "@core/BotClient";
 import { ServerConfigRepository } from "@database/repositories/ServerConfigRepository";
 import { ChatUtils } from "../utils/chat";
 import { Colors } from "@core/config";
 
-const allowedCommands = Object.keys(ChatUtils);
+const chatUtilCommands = Object.keys(ChatUtils);
 
 export default {
     data: new SlashCommandBuilder()
@@ -47,11 +48,14 @@ export default {
                 .setDescription("List current shortcuts")
         ),
 
-    async autocomplete(interaction: AutocompleteInteraction) {
+    async autocomplete(interaction: AutocompleteInteraction, client: BotClient) {
         const focused = interaction.options.getFocused(true);
         if (focused.name === "command") {
-            const items = allowedCommands.filter(c => c.toLowerCase().startsWith(focused.value.toLowerCase()));
-            await interaction.respond(items.map(c => ({ name: c, value: c })));
+            const allCommands = [...new Set([...chatUtilCommands, ...client.commands.keys()])];
+            const items = allCommands
+                .filter(c => c.toLowerCase().startsWith(focused.value.toLowerCase()))
+                .slice(0, 25);
+            await interaction.respond(items.map(c => ({ name: chatUtilCommands.includes(c) ? `${c} (chat)` : c, value: c })));
         } else if (focused.name === "msg") {
             if (!interaction.guildId) return;
             const shortcuts = await ServerConfigRepository.getShortcuts(interaction.guildId);
@@ -60,7 +64,7 @@ export default {
         }
     },
 
-    async run(interaction: ChatInputCommandInteraction) {
+    async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         if (!interaction.guildId) return;
         await interaction.deferReply();
 
@@ -71,9 +75,10 @@ export default {
             const command = interaction.options.getString("command", true);
             const trigger = interaction.options.getString("msg", true);
 
-            if (!allowedCommands.includes(command)) {
+            const isChatUtil = chatUtilCommands.includes(command);
+            if (!isChatUtil && !client.commands.has(command)) {
                 await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ content: `Invalid command. Allowed: ${allowedCommands.join(", ")}`, flags: MessageFlags.Ephemeral });
+                await interaction.followUp({ content: `Unknown command \`${command}\` — pick a suggestion from autocomplete.`, flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -81,7 +86,7 @@ export default {
 
             await interaction.deleteReply().catch(() => {});
             await interaction.followUp({
-                content: `Shortcut added! Typing "${trigger}" will now execute "/chat ${command}".`,
+                content: `Shortcut added! Typing "${trigger}" will now execute "${isChatUtil ? `/chat ${command}` : `/${command}`}".`,
                 flags: MessageFlags.Ephemeral,
             });
             return;
@@ -108,7 +113,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle("Moderation Shortcuts")
-                .setDescription(shortcuts.map(s => `• \`${s.trigger}\` → \`/chat ${s.command}\``).join("\n"))
+                .setDescription(shortcuts.map(s => `• \`${s.trigger}\` → \`${chatUtilCommands.includes(s.command) ? `/chat ${s.command}` : `/${s.command}`}\``).join("\n"))
                 .setColor(Colors.info || 0x3498DB);
 
             await interaction.editReply({ embeds: [embed] });
