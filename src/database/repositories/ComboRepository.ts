@@ -42,7 +42,6 @@ export class ComboRepository {
                     lastMessageAtLow: now,
                     lastMessageAtHigh: now,
                     lastMessageBy: "",
-                    lastMessageQuality: "normal",
                 },
             },
             { upsert: true, returnDocument: "after" }
@@ -61,7 +60,6 @@ export class ComboRepository {
         wordCount: number,
         characterCount: number,
         now: Date,
-        quality: "normal" | "spammy" = "normal",
     ): Promise<ICombo | null> {
         const [userLowId, userHighId] = pairKey(userAId, userBId);
         const senderTimestampField = senderId === userLowId ? "lastMessageAtLow" : "lastMessageAtHigh";
@@ -79,7 +77,6 @@ export class ComboRepository {
                         lastMessageBy: senderId,
                         lastMessageAt: now,
                         [senderTimestampField]: now,
-                        lastMessageQuality: quality,
                         status: "active",
                     },
                 },

@@ -381,14 +381,6 @@ export const COMBO_CONFIG = {
     punishmentGateThreshold: 50,
     /** Multiplier applied to scoreGain once punishmentGateThreshold is met — dampened, not zeroed. */
     punishmentGateMultiplier: 0.4,
-    /** Shortened expiry while the pair's last message was spam-tier (see combo-spam-guard.ts). */
-    spamExpireMs: 30 * 1000,
-    /** Score multiplier for spam-tier messages — dampened, not zeroed. */
-    spamScoreMultiplier: 0.3,
-    /** Window for detecting a repeated message. */
-    spamRepeatWindowMs: 60 * 1000,
-    /** How many recent messages per author we remember for repeat detection. */
-    spamHistorySize: 5,
 } as const;
 
 export type ComboLeaderboardPeriod = "daily" | "weekly" | "monthly" | "alltime";

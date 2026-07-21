@@ -26,8 +26,6 @@ export interface ICombo extends Document {
     /** Per-participant last-qualifying-message time — the combo goes stale the moment EITHER side's own timer exceeds the expiry, not just when both go quiet, so one person ignoring the other for 2m ends it. */
     lastMessageAtLow: Date;
     lastMessageAtHigh: Date;
-    /** Quality of the last message applied to this pair — spam-tier messages shrink the expiry window (see COMBO_CONFIG.spamExpireMs) instead of the normal one. */
-    lastMessageQuality: "normal" | "spammy";
     startedAt: Date;
     streakCurrent: number;
     streakBest: number;
@@ -54,7 +52,6 @@ const comboSchema = new Schema<ICombo>(
         lastMessageAt: { type: Date, default: () => new Date() },
         lastMessageAtLow: { type: Date, default: () => new Date() },
         lastMessageAtHigh: { type: Date, default: () => new Date() },
-        lastMessageQuality: { type: String, enum: ["normal", "spammy"], default: "normal" },
         startedAt: { type: Date, default: () => new Date() },
         streakCurrent: { type: Number, default: 0 },
         streakBest: { type: Number, default: 0 },
