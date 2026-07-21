@@ -363,8 +363,8 @@ export const COMBO_CONFIG = {
     heatGainAlternating: 16,
     heatGainSame: 6,
     minMessageLength: 4,
-    minScorePerMessage: 3,
-    maxScorePerMessage: 12,
+    minScorePerMessage: 2,
+    maxScorePerMessage: 7,
     /** Minimum combined confidence for the conversation detector to attribute a message to a partner. */
     detectionConfidenceThreshold: 0.3,
     /** Signals older than this are no longer considered for detection (mirrors the combo expiry window). */
