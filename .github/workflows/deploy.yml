@@ -9,7 +9,45 @@ permissions:
   packages: write
 
 jobs:
-  deploy:
+  deploy-api:
+    uses: robticorg/robtic-actions/.github/workflows/deploy.yml@main
+    with:
+      deploy-type: docker
+      runner-labels: '["self-hosted", "robtic-deploy"]'
+      environment-name: 'Robtic Server'
+      environment-url: 'https://robtic.org'
+      server-label: 'core.robtic.org'
+      dockerfile: 'apps/api/Dockerfile'
+      image-name: 'ghcr.io/robticorg/robtic-api'
+      compose-project-name: 'robtic-system'
+      compose-env-file: '/home/robtic/robtic-system/.env'
+      compose-pull-command: 'docker compose -p robtic-system --env-file /home/robtic/robtic-system/.env pull robtic-api'
+      compose-up-command: 'docker compose -p robtic-system --env-file /home/robtic/robtic-system/.env up -d robtic-api'
+    secrets:
+      DISCORD_WEBHOOK_DEPLOY: ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
+
+  deploy-activity:
+    needs: deploy-api
+    uses: robticorg/robtic-actions/.github/workflows/deploy.yml@main
+    with:
+      deploy-type: docker
+      runner-labels: '["self-hosted", "robtic-deploy"]'
+      environment-name: 'Robtic Server'
+      environment-url: 'https://robtic.org'
+      server-label: 'core.robtic.org'
+      dockerfile: 'apps/activity/Dockerfile'
+      image-name: 'ghcr.io/robticorg/robtic-activity'
+      build-args: |
+        VITE_DISCORD_CLIENT_ID=${{ vars.VITE_DISCORD_CLIENT_ID }}
+      compose-project-name: 'robtic-system'
+      compose-env-file: '/home/robtic/robtic-system/.env'
+      compose-pull-command: 'docker compose -p robtic-system --env-file /home/robtic/robtic-system/.env pull robtic-activity'
+      compose-up-command: 'docker compose -p robtic-system --env-file /home/robtic/robtic-system/.env up -d robtic-activity'
+    secrets:
+      DISCORD_WEBHOOK_DEPLOY: ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
+
+  deploy-bot:
+    needs: deploy-activity
     uses: robticorg/robtic-actions/.github/workflows/deploy.yml@main
     with:
       deploy-type: docker
