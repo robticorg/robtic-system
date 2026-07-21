@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/events",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Shared event definitions and future websocket events"
+}

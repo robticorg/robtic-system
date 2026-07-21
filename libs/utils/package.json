@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/utils",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Pure utility functions with no business logic"
+}

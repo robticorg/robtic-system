@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/core",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Shared business logic, bot client infrastructure, AI clients, and core utilities"
+}

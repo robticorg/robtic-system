@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/sdk",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Discord Embedded App SDK integration layer (structure only, no implementation yet)"
+}

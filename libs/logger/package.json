@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/logger",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Logging abstraction"
+}

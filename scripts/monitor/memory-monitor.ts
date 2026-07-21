@@ -1,5 +1,5 @@
 import os from "os"
-import { reportServiceStatus } from "../src/core/utils/statusSystem/status";
+import { reportServiceStatus } from "../../libs/core/src/utils/statusSystem/status";
 
 setInterval(async () => {
 

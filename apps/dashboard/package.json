@@ -1,0 +1,6 @@
+{
+  "name": "@robtic/dashboard",
+  "private": true,
+  "type": "module",
+  "description": "Web dashboard for the Robtic Platform. Architecture only — implementation pending."
+}

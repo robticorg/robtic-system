@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/config",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Application configuration (discord, database, environment, feature flags)"
+}

@@ -31,10 +31,21 @@ A central **Main Bot** controls and coordinates several functional bots, allowin
 
 ## Technology
 
-* Bun
+* Bun (workspaces monorepo)
 * TypeScript
 * Discord.js v14
 * Environment-based configuration
+
+## Repository Layout
+
+```
+apps/       Applications (bot is live; activity, dashboard, api are scaffolds)
+libs/       Shared libraries (core, database, types, sdk, ...)
+docs/       All documentation
+scripts/    Operational scripts (monitors)
+```
+
+See [docs/architecture.md](docs/architecture.md) and [docs/development.md](docs/development.md).
 
 ## Configuration
 
@@ -43,5 +54,3 @@ All bot tokens and system configuration are defined in the `.env` file.
 ## Purpose
 
 Robtic System aims to provide a reliable automation backbone for developer-focused communities and services.
-
-..

@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/cache",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Redis caching and future pub/sub"
+}

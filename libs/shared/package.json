@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/shared",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Shared reusable helpers that do not belong elsewhere"
+}

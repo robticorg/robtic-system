@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/constants",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Static values shared across applications (messages, colors, limits, routes)"
+}

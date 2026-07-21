@@ -1,36 +1,31 @@
 {
   "compilerOptions": {
-    // Enable latest features
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
     "module": "ESNext",
     "moduleDetection": "force",
-    "types": ["bun-types"],
+    "types": ["bun"],
 
-    // Bundler mode
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
     "ignoreDeprecations": "6.0",
 
-    // Best practices
     "strict": true,
     "skipLibCheck": true,
 
-    // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "outDir": "./dist",
-    "rootDir":"./src",
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
-      "@bot/*": ["bot/*"],
-      "@shared/*": ["bot/shared/*"],
-      "@database/*": ["database/*"],
-      "@core/*": ["core/*"],
-      "@types/*": ["types/*"],
+      "@bot/*": ["apps/bot/src/*"],
+      "@shared/*": ["apps/bot/src/shared/*"],
+      "@database/*": ["libs/database/src/*"],
+      "@core/*": ["libs/core/src/*"],
+      "@types/*": ["libs/types/src/*"]
     }
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["apps", "libs"],
+  "exclude": ["node_modules", "dist", "apps/activity", "apps/dashboard", "apps/api"]
 }

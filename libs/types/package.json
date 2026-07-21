@@ -1,0 +1,6 @@
+{
+  "name": "@robtic/types",
+  "private": true,
+  "type": "module",
+  "description": "Shared interfaces, types, enums, and DTOs"
+}

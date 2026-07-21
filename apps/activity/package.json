@@ -1,0 +1,6 @@
+{
+  "name": "@robtic/activity",
+  "private": true,
+  "type": "module",
+  "description": "Discord Embedded Activity (React + TypeScript + Vite + Discord Embedded App SDK). Architecture only — implementation pending."
+}

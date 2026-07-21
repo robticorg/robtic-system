@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/database",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Database layer: Mongoose models, repositories, and connection management"
+}

@@ -22,6 +22,51 @@
         "typescript": "^6.0.3",
       },
     },
+    "apps/activity": {
+      "name": "@robtic/activity",
+    },
+    "apps/api": {
+      "name": "@robtic/api",
+    },
+    "apps/bot": {
+      "name": "@robtic/bot",
+    },
+    "apps/dashboard": {
+      "name": "@robtic/dashboard",
+    },
+    "libs/cache": {
+      "name": "@robtic/cache",
+    },
+    "libs/config": {
+      "name": "@robtic/config",
+    },
+    "libs/constants": {
+      "name": "@robtic/constants",
+    },
+    "libs/core": {
+      "name": "@robtic/core",
+    },
+    "libs/database": {
+      "name": "@robtic/database",
+    },
+    "libs/events": {
+      "name": "@robtic/events",
+    },
+    "libs/logger": {
+      "name": "@robtic/logger",
+    },
+    "libs/sdk": {
+      "name": "@robtic/sdk",
+    },
+    "libs/shared": {
+      "name": "@robtic/shared",
+    },
+    "libs/types": {
+      "name": "@robtic/types",
+    },
+    "libs/utils": {
+      "name": "@robtic/utils",
+    },
   },
   "packages": {
     "@discordjs/builders": ["@discordjs/builders@1.14.1", "", { "dependencies": { "@discordjs/formatters": "^0.6.2", "@discordjs/util": "^1.2.0", "@sapphire/shapeshift": "^4.0.0", "discord-api-types": "^0.38.40", "fast-deep-equal": "^3.1.3", "ts-mixer": "^6.0.4", "tslib": "^2.6.3" } }, "sha512-gSKkhXLqs96TCzk66VZuHHl8z2bQMJFGwrXC0f33ngK+FLNau4hU1PYny3DNJfNdSH+gVMzE85/d5FQ2BpcNwQ=="],
@@ -61,6 +106,36 @@
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
     "@mongodb-js/saslprep": ["@mongodb-js/saslprep@1.4.11", "", { "dependencies": { "sparse-bitfield": "^3.0.3" } }, "sha512-o9rAHc0IpIjuPSxRutWpE1F62x7n+4mVS4rCNHkzhIUMQcc18bb6xEq5wd2NdN0WjepIyXIppRshYI2kQDOZVA=="],
+
+    "@robtic/activity": ["@robtic/activity@workspace:apps/activity"],
+
+    "@robtic/api": ["@robtic/api@workspace:apps/api"],
+
+    "@robtic/bot": ["@robtic/bot@workspace:apps/bot"],
+
+    "@robtic/cache": ["@robtic/cache@workspace:libs/cache"],
+
+    "@robtic/config": ["@robtic/config@workspace:libs/config"],
+
+    "@robtic/constants": ["@robtic/constants@workspace:libs/constants"],
+
+    "@robtic/core": ["@robtic/core@workspace:libs/core"],
+
+    "@robtic/dashboard": ["@robtic/dashboard@workspace:apps/dashboard"],
+
+    "@robtic/database": ["@robtic/database@workspace:libs/database"],
+
+    "@robtic/events": ["@robtic/events@workspace:libs/events"],
+
+    "@robtic/logger": ["@robtic/logger@workspace:libs/logger"],
+
+    "@robtic/sdk": ["@robtic/sdk@workspace:libs/sdk"],
+
+    "@robtic/shared": ["@robtic/shared@workspace:libs/shared"],
+
+    "@robtic/types": ["@robtic/types@workspace:libs/types"],
+
+    "@robtic/utils": ["@robtic/utils@workspace:libs/utils"],
 
     "@sapphire/async-queue": ["@sapphire/async-queue@1.5.5", "", {}, "sha512-cvGzxbba6sav2zZkH8GPf2oGk9yYoD5qrNWdu9fRehifgnFZJMV+nuy2nON2roRO4yQQ+v7MK/Pktl/HgfsUXg=="],
 

@@ -1,0 +1,7 @@
+{
+  "name": "@robtic/bot",
+  "private": true,
+  "type": "module",
+  "module": "src/index.ts",
+  "description": "Robtic Discord bot application (main, moderation, hr, modmail, community, dev)"
+}

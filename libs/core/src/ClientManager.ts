@@ -10,6 +10,7 @@ export class ClientManager {
     private clients = new Collection<BotName, BotClient>();
     private startTimes = new Collection<BotName, number>();
     private tokenToClient = new Map<string, BotClient>();
+    private botModulesRoot = `${import.meta.dir}/../../../apps/bot/src`;
     private static instance: ClientManager;
 
     private constructor() {}
@@ -19,6 +20,11 @@ export class ClientManager {
             ClientManager.instance = new ClientManager();
         }
         return ClientManager.instance;
+    }
+
+    /** Directory containing the per-bot module folders (commands/events/components); set by the app entrypoint. */
+    setBotModulesRoot(dir: string): void {
+        this.botModulesRoot = dir;
     }
 
     private resolveToken(name: BotName): string | undefined {
@@ -46,7 +52,7 @@ export class ClientManager {
             const errorHandler = new DiscordErrorHandler(client);
             errorHandler.init();
 
-            const sharedDir = `${import.meta.dir}/../bot/shared`;
+            const sharedDir = `${this.botModulesRoot}/shared`;
             await new ModuleLoader(client).loadEvents(sharedDir);
 
             this.tokenToClient.set(token, client);
@@ -55,7 +61,7 @@ export class ClientManager {
         }
 
         const loader = new ModuleLoader(client);
-        const botDir = `${import.meta.dir}/../bot/${definition.name}`;
+        const botDir = `${this.botModulesRoot}/${definition.name}`;
         const alreadyLoaded = client.loadedModules.includes(definition.name);
 
         await loader.loadCommands(`${botDir}/commands`);
