@@ -27,5 +27,5 @@
     }
   },
   "include": ["apps", "libs"],
-  "exclude": ["node_modules", "dist", "apps/activity", "apps/dashboard", "apps/api"]
+  "exclude": ["node_modules", "dist", "apps/activity", "apps/dashboard"]
 }
