@@ -6,9 +6,9 @@ import {
     ChannelType,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { XPSettingsRepository } from "@database/repositories";
-import { Colors } from "@core/config";
+import { COLORS } from "@constants";
 
 export default {
     data: new SlashCommandBuilder()
@@ -116,7 +116,7 @@ export default {
                     { name: "Staff Channels", value: staffChs },
                     { name: "Decay Enabled", value: settings.decayEnabled ? "Yes" : "No", inline: true },
                 )
-                .setColor(Colors.info)
+                .setColor(COLORS.info)
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });

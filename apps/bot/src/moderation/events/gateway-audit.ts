@@ -1,5 +1,5 @@
 import { Events } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { AuditLogRepository } from "@database/repositories";
 
 function isObject(value: unknown): value is Record<string, unknown> {

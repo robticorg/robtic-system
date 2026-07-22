@@ -11,7 +11,7 @@ export class SavedRolesRepository {
         return SavedRoles.findOneAndUpdate(
             { guildId, userId },
             { $set: { roles: [], ...input, leftAt: new Date() } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<ISavedRoles>;
     }
 

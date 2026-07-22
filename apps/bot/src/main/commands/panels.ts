@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type AutocompleteInteraction } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { panelList, panelSend, panelDelete, panelAutocompleteChoices, sentPanelAutocomplete } from "../utils/panels";
 
 export default {

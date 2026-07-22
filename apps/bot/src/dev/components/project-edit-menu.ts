@@ -1,4 +1,11 @@
 import { StringSelectMenuInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, LabelBuilder, FileUploadBuilder, MessageFlags } from "discord.js";
+import { PROJECT_FLOW_MESSAGES } from "@constants";
+
+const TEXT_MODALS = {
+    tutorial: { modalPrefix: "modal_tutorial_", inputId: "tutorial_link", style: TextInputStyle.Short, copy: PROJECT_FLOW_MESSAGES.editModals.tutorial },
+    additional_link: { modalPrefix: "modal_link_", inputId: "extra_link", style: TextInputStyle.Short, copy: PROJECT_FLOW_MESSAGES.editModals.link },
+    env: { modalPrefix: "modal_env_", inputId: "env_info", style: TextInputStyle.Paragraph, copy: PROJECT_FLOW_MESSAGES.editModals.env },
+} as const;
 
 export default {
     customId: /^project_edit_.*$/,
@@ -7,87 +14,48 @@ export default {
         const value = interaction.values[0];
 
         if (!value) {
-            await interaction.reply({ content: "Please select an option.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: PROJECT_FLOW_MESSAGES.selectAnOption, flags: MessageFlags.Ephemeral });
             return;
         }
 
-        if (value === "tutorial") {
-            const modal = new ModalBuilder()
-                .setCustomId(`modal_tutorial_${pendingId}`)
-                .setTitle("YouTube Tutorial");
-
-            const input = new TextInputBuilder()
-                .setCustomId("tutorial_link")
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder("https://youtube.com/...")
-                .setRequired(false);
-
-            const label = new LabelBuilder()
-                .setLabel("YouTube Link")
-                .setDescription("Leave empty to remove")
-                .setTextInputComponent(input);
-
-            modal.addLabelComponents(label);
-            await interaction.showModal(modal);
-            return;
-
-        } else if (value === "additional_link") {
-            const modal = new ModalBuilder()
-                .setCustomId(`modal_link_${pendingId}`)
-                .setTitle("Additional or Github Link");
-
-            const input = new TextInputBuilder()
-                .setCustomId("extra_link")
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder("https://...")
-                .setRequired(false);
-
-            const label = new LabelBuilder()
-                .setLabel("URL Link")
-                .setDescription("Leave empty to remove")
-                .setTextInputComponent(input);
-
-            modal.addLabelComponents(label);
-            await interaction.showModal(modal);
-            return;
-
-        } else if (value === "env") {
-            const modal = new ModalBuilder()
-                .setCustomId(`modal_env_${pendingId}`)
-                .setTitle(".env Info");
-
-            const input = new TextInputBuilder()
-                .setCustomId("env_info")
-                .setStyle(TextInputStyle.Paragraph)
-                .setPlaceholder("KEY=VALUE")
-                .setRequired(false);
-
-            const label = new LabelBuilder()
-                .setLabel(".env Information")
-                .setDescription("Leave empty to remove")
-                .setTextInputComponent(input);
-
-            modal.addLabelComponents(label);
-            await interaction.showModal(modal);
-            return;
-
-        } else if (value === "image") {
+        if (value === "image") {
+            const copy = PROJECT_FLOW_MESSAGES.editModals.image;
             const modal = new ModalBuilder()
                 .setCustomId(`modal_image_${pendingId}`)
-                .setTitle("Upload Image");
-                
-            const fileUpload = new FileUploadBuilder().setCustomId("image_upload");
+                .setTitle(copy.title);
+
             const label = new LabelBuilder()
-                .setLabel("Project Image")
-                .setDescription("Upload a screenshot (leave empty to skip)")
-                .setFileUploadComponent(fileUpload);
-                
+                .setLabel(copy.label)
+                .setDescription(copy.description)
+                .setFileUploadComponent(new FileUploadBuilder().setCustomId("image_upload"));
+
             modal.addLabelComponents(label);
             await interaction.showModal(modal);
             return;
-        } else {
-            await interaction.reply({ content: "Unknown project edit option.", flags: MessageFlags.Ephemeral });
+        }
+
+        const config = TEXT_MODALS[value as keyof typeof TEXT_MODALS];
+        if (!config) {
+            await interaction.reply({ content: PROJECT_FLOW_MESSAGES.unknownEditOption, flags: MessageFlags.Ephemeral });
             return;
         }
+
+        const modal = new ModalBuilder()
+            .setCustomId(`${config.modalPrefix}${pendingId}`)
+            .setTitle(config.copy.title);
+
+        const input = new TextInputBuilder()
+            .setCustomId(config.inputId)
+            .setStyle(config.style)
+            .setPlaceholder(config.copy.placeholder)
+            .setRequired(false);
+
+        const label = new LabelBuilder()
+            .setLabel(config.copy.label)
+            .setDescription(config.copy.description)
+            .setTextInputComponent(input);
+
+        modal.addLabelComponents(label);
+        await interaction.showModal(modal);
     }
-}
+};

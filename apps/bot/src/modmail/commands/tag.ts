@@ -9,9 +9,9 @@ import {
     AutocompleteInteraction,
 } from "discord.js";
 import { TagRepository } from "@database/repositories/TagRepository";
-import type { BotClient } from "@core/BotClient";
-import { TAG_VARIABLES_LIST } from "../utils/tagVariables";
-import { tagHelpEmbed } from "@shared/utils/help-embed";
+import type { BotClient } from "@core/bot-client";
+import { TAG_VARIABLES_LIST } from "../utils/tag-variables";
+import { tagHelpEmbed } from "@shared/utils/help";
 import messages from "../utils/messages.json";
 
 export default {

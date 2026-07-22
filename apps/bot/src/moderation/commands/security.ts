@@ -6,8 +6,8 @@ import {
     SlashCommandBuilder,
     type GuildMember,
 } from "discord.js";
-import { Colors } from "@core/config";
-import { errorEmbed } from "@core/utils";
+import { COLORS } from "@constants";
+import { errorEmbed } from "@utils";
 import { getMemberLevel, isManagerOf } from "@shared/utils/access";
 import {
     formatWindow,
@@ -260,7 +260,7 @@ export default {
         if (sub === "status") {
             const embed = new EmbedBuilder()
                 .setTitle("🛡️ Moderation Security Status")
-                .setColor(Colors.info)
+                .setColor(COLORS.info)
                 .addFields(
                     { name: "Enabled", value: String(config.enabled), inline: true },
                     { name: "Rules", value: String(config.rules.length), inline: true },
@@ -286,7 +286,7 @@ export default {
             config.enabled = enabled;
             const saved = await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Security system is now **${saved.enabled ? "ENABLED" : "DISABLED"}**.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Security system is now **${saved.enabled ? "ENABLED" : "DISABLED"}**.`)],
             });
             return;
         }
@@ -298,7 +298,7 @@ export default {
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Audit log channel for **${type}** set to <#${channel.id}>.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Audit log channel for **${type}** set to <#${channel.id}>.`)],
             });
             return;
         }
@@ -309,7 +309,7 @@ export default {
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Security alert channel set to <#${channel.id}>.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Security alert channel set to <#${channel.id}>.`)],
             });
             return;
         }
@@ -331,7 +331,7 @@ export default {
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Rule added: ${describeRule(rule, config.rules.length - 1)}`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Rule added: ${describeRule(rule, config.rules.length - 1)}`)],
             });
             return;
         }
@@ -358,7 +358,7 @@ export default {
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Removed rule: ${describeRule(selected, index)}`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Removed rule: ${describeRule(selected, index)}`)],
             });
             return;
         }
@@ -372,7 +372,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle("Security Rules")
-                .setColor(Colors.info)
+                .setColor(COLORS.info)
                 .setDescription(byEvent.join("\n\n"))
                 .setTimestamp();
 
@@ -402,7 +402,7 @@ export default {
             await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
-                        .setColor(Colors.success)
+                        .setColor(COLORS.success)
                         .setDescription(
                             `${sub === "whitelist-add" ? "Added to" : "Removed from"} whitelist: ${user ? `<@${user.id}>` : ""} ${role ? `<@&${role.id}>` : ""}`.trim()
                         ),
@@ -414,7 +414,7 @@ export default {
         if (sub === "whitelist-list") {
             const embed = new EmbedBuilder()
                 .setTitle("Security Whitelist")
-                .setColor(Colors.info)
+                .setColor(COLORS.info)
                 .addFields(
                     {
                         name: "Users",
@@ -443,7 +443,7 @@ export default {
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Added <@&${role.id}> to role strip list.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Added <@&${role.id}> to role strip list.`)],
             });
             return;
         }
@@ -454,7 +454,7 @@ export default {
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Removed <@&${role.id}> from role strip list.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Removed <@&${role.id}> from role strip list.`)],
             });
             return;
         }
@@ -463,7 +463,7 @@ export default {
             await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
-                        .setColor(Colors.info)
+                        .setColor(COLORS.info)
                         .setTitle("Role Strip List")
                         .setDescription(
                             config.settings.rolesToStrip.length > 0

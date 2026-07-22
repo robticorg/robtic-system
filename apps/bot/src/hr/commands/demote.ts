@@ -6,11 +6,11 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { StaffRepository } from "@database/repositories";
 import { hasDepartmentAuthority, hasFullPower } from "@shared/utils/access";
-import { moveStaffTier, categoryLabel } from "../utils/staffPromotion";
+import { moveStaffTier, categoryLabel } from "../utils/staff-promotion";
 
 export default {
     data: new SlashCommandBuilder()
@@ -74,7 +74,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("✅ تم التخفيض")
-            .setColor(Colors.moderation)
+            .setColor(COLORS.moderation)
             .setDescription(
                 `تم تخفيض <@${targetId}> من **${result.previousTierName}** إلى **${result.newTierName}**.` +
                 (crossedCategory ? `\n\nأصبح الآن **${newCategory}**.` : "")

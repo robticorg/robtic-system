@@ -5,8 +5,8 @@ import {
     MessageFlags,
 } from "discord.js";
 import { ActivityRepository } from "@database/repositories";
-import { Colors } from "@core/config";
-import { calculateLevel } from "../services/xp-service";
+import { COLORS } from "@constants";
+import { calculateLevel } from "../services/xp";
 
 export default {
     data: new SlashCommandBuilder()
@@ -44,7 +44,7 @@ export default {
         const embed = new EmbedBuilder()
             .setTitle("🏆 XP Leaderboard")
             .setDescription(lines.join("\n"))
-            .setColor(Colors.activity)
+            .setColor(COLORS.activity)
             .setFooter({ text: `Page ${page}` })
             .setTimestamp();
 

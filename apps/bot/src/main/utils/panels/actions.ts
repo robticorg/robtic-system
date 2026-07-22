@@ -9,7 +9,8 @@ import {
     ButtonBuilder,
     ActionRowBuilder,
 } from "discord.js";
-import { BRANCH_CONFIG, Colors } from "@core/config";
+import { BRANCH_CONFIG } from "@config";
+import { COLORS } from "@constants";
 import { getPanel, listPanels, getPanelKeys } from "./registry";
 import { ServerConfigRepository } from "@database/repositories/ServerConfigRepository";
 import { getUserLang } from "@shared/utils/lang";
@@ -36,7 +37,7 @@ export async function panelList(interaction: ChatInputCommandInteraction) {
     const embed = new EmbedBuilder()
         .setTitle("📋 Available Panels")
         .setDescription(lines.join("\n"))
-        .setColor(Colors.info)
+        .setColor(COLORS.info)
         .setFooter({ text: `${panels.length} panel(s) available` })
         .setTimestamp();
 
@@ -78,7 +79,7 @@ export async function panelSend(interaction: ChatInputCommandInteraction) {
     }
 
     const embed = new EmbedBuilder()
-        .setColor(panel.accentColor ?? Colors.default)
+        .setColor(panel.accentColor ?? COLORS.default)
         .setTitle(name)
         .setDescription(panel.description ?? "")
         .setImage(`${BRANCH_CONFIG.server.githubAssetsBase}/utils/discord/rules.png`)

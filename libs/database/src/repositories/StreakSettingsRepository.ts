@@ -34,6 +34,15 @@ export class StreakSettingsRepository {
         ) as Promise<IStreakSettings>;
     }
 
+    /** Replaces the whole channel list at once — used by the admin config panel. */
+    static async setChannels(guildId: string, channels: string[]): Promise<IStreakSettings> {
+        return StreakSettings.findOneAndUpdate(
+            { guildId },
+            { $set: { channels } },
+            { upsert: true, returnDocument: "after" }
+        ) as Promise<IStreakSettings>;
+    }
+
     static async setRemindersEnabled(guildId: string, enabled: boolean): Promise<IStreakSettings> {
         return StreakSettings.findOneAndUpdate(
             { guildId },

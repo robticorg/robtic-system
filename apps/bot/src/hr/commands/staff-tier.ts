@@ -5,8 +5,8 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors, SUPER_ADMIN_ID, ROLE_MAP, PERMISSION_HIERARCHY } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS, SUPER_ADMIN_ID, ROLE_MAP, PERMISSION_HIERARCHY } from "@constants";
 import { StaffTierRepository } from "@database/repositories";
 import { hasFullPower } from "@shared/utils/access";
 
@@ -81,7 +81,7 @@ export default {
         const member = interaction.member as GuildMember | null;
         if (interaction.user.id !== SUPER_ADMIN_ID && !(member && hasFullPower(member))) {
             await interaction.reply({
-                embeds: [new EmbedBuilder().setDescription("❌ You are not authorized to use this command.").setColor(Colors.error)],
+                embeds: [new EmbedBuilder().setDescription("❌ You are not authorized to use this command.").setColor(COLORS.error)],
                 flags: MessageFlags.Ephemeral,
             });
             return;
@@ -96,7 +96,7 @@ export default {
             const existing = await StaffTierRepository.list(guildId);
             if (existing.length > 0) {
                 await interaction.editReply({
-                    embeds: [new EmbedBuilder().setDescription(`❌ This server already has ${existing.length} tier(s) configured — refusing to overwrite. Use \`/staff-tier remove\` first if you really want to re-migrate.`).setColor(Colors.error)],
+                    embeds: [new EmbedBuilder().setDescription(`❌ This server already has ${existing.length} tier(s) configured — refusing to overwrite. Use \`/staff-tier remove\` first if you really want to re-migrate.`).setColor(COLORS.error)],
                 });
                 return;
             }
@@ -123,7 +123,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setTitle("✅ Migration Complete")
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setDescription(`Seeded ${created} tier(s) from the old global branch config into this server's own staff tier list.`)],
             });
             return;
@@ -139,7 +139,7 @@ export default {
             const existing = await StaffTierRepository.get(guildId, key);
             if (existing) {
                 await interaction.editReply({
-                    embeds: [new EmbedBuilder().setDescription(`❌ A tier with key \`${key}\` already exists.`).setColor(Colors.error)],
+                    embeds: [new EmbedBuilder().setDescription(`❌ A tier with key \`${key}\` already exists.`).setColor(COLORS.error)],
                 });
                 return;
             }
@@ -149,7 +149,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setTitle("✅ Tier Created")
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .addFields(
                         { name: "Key", value: `\`${key}\``, inline: true },
                         { name: "Name", value: name, inline: true },
@@ -168,7 +168,7 @@ export default {
             const tier = await StaffTierRepository.get(guildId, key);
             if (!tier) {
                 await interaction.editReply({
-                    embeds: [new EmbedBuilder().setDescription(`❌ No tier with key \`${key}\` exists.`).setColor(Colors.error)],
+                    embeds: [new EmbedBuilder().setDescription(`❌ No tier with key \`${key}\` exists.`).setColor(COLORS.error)],
                 });
                 return;
             }
@@ -180,7 +180,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setTitle(sub === "add-role" ? "✅ Role Added" : "✅ Role Removed")
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setDescription(`Tier \`${key}\` now has: ${updated?.roleIds.length ? updated.roleIds.map(id => `<@&${id}>`).join(", ") : "no roles bound"}`)],
             });
             return;
@@ -193,7 +193,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setDescription(removed ? `✅ Tier \`${key}\` deleted.` : `❌ No tier with key \`${key}\` exists.`)
-                    .setColor(removed ? Colors.success : Colors.error)],
+                    .setColor(removed ? COLORS.success : COLORS.error)],
             });
             return;
         }
@@ -214,7 +214,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setTitle("✅ Category Bound")
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setDescription(`<@&${role.id}> is now **${CATEGORY_LABELS[category]}** (score ${CATEGORY_SCORES[category]}) for the **${department}** department.`)],
             });
             return;
@@ -224,7 +224,7 @@ export default {
         const tiers = await StaffTierRepository.list(guildId);
         if (!tiers.length) {
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setDescription("No staff tiers configured for this server yet.").setColor(Colors.info)],
+                embeds: [new EmbedBuilder().setDescription("No staff tiers configured for this server yet.").setColor(COLORS.info)],
             });
             return;
         }
@@ -239,7 +239,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("Staff Tiers")
-            .setColor(Colors.info)
+            .setColor(COLORS.info)
             .setTimestamp();
 
         for (const [department, group] of grouped) {

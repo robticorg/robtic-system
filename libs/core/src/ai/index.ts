@@ -1,7 +1,7 @@
-export { AiClient } from "./AiClient";
-export { classifyMessage } from "./MessageClassifier";
-export { analyzeSupportMessage, type SupportAnalysis } from "./SupportAnalyzer";
-export { analyzeActivity, analyzeStaffActivity } from "./ActivityAnalyzer";
+export { AiClient } from "./ai-client";
+export { classifyMessage } from "./message-classifier";
+export { analyzeSupportMessage, type SupportAnalysis } from "./support-analyzer";
+export { analyzeActivity, analyzeStaffActivity } from "./activity-analyzer";
 export {
     buildSupportClassificationPrompt,
     buildActivityPrompt,
@@ -20,4 +20,4 @@ export {
     type SessionQualityResult,
     type UserSentimentResult,
     type StaffChatCheckResult,
-} from "./SupportQualityAnalyzer";
+} from "./support-quality-analyzer";

@@ -1,6 +1,6 @@
-import { StringSelectMenuInteraction, MessageFlags, GuildMember } from "discord.js";
+import { StringSelectMenuInteraction, MessageFlags } from "discord.js";
 import { ProjectShareRepository } from "@database/repositories";
-import { buildProjectContainer } from "@bot/dev/utils/project-flow";
+import { buildPendingProjectContainer } from "@bot/dev/utils/build-pending-project-container";
 
 export default {
     customId: /^project_sys_type_.*$/,
@@ -11,9 +11,9 @@ export default {
 
         await ProjectShareRepository.updatePendingById(pendingId, { type: selectedType });
 
-        const container = await buildProjectContainer(pendingId, interaction.member as GuildMember);
+        const container = await buildPendingProjectContainer(pendingId);
         if (container) {
             await interaction.editReply({ components: [container], embeds: [], flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral });
         }
     }
-}
+};

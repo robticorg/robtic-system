@@ -1,6 +1,6 @@
 import { Events, type GuildMember } from "discord.js";
 import { StreakRepository } from "@database/repositories";
-import { applyStreakRole } from "../utils/streakRole";
+import { applyStreakRole } from "../utils/streak-role";
 import { handleError, BotError } from "@core/handlers";
 
 export default {

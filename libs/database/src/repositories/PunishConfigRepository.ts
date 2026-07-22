@@ -30,7 +30,7 @@ export class PunishConfigRepository {
         const config = await PunishConfig.findOneAndUpdate(
             { guildId },
             { $addToSet: { shortcutRoleIds: roleId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as IPunishConfig;
         this.invalidate(guildId);
         return config;
@@ -40,7 +40,18 @@ export class PunishConfigRepository {
         const config = await PunishConfig.findOneAndUpdate(
             { guildId },
             { $pull: { shortcutRoleIds: roleId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
+        ) as IPunishConfig;
+        this.invalidate(guildId);
+        return config;
+    }
+
+    /** Replaces the whole shortcut-role list at once — used by the admin config panel. */
+    static async setShortcutRoles(guildId: string, roleIds: string[]): Promise<IPunishConfig> {
+        const config = await PunishConfig.findOneAndUpdate(
+            { guildId },
+            { $set: { shortcutRoleIds: roleIds } },
+            { upsert: true, returnDocument: "after" }
         ) as IPunishConfig;
         this.invalidate(guildId);
         return config;
@@ -50,7 +61,7 @@ export class PunishConfigRepository {
         const config = await PunishConfig.findOneAndUpdate(
             { guildId },
             { $set: { pointsPerAction: points } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as IPunishConfig;
         this.invalidate(guildId);
         return config;
@@ -60,7 +71,7 @@ export class PunishConfigRepository {
         const config = await PunishConfig.findOneAndUpdate(
             { guildId },
             { $set: { proofChannelId: channelId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as IPunishConfig;
         this.invalidate(guildId);
         return config;

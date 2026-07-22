@@ -30,7 +30,7 @@ export class HrConfigRepository {
         const config = await HrConfig.findOneAndUpdate(
             { guildId },
             { $set: { staffWarnLogChannelId: channelId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as IHrConfig;
         this.invalidate(guildId);
         return config;
@@ -40,7 +40,7 @@ export class HrConfigRepository {
         const config = await HrConfig.findOneAndUpdate(
             { guildId },
             { $addToSet: { staffWarnShortcutRoleIds: roleId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as IHrConfig;
         this.invalidate(guildId);
         return config;
@@ -50,7 +50,7 @@ export class HrConfigRepository {
         const config = await HrConfig.findOneAndUpdate(
             { guildId },
             { $pull: { staffWarnShortcutRoleIds: roleId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as IHrConfig;
         this.invalidate(guildId);
         return config;

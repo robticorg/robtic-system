@@ -1,7 +1,7 @@
 import { Events, type Message } from "discord.js";
 import { ActivityRepository, PeriodicStatRepository } from "@database/repositories";
-import { isAcceptableMessage } from "@core/utils";
-import { MESSAGE_STATS_CONFIG } from "@core/config";
+import { isAcceptableMessage } from "@utils";
+import { MESSAGE_STATS_CONFIG } from "@constants";
 import { handleError, BotError } from "@core/handlers";
 
 /**

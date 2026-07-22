@@ -1,11 +1,12 @@
 import { MessageFlags, type ButtonInteraction } from "discord.js";
+import { PROJECT_BROWSER_MESSAGES } from "@constants";
 
-export const devPanelConfig = {
+export default {
     customId: /^dev_panel_config:.+$/,
     async run(interaction: ButtonInteraction) {
         await interaction.reply({
-            content: "Soon ...",
-            flags: MessageFlags.Ephemeral
+            content: PROJECT_BROWSER_MESSAGES.comingSoon,
+            flags: MessageFlags.Ephemeral,
         });
     }
-}
+};

@@ -3,7 +3,7 @@ import {
     type Guild,
     PermissionFlagsBits,
 } from "discord.js";
-import { Logger } from "@core/libs";
+import { Logger } from "@logger";
 
 const checkChannelPermission = (channel: GuildTextBasedChannel, permission: keyof typeof PermissionFlagsBits, status: boolean) => {
     Logger.debug(channel.permissionsFor(channel.guild.id)?.has(PermissionFlagsBits[permission]));

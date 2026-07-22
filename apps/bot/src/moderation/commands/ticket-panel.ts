@@ -11,7 +11,7 @@ import {
     StringSelectMenuOptionBuilder,
     type TextChannel,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { TICKET_CATEGORIES, TICKET_PANEL_COLOR, TICKET_MANAGER_EMOJI } from "../config/ticket";
 
 export function buildTicketPanel(): ContainerBuilder {

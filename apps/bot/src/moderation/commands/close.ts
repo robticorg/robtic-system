@@ -7,11 +7,11 @@ import {
     TextDisplayBuilder,
     type TextChannel,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { TicketRepository, ActivityRepository, ActivityLogRepository } from "@database/repositories";
-import { Logger } from "@core/libs";
-import { requireOpenTicket, requireTicketStaff } from "../utils/ticketGuard";
-import { ticketCard } from "../utils/ticketCard";
+import { Logger } from "@logger";
+import { requireOpenTicket, requireTicketStaff } from "../utils/ticket-guard";
+import { ticketCard } from "../utils/ticket-card";
 import { TICKET_CLOSED_COLOR, TICKET_REPORT_CHANNEL_ID } from "../config/ticket";
 
 export default {

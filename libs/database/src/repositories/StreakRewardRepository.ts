@@ -5,7 +5,7 @@ export class StreakRewardRepository {
         return StreakReward.findOneAndUpdate(
             { guildId, threshold },
             { $set: { offer, createdBy } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<IStreakReward>;
     }
 

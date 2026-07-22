@@ -1,0 +1,29 @@
+export type TopCategory = "streak" | "combo" | "xp" | "messages";
+
+export const TOP_CATEGORIES: TopCategory[] = ["streak", "combo", "xp", "messages"];
+
+/** Emoji shown in each leaderboard's title. */
+export const TOP_CATEGORY_EMOJI: Record<TopCategory, string> = {
+    streak: "🔥",
+    combo: "💬",
+    xp: "⭐",
+    messages: "📨",
+};
+
+/** How many ranks the leaderboard shows by default. */
+export const TOP_DISPLAY_LIMIT = 5;
+
+/** How far to scan for the viewer's own rank when outside the top 5. */
+export const VIEWER_RANK_SCAN_LIMIT = 100;
+
+/** Separator inserted when the viewer's rank is far below the displayed top. */
+export const TOP_RANK_GAP_SEPARATOR = "....";
+
+/** Lookback windows for period-scoped streak leaderboards. */
+export const TOP_PERIOD_TO_DAYS: Record<"weekly" | "monthly", number> = { weekly: 7, monthly: 30 };
+
+/** Maximum autocomplete suggestions returned by the Activity's profile search. */
+export const PROFILE_SEARCH_LIMIT = 8;
+
+/** Rows returned per page by the Activity's leaderboard view. */
+export const ACTIVITY_LEADERBOARD_LIMIT = 10;

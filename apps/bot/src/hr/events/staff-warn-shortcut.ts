@@ -1,8 +1,8 @@
 import { Events, type Message, type GuildMember } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { DEFAULT_PREFIX } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { DEFAULT_PREFIX } from "@constants";
 import { ServerConfigRepository, HrConfigRepository } from "@database/repositories";
-import { parsePrefixCommand, runPrefixShortcut } from "@shared/utils/prefixShortcutRunner";
+import { parsePrefixCommand, runPrefixShortcut } from "@shared/utils/prefix";
 
 /** Same schema-driven prefix plumbing as moderation's punish-shortcut.ts, restricted to staff-warn (its own separate shortcut-role gate — see hr-shortcut.ts for every other hr command). */
 export default {

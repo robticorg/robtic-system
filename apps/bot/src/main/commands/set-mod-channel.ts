@@ -6,7 +6,7 @@ import {
     ActionRowBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 
 const MOD_CHANNEL_REGISTRY = {
     modmail: { label: "ModMail Channel", description: "Channel where modmail threads are created" },

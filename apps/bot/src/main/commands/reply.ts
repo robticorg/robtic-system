@@ -7,7 +7,7 @@ import {
     MessageFlags,
 } from "discord.js";
 import { ReplyRepository } from "@database/repositories/ReplyRepository";
-import { Colors } from "@core/config";
+import { COLORS } from "@constants";
 
 export default {
     data: new SlashCommandBuilder()
@@ -90,7 +90,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle(`Reply Settings for: ${msg}`)
                 .setDescription(`Current replies: ${replyData.replies.map((r: string) => `• ${r}`).join("\n")}`)
-                .setColor(Colors.info || 0x3498DB);
+                .setColor(COLORS.info || 0x3498DB);
             // Add more fields for special channels/roles/blocklist if needed
             await interaction.editReply({ embeds: [embed] });
         }

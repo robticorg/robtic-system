@@ -1,6 +1,6 @@
 import { Events, type Message } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { findShortcutMatch, runCustomCommandShortcut } from "@shared/utils/customShortcutRunner";
+import type { BotClient } from "@core/bot-client";
+import { findShortcutMatch, runCustomCommandShortcut } from "@shared/utils/prefix";
 
 /** Lets /shortcut add target main bot's own commands too, not just moderation/hr. */
 export default {

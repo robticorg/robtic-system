@@ -9,12 +9,13 @@ import {
     ButtonStyle,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { BRANCH_CONFIG, Colors, MembersPunishments, PunishmentsSystem } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { BRANCH_CONFIG } from "@config";
+import { COLORS, MEMBER_PUNISHMENTS, PUNISHMENT_POINTS } from "@constants";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
-import { errorEmbed } from "@core/utils";
+import { errorEmbed } from "@utils";
 import { getUserLang, t } from "@shared/utils/lang";
-import { needsProof, buildProofModal, sendShortcutProofDM, awardPunishPoints } from "../utils/punishFlow";
+import { needsProof, buildProofModal, sendShortcutProofDM, awardPunishPoints } from "../utils/punish-flow";
 
 export async function executeWarn(
     client: BotClient,
@@ -37,11 +38,11 @@ export async function executeWarn(
         active: true,
     });
 
-    const newLevel = await PunishmentRepository.addPunishmentLevel(targetId, targetUsername, PunishmentsSystem.warn);
+    const newLevel = await PunishmentRepository.addPunishmentLevel(targetId, targetUsername, PUNISHMENT_POINTS.warn);
     const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
 
     if (member) {
-        const allPunishmentRoleIds = Object.values(MembersPunishments).map(p => p.id);
+        const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
         const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
         for (const [, role] of rolesToRemove) {
             await member.roles.remove(role).catch(() => null);
@@ -50,11 +51,11 @@ export async function executeWarn(
             await member.roles.add(levelInfo.roleId).catch(() => null);
         }
 
-        if (newLevel >= MembersPunishments.tempMute.level && newLevel < MembersPunishments.tempBan.level) {
+        if (newLevel >= MEMBER_PUNISHMENTS.tempMute.level && newLevel < MEMBER_PUNISHMENTS.tempBan.level) {
             await member.timeout(24 * 60 * 60 * 1000, `Auto-mute: punishment level ${newLevel}`).catch(() => null);
         }
-        if (newLevel >= MembersPunishments.permBan.level) {
-            await member.roles.add(MembersPunishments.permBan.id).catch(() => null);
+        if (newLevel >= MEMBER_PUNISHMENTS.permBan.level) {
+            await member.roles.add(MEMBER_PUNISHMENTS.permBan.id).catch(() => null);
         }
     }
 
@@ -65,7 +66,7 @@ export async function executeWarn(
 
         const dmEmbed = new EmbedBuilder()
             .setTitle(t("moderation.warn_title", lang))
-            .setColor(Colors.warning)
+            .setColor(COLORS.warning)
             .setDescription(t("moderation.warn_desc", lang, { reason: localReason }))
             .setTimestamp();
 
@@ -82,7 +83,7 @@ export async function executeWarn(
 
     const embed = new EmbedBuilder()
         .setTitle("⚠️ Warning Issued")
-        .setColor(Colors.warning)
+        .setColor(COLORS.warning)
         .addFields(
             { name: "User", value: `<@${targetId}>`, inline: true },
             { name: "Moderator", value: `<@${moderatorId}>`, inline: true },
@@ -194,11 +195,11 @@ export default {
             }
 
             await PunishmentRepository.appeal(caseId, reason);
-            const newLevel = await PunishmentRepository.removePunishmentLevel(target.id, target.username, PunishmentsSystem.warn);
+            const newLevel = await PunishmentRepository.removePunishmentLevel(target.id, target.username, PUNISHMENT_POINTS.warn);
             const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
 
             if (member) {
-                const allPunishmentRoleIds = Object.values(MembersPunishments).map(p => p.id);
+                const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
                 const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
                 for (const [, role] of rolesToRemove) {
                     await member.roles.remove(role).catch(() => null);
@@ -210,7 +211,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle("✅ Warning Appealed")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .addFields(
                     { name: "User", value: `<@${target.id}>`, inline: true },
                     { name: "Case", value: `\`${caseId}\``, inline: true },
@@ -228,7 +229,7 @@ export default {
 
             if (!warns.length) {
                 await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no warnings.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
+                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no warnings.`).setColor(COLORS.info)], flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -240,7 +241,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle(`⚠️ Warnings for ${target.username}`)
                 .setDescription(lines.join("\n\n"))
-                .setColor(Colors.warning)
+                .setColor(COLORS.warning)
                 .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${warns.length} warning(s)` })
                 .setTimestamp();
 

@@ -1,7 +1,7 @@
 import { AuditLogEvent, EmbedBuilder, Events, type GuildChannel } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
-import { sendToServerLog } from "@shared/utils/sendToServerLog";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
+import { sendToServerLog } from "@shared/utils/server-log";
 
 export default {
     name: Events.ChannelUpdate,
@@ -30,7 +30,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("📘 Audit: Channel Updated")
-            .setColor(Colors.warning)
+            .setColor(COLORS.warning)
             .addFields(
                 { name: "Channel", value: `${newChannel.toString()} (\`${newChannel.id}\`)` },
                 { name: "Changes", value: changes.join("\n") },

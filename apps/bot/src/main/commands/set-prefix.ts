@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder, MessageFlags } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors, DEFAULT_PREFIX } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS, DEFAULT_PREFIX } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
 export default {
@@ -20,7 +20,7 @@ export default {
         const prefix = interaction.options.getString("prefix", true).trim();
         if (!prefix || /\s/.test(prefix)) {
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setDescription("❌ Prefix can't be empty or contain spaces.").setColor(Colors.error)],
+                embeds: [new EmbedBuilder().setDescription("❌ Prefix can't be empty or contain spaces.").setColor(COLORS.error)],
             });
             return;
         }
@@ -30,7 +30,7 @@ export default {
         await interaction.editReply({
             embeds: [new EmbedBuilder()
                 .setTitle("✅ Prefix Updated")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .setDescription(`Text commands in this server now use \`${prefix}\` (e.g. \`${prefix}profile\`). Default is \`${DEFAULT_PREFIX}\` when unset.`)],
         });
     },

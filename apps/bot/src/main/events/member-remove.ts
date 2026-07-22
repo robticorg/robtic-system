@@ -1,6 +1,6 @@
 import { Events, type GuildMember } from "discord.js";
 import { SavedRolesRepository, StaffRepository, StaffTierRepository } from "@database/repositories";
-import { Logger } from "@core/libs";
+import { Logger } from "@logger";
 
 export default {
     name: Events.GuildMemberRemove,

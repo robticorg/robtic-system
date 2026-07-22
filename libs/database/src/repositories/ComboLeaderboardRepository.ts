@@ -1,5 +1,5 @@
 import { ComboLeaderboardEntry, type IComboLeaderboardEntry } from "@database/models/ComboLeaderboardEntry";
-import type { ComboLeaderboardPeriod, ComboLeaderboardType } from "@core/config";
+import type { ComboLeaderboardPeriod, ComboLeaderboardType } from "@constants";
 
 export interface ComboLeaderboardUpsert {
     guildId: string;

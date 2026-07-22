@@ -8,10 +8,10 @@ import {
     PermissionFlagsBits,
     type TextChannel,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { SubmitConfigRepository, SubmissionTypeRepository } from "@database/repositories";
-import { updatePanel } from "../utils/updatePanel";
+import { updatePanel } from "../utils/update-panel";
 
 export default {
     data: new SlashCommandBuilder()
@@ -48,7 +48,7 @@ export default {
                     new EmbedBuilder()
                         .setTitle("✅ Submit Review Channel Set")
                         .setDescription(`All staff submissions will now be sent to ${channel}.`)
-                        .setColor(Colors.success),
+                        .setColor(COLORS.success),
                 ],
             });
             return;
@@ -71,7 +71,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle("📋 Staff Applications")
                 .setDescription("No submission types are currently open for applications.\nCheck back later!")
-                .setColor(Colors.error)
+                .setColor(COLORS.error)
                 .setTimestamp();
 
             const msg = await panelChannel.send({ embeds: [embed] });
@@ -90,7 +90,7 @@ export default {
                     new EmbedBuilder()
                         .setTitle("✅ Application Panel Posted")
                         .setDescription(`Panel posted in ${panelChannel}. Use \`/staff-submit open <department>\` to open applications.`)
-                        .setColor(Colors.success),
+                        .setColor(COLORS.success),
                 ],
             });
         }

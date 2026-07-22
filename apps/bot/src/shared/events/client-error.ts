@@ -1,6 +1,7 @@
-import { sendAlert } from "@core/utils/sendAlert";
+import { sendAlert } from "@core/status/send-alert";
 import { Events } from "discord.js";
-import { Logger } from "@core/libs/logger";
+import { Logger } from "@logger";
+import { ALERT_MESSAGES } from "@constants";
 
 export default {
     name: Events.Error,
@@ -13,9 +14,9 @@ export default {
 
         Logger.error(`Client Error: ${error.message}`, "Client");
         await sendAlert({
-            title: "Discord Client Error",
-            description: "The bot encountered a critical client error",
-            color: 15158332,
+            title: ALERT_MESSAGES.clientError.title,
+            description: ALERT_MESSAGES.clientError.description,
+            color: ALERT_MESSAGES.clientError.color,
             fields: [
                 { name: "Error", value: error.toString() }
             ]

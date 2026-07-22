@@ -1,5 +1,5 @@
 import { Schema, model, type Document } from "mongoose";
-import { COMBO_LEVELS } from "@core/config";
+import { COMBO_LEVELS } from "@constants";
 
 export type ComboStatus = "active" | "ended";
 

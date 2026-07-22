@@ -1,4 +1,4 @@
-import type { ClientManager } from "@core/ClientManager";
+import type { ClientManager } from "@core/client-manager";
 import type { ChatInputCommandInteraction } from "discord.js";
 
 export async function disableSystemCommands(interaction: ChatInputCommandInteraction, manager: ClientManager) {

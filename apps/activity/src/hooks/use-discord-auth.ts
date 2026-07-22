@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
-import type { DiscordAuth } from "@robtic/sdk";
+import type { DiscordSession } from "@robtic/sdk";
 import { setupDiscordSdk } from "../services/discord/setup-discord-sdk";
+
+/** SDK RPC failures reject with plain objects ({code, message}), not Error instances. */
+function describeError(err: unknown): string {
+    if (err instanceof Error) return err.message;
+    try {
+        return JSON.stringify(err);
+    } catch {
+        return String(err);
+    }
+}
 
 export type DiscordAuthState =
     | { status: "connecting" }
-    | { status: "authenticated"; auth: DiscordAuth }
+    | { status: "authenticated"; session: DiscordSession }
     | { status: "error"; message: string };
 
 export function useDiscordAuth(): DiscordAuthState {
@@ -14,11 +24,11 @@ export function useDiscordAuth(): DiscordAuthState {
         let cancelled = false;
 
         setupDiscordSdk()
-            .then((auth) => {
-                if (!cancelled) setState({ status: "authenticated", auth });
+            .then((session) => {
+                if (!cancelled) setState({ status: "authenticated", session });
             })
             .catch((err: unknown) => {
-                if (!cancelled) setState({ status: "error", message: err instanceof Error ? err.message : String(err) });
+                if (!cancelled) setState({ status: "error", message: describeError(err) });
             });
 
         return () => {

@@ -20,7 +20,7 @@ export class ServerConfigRepository {
         return ServerConfig.findOneAndUpdate(
             { guildId },
             { $set: { [`roles.${type}`]: roleId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<IServerConfig>;
     }
 
@@ -33,7 +33,7 @@ export class ServerConfigRepository {
         return ServerConfig.findOneAndUpdate(
             { guildId },
             { $set: { modmailChannelId: channelId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<IServerConfig>;
     }
 
@@ -46,7 +46,7 @@ export class ServerConfigRepository {
         const config = await ServerConfig.findOneAndUpdate(
             { guildId },
             { $set: { prefix } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as IServerConfig;
         prefixCache.set(guildId, { prefix: config.prefix ?? null, expiresAt: Date.now() + PREFIX_CACHE_TTL_MS });
         return config;
@@ -67,7 +67,7 @@ export class ServerConfigRepository {
         return ServerConfig.findOneAndUpdate(
             { guildId },
             { $set: { commandsChannelId: channelId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<IServerConfig>;
     }
 
@@ -80,7 +80,7 @@ export class ServerConfigRepository {
         return ServerConfig.findOneAndUpdate(
             { guildId },
             { $addToSet: { lineChannelIds: channelId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<IServerConfig>;
     }
 

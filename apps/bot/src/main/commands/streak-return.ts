@@ -5,10 +5,10 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { StreakRepository, StreakRecoveryRepository } from "@database/repositories";
-import { Colors, STREAK_CONFIG } from "@core/config";
-import { applyStreakRole } from "../utils/streakRole";
+import { COLORS, STREAK_CONFIG } from "@constants";
+import { applyStreakRole } from "../utils/streak-role";
 import { getUserLang, t } from "@shared/utils/lang";
 
 export default {
@@ -25,13 +25,13 @@ export default {
 
         const recovery = await StreakRecoveryRepository.find(userId, guildId);
         if (!recovery) {
-            await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(t("streak.return_nothing", lang)).setColor(Colors.info)] });
+            await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(t("streak.return_nothing", lang)).setColor(COLORS.info)] });
             return;
         }
 
         const withinWindow = Date.now() - recovery.expiredAt.getTime() <= STREAK_CONFIG.recoveryWindowMs;
         if (!withinWindow) {
-            await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(t("streak.return_expired", lang)).setColor(Colors.warning)] });
+            await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(t("streak.return_expired", lang)).setColor(COLORS.warning)] });
             return;
         }
 
@@ -41,7 +41,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder().setDescription(
                     t("streak.return_not_needed", lang, { current: `${current.currentStreak}`, last: `${recovery.currentStreak}` })
-                ).setColor(Colors.info)],
+                ).setColor(COLORS.info)],
             });
             return;
         }
@@ -56,7 +56,7 @@ export default {
         await interaction.editReply({
             embeds: [new EmbedBuilder()
                 .setDescription(t("streak.return_success", lang, { streak: `${recovery.currentStreak}` }))
-                .setColor(Colors.success)],
+                .setColor(COLORS.success)],
         });
     },
 };

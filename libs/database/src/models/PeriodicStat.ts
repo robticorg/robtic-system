@@ -1,5 +1,5 @@
 import { Schema, model, type Document } from "mongoose";
-import type { ComboLeaderboardPeriod } from "@core/config";
+import type { ComboLeaderboardPeriod } from "@constants";
 
 export type PeriodicStatMetric = "xp" | "messages";
 

@@ -1,8 +1,8 @@
 import { ContainerBuilder, ButtonStyle } from "discord.js";
 import type { PanelDefinition } from "../registry";
 import type { Lang } from "@shared/utils/lang";
-import emoji from "@shared/emojis.json";
-import { BRANCH_CONFIG } from "@core/config";
+import { BRANCH_EMOJIS as emoji } from "@config";
+import { BRANCH_CONFIG } from "@config";
 
 function englishRules(): ContainerBuilder {
     return new ContainerBuilder()

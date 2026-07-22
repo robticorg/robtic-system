@@ -2,10 +2,10 @@ import {
     Events,
     type Interaction,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient.ts";
-import { Logger } from "@core/libs";
+import type { BotClient } from "@core/bot-client";
+import { Logger } from "@logger";
 import { classifyError } from "@core/handlers";
-import { checkPermissions, commandError, cooldowns, releaseCooldown, HandlingComponent } from "../utils/interaction-helper";
+import { checkPermissions, commandError, cooldowns, releaseCooldown, HandlingComponent } from "../utils/interaction";
 
 export default {
     name: Events.InteractionCreate,

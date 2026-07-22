@@ -1,7 +1,8 @@
-import type { ClientManager } from "@core/ClientManager";
-import { BOT_DEFINITIONS, Colors } from "@core/config";
-import { buildSystemStatusEmbed, configureStatusPanel, getConfiguredStatusPanel, registerStatusClient } from "@core/utils";
-import { formatDuration } from "@core/utils";
+import type { ClientManager } from "@core/client-manager";
+import { BOT_DEFINITIONS } from "@config";
+import { COLORS } from "@constants";
+import { buildSystemStatusEmbed, configureStatusPanel, getConfiguredStatusPanel, registerStatusClient } from "@core/status/status";
+import { formatDuration } from "@utils";
 import { EmbedBuilder, type ChatInputCommandInteraction } from "discord.js";
 
 export async function systemStatus(interaction: ChatInputCommandInteraction, manager: ClientManager) {
@@ -50,7 +51,7 @@ export async function systemStatus(interaction: ChatInputCommandInteraction, man
 
     const embed = new EmbedBuilder()
         .setTitle("🖥️ System Status")
-        .setColor(Colors.info)
+        .setColor(COLORS.info)
         .setTimestamp()
         .setDescription(
             `**Active Bots:** ${manager.getActiveCount()}/${BOT_DEFINITIONS.length}`

@@ -6,8 +6,8 @@ import {
     ActionRowBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { LOG_REGISTRY } from "@shared/config/log-registry";
+import type { BotClient } from "@core/bot-client";
+import { LOG_REGISTRY, LOG_SETUP_MESSAGES } from "@constants";
 
 export default {
     data: new SlashCommandBuilder()
@@ -27,13 +27,13 @@ export default {
 
         const select = new StringSelectMenuBuilder()
             .setCustomId("setup_log_select")
-            .setPlaceholder("Select a log type to configure...")
+            .setPlaceholder(LOG_SETUP_MESSAGES.selectPlaceholder)
             .addOptions(options);
 
         const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
 
         await interaction.reply({
-            content: "Select a log type to configure:",
+            content: LOG_SETUP_MESSAGES.selectPrompt,
             components: [row],
             flags: MessageFlags.Ephemeral,
         });

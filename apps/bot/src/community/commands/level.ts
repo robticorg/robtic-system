@@ -4,8 +4,8 @@ import {
     EmbedBuilder,
 } from "discord.js";
 import { ActivityRepository } from "@database/repositories";
-import { Colors } from "@core/config";
-import { calculateLevel, xpForLevel } from "../services/xp-service";
+import { COLORS } from "@constants";
+import { calculateLevel, xpForLevel } from "../services/xp";
 
 export default {
     data: new SlashCommandBuilder()
@@ -42,7 +42,7 @@ export default {
                 { name: "Messages", value: `${record.messageCount}`, inline: true },
                 { name: "Progress", value: `${progressBar} ${progress}/${needed}`, inline: false },
             )
-            .setColor(Colors.activity)
+            .setColor(COLORS.activity)
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });

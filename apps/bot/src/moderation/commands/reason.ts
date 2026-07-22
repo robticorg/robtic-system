@@ -9,10 +9,10 @@ import {
     EmbedBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { ReasonRepository } from "@database/repositories";
-import { errorEmbed } from "@core/utils";
+import { errorEmbed } from "@utils";
 
 export default {
     data: new SlashCommandBuilder()
@@ -108,7 +108,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle("✅ Reason Removed")
                 .setDescription(`Punishment reason \`${key}\` has been deleted.`)
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });
@@ -121,7 +121,7 @@ export default {
             const reasons = await ReasonRepository.getAll();
 
             if (!reasons.length) {
-                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription("No punishment reasons created yet.").setColor(Colors.info)] });
+                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription("No punishment reasons created yet.").setColor(COLORS.info)] });
                 return;
             }
 
@@ -138,7 +138,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle("📋 Punishment Reasons")
                 .addFields(fields)
-                .setColor(Colors.info)
+                .setColor(COLORS.info)
                 .setFooter({ text: `Total: ${reasons.length} reason(s)` })
                 .setTimestamp();
 

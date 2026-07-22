@@ -1,3 +1,3 @@
-export * from "./DiscordHandler";
-export * from "./ErrorHandler";
-export * from "./classifyError";
+export * from "./discord-handler";
+export * from "./error-handler";
+export * from "./classify-error";

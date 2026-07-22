@@ -1,5 +1,5 @@
 import { Events } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { getModerationSecurityConfig, resolveLogChannel, detectBanAuditEntry, recordSecurityEvent } from "../utils/security";
 import { memberBanEmbed } from "../utils/embed";
 

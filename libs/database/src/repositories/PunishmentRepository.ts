@@ -1,6 +1,6 @@
 import { Punishment, type IPunishment } from "@database/models/Punishment";
 import { User } from "@database/models/User";
-import { MembersPunishments, PunishmentsSystem } from "@core/config";
+import { MEMBER_PUNISHMENTS, PUNISHMENT_POINTS } from "@constants";
 
 export class PunishmentRepository {
     static async create(data: Partial<IPunishment>): Promise<IPunishment> {
@@ -87,11 +87,11 @@ export class PunishmentRepository {
     }
 
     static getLevelInfo(level: number): { role: string | null; roleId: string | null; name: string } {
-        if (level >= MembersPunishments.permBan.level) return { role: MembersPunishments.permBan.name, roleId: MembersPunishments.permBan.id, name: "Permanent Ban" };
-        if (level >= MembersPunishments.tempBan.level) return { role: MembersPunishments.tempBan.name, roleId: MembersPunishments.tempBan.id, name: "Temporary Ban" };
-        if (level >= MembersPunishments.tempMute.level) return { role: MembersPunishments.tempMute.name, roleId: MembersPunishments.tempMute.id, name: "Temporary Mute" };
-        if (level >= MembersPunishments.fWarn.level) return { role: MembersPunishments.fWarn.name, roleId: MembersPunishments.fWarn.id, name: "Final Warning" };
-        if (level >= MembersPunishments.warn.level) return { role: MembersPunishments.warn.name, roleId: MembersPunishments.warn.id, name: "Warning" };
+        if (level >= MEMBER_PUNISHMENTS.permBan.level) return { role: MEMBER_PUNISHMENTS.permBan.name, roleId: MEMBER_PUNISHMENTS.permBan.id, name: "Permanent Ban" };
+        if (level >= MEMBER_PUNISHMENTS.tempBan.level) return { role: MEMBER_PUNISHMENTS.tempBan.name, roleId: MEMBER_PUNISHMENTS.tempBan.id, name: "Temporary Ban" };
+        if (level >= MEMBER_PUNISHMENTS.tempMute.level) return { role: MEMBER_PUNISHMENTS.tempMute.name, roleId: MEMBER_PUNISHMENTS.tempMute.id, name: "Temporary Mute" };
+        if (level >= MEMBER_PUNISHMENTS.fWarn.level) return { role: MEMBER_PUNISHMENTS.fWarn.name, roleId: MEMBER_PUNISHMENTS.fWarn.id, name: "Final Warning" };
+        if (level >= MEMBER_PUNISHMENTS.warn.level) return { role: MEMBER_PUNISHMENTS.warn.name, roleId: MEMBER_PUNISHMENTS.warn.id, name: "Warning" };
         return { role: null, roleId: null, name: "Clean" };
     }
 }

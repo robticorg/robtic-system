@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, type GuildMember } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { buildStatusEmbed } from "../utils/comboEmbeds";
-import { buildComboNavRow, isComboAdmin } from "../utils/comboComponents";
+import type { BotClient } from "@core/bot-client";
+import { buildStatusEmbed } from "../utils/combo-embeds";
+import { buildComboNavRow, isComboAdmin } from "../utils/combo-components";
 import { getUserLang, t } from "@shared/utils/lang";
 
 export default {

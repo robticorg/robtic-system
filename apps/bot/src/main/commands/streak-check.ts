@@ -3,8 +3,8 @@ import {
     ChatInputCommandInteraction,
     EmbedBuilder,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { StreakRepository, StreakRewardRepository, StreakRewardClaimRepository } from "@database/repositories";
 
 export default {
@@ -24,7 +24,7 @@ export default {
         const rewards = await StreakRewardRepository.list(guildId);
         if (!rewards.length) {
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.info).setDescription("لا توجد مكافآت تتابع مُعدة لهذا السيرفر.")],
+                embeds: [new EmbedBuilder().setColor(COLORS.info).setDescription("لا توجد مكافآت تتابع مُعدة لهذا السيرفر.")],
             });
             return;
         }
@@ -46,7 +46,7 @@ export default {
         const embed = new EmbedBuilder()
             .setTitle(`🎁 حالة مكافآت التتابع — ${target.username}`)
             .setDescription(`التتابع الحالي: 🔥 ${record.currentStreak}\n\n${lines.join("\n")}`)
-            .setColor(Colors.activity)
+            .setColor(COLORS.activity)
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });

@@ -1,6 +1,6 @@
 import { Combo, type ICombo } from "@database/models/Combo";
-import { COMBO_LEVELS } from "@core/config";
-import { buildLevelSwitchExpr } from "@core/utils";
+import { COMBO_LEVELS } from "@constants";
+import { buildLevelSwitchExpr } from "@core/combo/build-level-switch-expr";
 
 function pairKey(a: string, b: string): [string, string] {
     return a < b ? [a, b] : [b, a];

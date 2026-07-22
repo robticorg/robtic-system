@@ -5,9 +5,9 @@ import {
     SlashCommandBuilder,
     type GuildMember,
 } from "discord.js";
-import { Colors } from "@core/config";
-import { errorEmbed } from "@core/utils";
-import type { BotClient } from "@core/BotClient";
+import { COLORS } from "@constants";
+import { errorEmbed } from "@utils";
+import type { BotClient } from "@core/bot-client";
 import { recordSecurityEvent, sendAuditLog } from "../utils/security";
 
 export default {
@@ -61,7 +61,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("👢 Member Kicked")
-            .setColor(Colors.moderation)
+            .setColor(COLORS.moderation)
             .addFields(
                 { name: "Target", value: `<@${target.id}> (${target.id})` },
                 { name: "Moderator", value: `<@${interaction.user.id}> (${interaction.user.id})` },
@@ -76,7 +76,7 @@ export default {
             "member_kick",
             new EmbedBuilder()
                 .setTitle("📘 Audit: Member Kick")
-                .setColor(Colors.warning)
+                .setColor(COLORS.warning)
                 .addFields(
                     { name: "Target", value: `<@${target.id}> (${target.id})` },
                     { name: "Executor", value: `<@${interaction.user.id}> (${interaction.user.id})` },

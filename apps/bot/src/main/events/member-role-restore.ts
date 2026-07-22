@@ -1,6 +1,6 @@
 import { Events, type GuildMember } from "discord.js";
 import { SavedRolesRepository } from "@database/repositories";
-import { Logger } from "@core/libs";
+import { Logger } from "@logger";
 
 const MEMBER_RESTORE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const FORMER_STAFF_MEMBER_RESTORE_WINDOW_MS = 5 * 24 * 60 * 60 * 1000;

@@ -6,8 +6,8 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors, SUPER_ADMIN_ID } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS, SUPER_ADMIN_ID } from "@constants";
 import { CommandAccessRepository, StaffTierRepository } from "@database/repositories";
 import { hasFullPower } from "@shared/utils/access";
 
@@ -50,7 +50,7 @@ export default {
         const member = interaction.member as GuildMember | null;
         if (interaction.user.id !== SUPER_ADMIN_ID && !(member && hasFullPower(member))) {
             await interaction.reply({
-                embeds: [new EmbedBuilder().setDescription("❌ You are not authorized to use this command.").setColor(Colors.error)],
+                embeds: [new EmbedBuilder().setDescription("❌ You are not authorized to use this command.").setColor(COLORS.error)],
                 flags: MessageFlags.Ephemeral,
             });
             return;
@@ -71,7 +71,7 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setDescription(`\`/${commandName}\` roles: ${entry.allowedRoleIds.length ? entry.allowedRoleIds.map(id => `<@&${id}>`).join(", ") : "none"}`)],
             });
             return;
@@ -82,7 +82,7 @@ export default {
             const tier = await StaffTierRepository.get(guildId, category);
             if (!tier) {
                 await interaction.editReply({
-                    embeds: [new EmbedBuilder().setColor(Colors.error).setDescription(`❌ No staff-tier with key \`${category}\` exists. See \`/staff-tier list\`.`)],
+                    embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(`❌ No staff-tier with key \`${category}\` exists. See \`/staff-tier list\`.`)],
                 });
                 return;
             }
@@ -93,7 +93,7 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setDescription(`\`/${commandName}\` categories: ${entry.allowedCategoryKeys.length ? entry.allowedCategoryKeys.map(k => `\`${k}\``).join(", ") : "none"}`)],
             });
             return;
@@ -103,7 +103,7 @@ export default {
         const entry = await CommandAccessRepository.getForCommand(guildId, commandName);
         const embed = new EmbedBuilder()
             .setTitle(`Access Grants — /${commandName}`)
-            .setColor(Colors.info)
+            .setColor(COLORS.info)
             .addFields(
                 { name: "Roles", value: entry?.allowedRoleIds.length ? entry.allowedRoleIds.map(id => `<@&${id}>`).join(", ") : "None" },
                 { name: "Categories", value: entry?.allowedCategoryKeys.length ? entry.allowedCategoryKeys.map(k => `\`${k}\``).join(", ") : "None" },

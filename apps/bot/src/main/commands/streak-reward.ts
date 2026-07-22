@@ -4,8 +4,8 @@ import {
     EmbedBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { StreakRewardRepository } from "@database/repositories";
 
 export default {
@@ -43,7 +43,7 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setDescription(`✅ عند وصول العضو إلى **${number}** يوم تتابع سيحصل على: ${offer}`)],
             });
             return;
@@ -55,7 +55,7 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setColor(removed ? Colors.success : Colors.error)
+                    .setColor(removed ? COLORS.success : COLORS.error)
                     .setDescription(removed ? `✅ تمت إزالة مكافأة **${number}** يوم.` : `❌ لا توجد مكافأة عند **${number}** يوم.`)],
             });
             return;
@@ -65,14 +65,14 @@ export default {
         const rewards = await StreakRewardRepository.list(guildId);
         if (!rewards.length) {
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.info).setDescription("لا توجد مكافآت تتابع مُعدة بعد.")],
+                embeds: [new EmbedBuilder().setColor(COLORS.info).setDescription("لا توجد مكافآت تتابع مُعدة بعد.")],
             });
             return;
         }
 
         const lines = rewards.map(r => `**${r.threshold}** يوم — ${r.offer}`).join("\n");
         await interaction.editReply({
-            embeds: [new EmbedBuilder().setTitle("🎁 مكافآت التتابع").setDescription(lines).setColor(Colors.info)],
+            embeds: [new EmbedBuilder().setTitle("🎁 مكافآت التتابع").setDescription(lines).setColor(COLORS.info)],
         });
     },
 };

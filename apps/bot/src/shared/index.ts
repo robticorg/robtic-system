@@ -1,5 +1,5 @@
 export { default } from "./events/interaction-create";
 
-export * from "./bots-guards";
-export * from "./utils/set-presense";
+export { setupGuildGuard } from "./guards/setup-guild-guard";
+export { setPresence } from "./utils/set-presence";
 export * from "./utils/lang";

@@ -3,8 +3,8 @@ import {
     ChatInputCommandInteraction,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { moderationHelpEmbed } from "@shared/utils/help-embed";
+import type { BotClient } from "@core/bot-client";
+import { moderationHelpEmbed } from "@shared/utils/help";
 
 export default {
     data: new SlashCommandBuilder()

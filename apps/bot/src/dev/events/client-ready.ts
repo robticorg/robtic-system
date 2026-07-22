@@ -1,6 +1,7 @@
 import { Events } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Logger } from "@core/libs";
+import type { BotClient } from "@core/bot-client";
+import { Logger } from "@logger";
+import { BRANCH_CONFIG } from "@config";
 import { setPresence, setupGuildGuard } from "@shared/index";
 
 export default {
@@ -11,11 +12,7 @@ export default {
         Logger.debug(`Bot ID: ${client.user?.id}`, client.botName);
         Logger.debug(`Serving ${client.guilds.cache.size} guild(s)`, client.botName);
 
-        const activityNames = [
-            "Development Bot 🛠️",
-            "Code Review and Sharing 🧪"
-        ]
-        setPresence(client, "idle", "Playing", activityNames)
+        setPresence(client, "idle", "Playing", [...BRANCH_CONFIG.presence.dev])
         setupGuildGuard(client);
     },
 };

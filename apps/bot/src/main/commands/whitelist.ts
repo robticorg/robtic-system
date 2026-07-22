@@ -4,8 +4,8 @@ import {
     EmbedBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors, SUPER_ADMIN_ID } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS, SUPER_ADMIN_ID } from "@constants";
 import { SuperUserRepository } from "@database/repositories";
 
 export default {
@@ -36,7 +36,7 @@ export default {
             await interaction.reply({
                 embeds: [new EmbedBuilder()
                     .setDescription("❌ You are not authorized to use this command.")
-                    .setColor(Colors.error)],
+                    .setColor(COLORS.error)],
                 flags: MessageFlags.Ephemeral,
             });
             return;
@@ -53,7 +53,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setTitle("✅ Super User Added")
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setDescription(`${user} (\`${user.id}\`) can now use any command in any server.`)],
             });
             return;
@@ -66,7 +66,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setTitle("✅ Super User Removed")
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setDescription(`${user} (\`${user.id}\`) no longer has super user access.`)],
             });
             return;
@@ -77,14 +77,14 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setDescription("No super users are whitelisted.")
-                    .setColor(Colors.info)],
+                    .setColor(COLORS.info)],
             });
             return;
         }
 
         const embed = new EmbedBuilder()
             .setTitle("Super User Whitelist")
-            .setColor(Colors.info)
+            .setColor(COLORS.info)
             .setDescription(superUsers.map(u => `• <@${u.userId}> (\`${u.userId}\`) — added by <@${u.addedBy}>`).join("\n"));
 
         await interaction.editReply({ embeds: [embed] });

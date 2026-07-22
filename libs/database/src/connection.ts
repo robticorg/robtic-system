@@ -1,5 +1,5 @@
 import mongoose, { type ConnectOptions } from "mongoose";
-import { Logger } from "@core/libs";
+import { Logger } from "@logger";
 import { handleError, BotError } from "@core/handlers";
 
 export async function connectDatabase(url: string): Promise<void> {

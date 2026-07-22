@@ -1,8 +1,9 @@
 import { Events, type Message, type GuildTextBasedChannel, PermissionFlagsBits } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { ChatUtils } from "../utils/chat";
-import { Logger } from "@core/libs";
-import { findShortcutMatch, runCustomCommandShortcut } from "@shared/utils/customShortcutRunner";
+import { Logger } from "@logger";
+import { findShortcutMatch, runCustomCommandShortcut } from "@shared/utils/prefix";
+import { hasFullPower } from "@shared/utils/access";
 
 const CHAT_UTIL_COMMANDS = new Set(Object.keys(ChatUtils));
 
@@ -23,7 +24,7 @@ export default {
             return;
         }
 
-        if (!message.member.permissions.has(PermissionFlagsBits.ManageChannels)) return;
+        if (!hasFullPower(message.member) && !message.member.permissions.has(PermissionFlagsBits.ManageChannels)) return;
 
         const channel = message.channel as GuildTextBasedChannel;
         const commandName = match.command as keyof typeof ChatUtils;

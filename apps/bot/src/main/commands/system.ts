@@ -1,5 +1,5 @@
-import { ClientManager } from "@core/ClientManager";
-import { BOT_DEFINITIONS } from "@core/config";
+import { ClientManager } from "@core/client-manager";
+import { BOT_DEFINITIONS } from "@config";
 import { ChannelType, ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 
 const validBotNames = BOT_DEFINITIONS.map((d) => d.name);

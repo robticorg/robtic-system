@@ -30,4 +30,4 @@ COPY apps ./apps
 COPY libs ./libs
 COPY images ./images
 
-CMD ["bun", "--preload", "./apps/bot/src/preload.ts", "apps/bot/src/index.ts"]
+CMD ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/bot/src/index.ts"]

@@ -1,7 +1,7 @@
 import { AuditLogEvent, EmbedBuilder, Events, type Role } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
-import { sendToServerLog } from "@shared/utils/sendToServerLog";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
+import { sendToServerLog } from "@shared/utils/server-log";
 
 export default {
     name: Events.GuildRoleDelete,
@@ -12,7 +12,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("📘 Audit: Role Deleted")
-            .setColor(Colors.error)
+            .setColor(COLORS.error)
             .addFields(
                 { name: "Role", value: `${role.name} (\`${role.id}\`)` },
                 { name: "Executor", value: executorId ? `<@${executorId}> (${executorId})` : "Unknown", inline: true },

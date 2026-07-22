@@ -8,10 +8,10 @@ import {
     PermissionFlagsBits,
 } from "discord.js";
 import { ModMailRepository } from "@database/repositories";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { hasDepartmentAuthority } from "@shared/utils/access";
-import { closeModMail } from "../utils/closeModMail";
-import { Colors } from "@core/config";
+import { closeModMail } from "../utils/close-mod-mail";
+import { COLORS } from "@constants";
 import messages from "../utils/messages.json";
 
 export default {
@@ -66,7 +66,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle(messages.embed.thread_status_title)
-                .setColor(Colors.info)
+                .setColor(COLORS.info)
                 .setTimestamp();
 
             if (openThreads.length) {

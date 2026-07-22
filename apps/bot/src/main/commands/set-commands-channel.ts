@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder, MessageFlags, ChannelType } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
 export default {
@@ -23,7 +23,7 @@ export default {
         await interaction.editReply({
             embeds: [new EmbedBuilder()
                 .setTitle("✅ Commands Channel Set")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .setDescription(`Non-command messages in <#${channel.id}> will now be removed automatically. Any message starting with a symbol (this bot's or another bot's prefix) is left alone.`)],
         });
     },

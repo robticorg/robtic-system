@@ -8,11 +8,11 @@ import {
     ButtonBuilder,
     ButtonStyle,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { StreakSettingsRepository, StreakRepository, StreakRecoveryRepository } from "@database/repositories";
-import { Colors, STREAK_CONFIG } from "@core/config";
-import { formatDuration } from "@core/utils";
-import { applyStreakRole } from "../utils/streakRole";
+import { COLORS, STREAK_CONFIG } from "@constants";
+import { formatDuration } from "@utils";
+import { applyStreakRole } from "../utils/streak-role";
 
 export default {
     data: new SlashCommandBuilder()
@@ -108,7 +108,7 @@ export default {
             const settings = await StreakSettingsRepository.getOrCreate(guildId);
             const list = settings.channels.length ? settings.channels.map(id => `<#${id}>`).join(", ") : "لا يوجد";
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setTitle("قنوات التتابع").setDescription(list).setColor(Colors.info)],
+                embeds: [new EmbedBuilder().setTitle("قنوات التتابع").setDescription(list).setColor(COLORS.info)],
             });
             return;
         }
@@ -138,7 +138,7 @@ export default {
                     { name: "حد التذكير", value: formatDuration(STREAK_CONFIG.reminderThresholdMs), inline: true },
                     { name: "مدة الاسترجاع", value: formatDuration(STREAK_CONFIG.recoveryWindowMs), inline: true },
                 )
-                .setColor(Colors.info)
+                .setColor(COLORS.info)
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });
@@ -179,7 +179,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setTitle("⚠️ تأكيد مزامنة التتابع")
-                    .setColor(Colors.warning)
+                    .setColor(COLORS.warning)
                     .setDescription(
                         `سيتم نسخ **${count}** تتابع من **${sourceGuild.name}** إلى هذا السيرفر.\n` +
                         `عند تعارض البيانات سيتم الاحتفاظ بالقيمة الأعلى، وسيتم تحديث أدوار التتابع تلقائيًا.`
@@ -215,7 +215,7 @@ export default {
         await interaction.editReply({
             embeds: [new EmbedBuilder()
                 .setTitle("✅ تم استرجاع التتابع")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .setDescription(`تم استرجاع تتابع ${user} إلى **${recovery.currentStreak}** (الأفضل **${recovery.bestStreak}**).`)],
         });
     },

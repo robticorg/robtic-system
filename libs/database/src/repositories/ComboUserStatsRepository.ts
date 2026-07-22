@@ -1,6 +1,6 @@
 import { ComboUserStats, type IComboUserStats, type IComboPartnerTally } from "@database/models/ComboUserStats";
-import { COMBO_CONFIG } from "@core/config";
-import { favoritePartnerWeight } from "@core/utils";
+import { COMBO_CONFIG } from "@constants";
+import { favoritePartnerWeight } from "@core/combo/favorite-partner-weight";
 
 export interface ComboEndDelta {
     score: number;

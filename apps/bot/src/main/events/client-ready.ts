@@ -1,6 +1,7 @@
 import { Events } from "discord.js";
-import type { BotClient } from "@core/BotClient.ts";
-import { Logger } from "@core/libs";
+import type { BotClient } from "@core/bot-client";
+import { Logger } from "@logger";
+import { BRANCH_CONFIG } from "@config";
 import { setPresence, setupGuildGuard } from "@shared/index";
 import { startStreakScheduler } from "../services/streak-scheduler";
 import { startComboScheduler } from "../services/combo-scheduler";
@@ -13,13 +14,7 @@ export default {
         Logger.debug(`Bot ID: ${client.user?.id}`, client.botName);
         Logger.debug(`Serving ${client.guilds.cache.size} guild(s)`, client.botName);
 
-        const activityNames = [
-            "Developer support system 🔥",
-            "Debugging code with devs ⚙️",
-            "Learning resources hub 📚",
-            "Helping with dev projects 🚀",
-        ]
-        setPresence(client, "dnd", "Playing", activityNames)
+        setPresence(client, "dnd", "Playing", [...BRANCH_CONFIG.presence.main])
         setupGuildGuard(client);
         startStreakScheduler(client);
         startComboScheduler(client);

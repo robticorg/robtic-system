@@ -1,11 +1,12 @@
 import { Events, type Message, type GuildMember } from "discord.js";
-import type { BotClient } from "@core/BotClient.ts";
-import { Logger } from "@core/libs";
-import { analyzeSupportMessage, analyzeUserFeedback } from "@core/ai";
-import { normalizeElongated } from "@core/utils/normalize";
-import { grantXP, isXPChannel, hasAllowedRole } from "../services/xp-service";
-import { trackPublicChat, trackStaffChat } from "../services/staff-activity-service";
-import { isSupportChannel, createSession, recordResponse, resolveSession, autoClaimSession, type ClaimResult } from "../services/support-service";
+import type { BotClient } from "@core/bot-client";
+import { Logger } from "@logger";
+import { analyzeSupportMessage } from "@core/ai";
+import { normalizeElongated } from "@utils";
+import { COMMUNITY_MESSAGES, SUPPORT_SCORING } from "@constants";
+import { grantXP, isXPChannel, hasAllowedRole } from "../services/xp";
+import { trackPublicChat, trackStaffChat } from "../services/staff-activity";
+import { isSupportChannel, createSession, recordResponse, autoClaimSession } from "../services/support";
 import { SupportSessionRepository } from "@database/repositories/SupportSessionRepository";
 import { ActivityRepository } from "@database/repositories/ActivityRepository";
 import { ActivityLogRepository } from "@database/repositories/ActivityLogRepository";
@@ -14,145 +15,16 @@ import {
     logToChannel,
     xpGainEmbed,
     supportSessionEmbed,
-    dynamicSupportPointsEmbed,
     staffActivityEmbed,
     staffPenaltyEmbed,
     staffReminderEmbed,
-    sorryDmEmbed,
-    ratingFeedbackEmbed,
     aiDecisionEmbed,
     claimWarningEmbed,
     claimTakeoverEmbed,
-} from "../utils/activity-logger";
-
-const STAFF_SESSION_TIMEOUT_MS = 3_600_000; // 1 hour
-const STAFF_CHAT_THRESHOLD = 4;
-
-interface StaffChatTracker {
-    staffIds: Set<string>;
-    count: number;
-    warned: boolean;
-    startedAt: number;
-}
-
-const staffChatCounters = new Map<string, StaffChatTracker>();
-
-function trackStaffToStaff(channelId: string, staffId: string): { reachedThreshold: boolean; count: number; warned: boolean } {
-    let tracker = staffChatCounters.get(channelId);
-
-    if (tracker && Date.now() - tracker.startedAt >= STAFF_SESSION_TIMEOUT_MS) {
-        Logger.debug(`[activity:track] Staff tracker expired for channelId=${channelId}, resetting`, "BotClient");
-        staffChatCounters.delete(channelId);
-        tracker = undefined;
-    }
-
-    Logger.debug(`[activity:track] Tracking staff message for staffId=${staffId} in channelId=${channelId}. Current tracker: ${tracker ? `count=${tracker.count}, warned=${tracker.warned}, staffIds=[${[...tracker.staffIds].join(", ")}]` : "none"}`, "BotClient");
-    if (!tracker) {
-        tracker = { staffIds: new Set(), count: 0, warned: false, startedAt: Date.now() };
-        Logger.debug(`[activity:track] Initializing staff tracker for channelId=${channelId}`, "BotClient");
-        staffChatCounters.set(channelId, tracker);
-    }
-
-    Logger.debug(`[activity:track] Adding staffId=${staffId} to tracker for channelId=${channelId}`, "BotClient");
-    tracker.staffIds.add(staffId);
-    tracker.count++;
-    const reachedThreshold = tracker.staffIds.size >= 2 && tracker.count >= STAFF_CHAT_THRESHOLD;
-    return { reachedThreshold, count: tracker.count, warned: tracker.warned };
-}
-
-function resetStaffTracker(channelId: string): void {
-    staffChatCounters.delete(channelId);
-}
-
-const CLAIM_INTRUSION_TIMEOUT_MS = 3_600_000; // 1 hour
-
-interface ClaimIntrusionTracker {
-    count: number;
-    warned: boolean;
-    startedAt: number;
-}
-
-const claimIntrusionCounters = new Map<string, ClaimIntrusionTracker>();
-
-function trackClaimIntrusion(staffId: string, channelId: string): { warned: boolean; shouldDeduct: boolean } {
-    const key = `${staffId}:${channelId}`;
-    let tracker = claimIntrusionCounters.get(key);
-
-    if (tracker && Date.now() - tracker.startedAt >= CLAIM_INTRUSION_TIMEOUT_MS) {
-        claimIntrusionCounters.delete(key);
-        tracker = undefined;
-    }
-
-    if (!tracker) {
-        tracker = { count: 0, warned: false, startedAt: Date.now() };
-        claimIntrusionCounters.set(key, tracker);
-    }
-
-    tracker.count++;
-
-    if (!tracker.warned) {
-        tracker.warned = true;
-        return { warned: true, shouldDeduct: false };
-    }
-
-    return { warned: false, shouldDeduct: true };
-}
-
-function resetClaimIntrusion(staffId: string, channelId: string): void {
-    claimIntrusionCounters.delete(`${staffId}:${channelId}`);
-}
-
-async function handleSessionResolution(
-    message: Message,
-    session: { userMessageId: string; userId: string; claimedBy: string | null; responseTimeMs: number | null },
-    guildId: string,
-    endingContent: string,
-    endedBy: string,
-    reason: string,
-    client: BotClient,
-): Promise<void> {
-    const resolved = await resolveSession(session.userMessageId, guildId, endingContent);
-    if (!resolved) return;
-
-    Logger.debug(`[activity] Session resolved: staff=${resolved.staffId} points=${resolved.points} quality=${resolved.quality} sentiment=${resolved.sentiment}`, client.botName);
-
-    const responseMs = session.responseTimeMs ?? 0;
-    let speedPts = 0;
-    if (responseMs > 0) {
-        if (responseMs <= 60_000) speedPts = 2;
-        else if (responseMs <= 300_000) speedPts = 1;
-    }
-    const qualityPts = resolved.quality === "professional" ? 2 : resolved.quality === "bad" ? -1 : resolved.quality === "normal" ? 1 : 0;
-    const sentimentPts = resolved.sentiment === "negative" ? -1 : 0;
-
-    await logToChannel(client,"support_points", dynamicSupportPointsEmbed(
-        resolved.staffId, resolved.points, speedPts, qualityPts, sentimentPts,
-        resolved.quality, resolved.sentiment, responseMs,
-    ));
-    await logToChannel(client,"support_points", supportSessionEmbed(
-        "resolved", session.userId, resolved.staffId, reason,
-    ));
-
-    if (resolved.sentiment === "negative" && Math.random() < 0.2) {
-        try {
-            const user = await message.guild!.members.fetch(session.userId).catch(() => null);
-            if (user) {
-                await user.send({ embeds: [sorryDmEmbed()] }).catch(() => {});
-                Logger.debug(`[activity] Sent sorry DM to user ${session.userId}`, client.botName);
-            }
-        } catch {}
-    }
-
-    if (resolved.sentiment !== "negative" && Math.random() < 0.1) {
-        try {
-            const user = await message.guild!.members.fetch(session.userId).catch(() => null);
-            if (user) {
-                await user.send({ embeds: [ratingFeedbackEmbed()] }).catch(() => {});
-                Logger.debug(`[activity] Sent rating embed to user ${session.userId}`, client.botName);
-            }
-        } catch {}
-    }
-}
+} from "../utils/activity-log";
+import { staffChatCounters, trackStaffToStaff, resetStaffTracker } from "../utils/staff-chat-tracker";
+import { trackClaimIntrusion, resetClaimIntrusion } from "../utils/claim-intrusion-tracker";
+import { handleSessionResolution } from "../utils/handle-session-resolution";
 
 export default {
     name: Events.MessageCreate,
@@ -180,12 +52,12 @@ export default {
                         const { previousStaff, sessionUserId } = claimResult.takeover;
                         Logger.debug(`[activity:claim] Takeover in channelId=${channelId}: ${previousStaff} → ${member.id}`, client.botName);
 
-                        await logToChannel(client,"support_points", supportSessionEmbed(
+                        await logToChannel(client, "support_points", supportSessionEmbed(
                             "reassigned", sessionUserId, member.id,
-                            `Previous staff: <@${previousStaff}> (inactive >10min, -1 point)`,
+                            COMMUNITY_MESSAGES.resolutionReasons.takeoverDetails(previousStaff),
                         ));
-                        await logToChannel(client,"support_points", staffPenaltyEmbed(
-                            previousStaff, -1, "Ignored user for 10+ minutes, session reassigned",
+                        await logToChannel(client, "support_points", staffPenaltyEmbed(
+                            previousStaff, SUPPORT_SCORING.takeoverPenalty, COMMUNITY_MESSAGES.penaltyReasons.ignoredUser,
                         ));
 
                         const newStaffMember = await message.guild!.members.fetch(member.id).catch(() => null);
@@ -210,16 +82,16 @@ export default {
 
                         if (intrusion.shouldDeduct) {
                             await ActivityRepository.findOrCreate(member.id, guildId, "staff");
-                            await ActivityRepository.addSupportPoints(member.id, guildId, -1);
+                            await ActivityRepository.addSupportPoints(member.id, guildId, SUPPORT_SCORING.intrusionPenalty);
                             await ActivityLogRepository.log({
                                 guildId,
                                 userId: member.id,
                                 type: "support_penalty",
-                                amount: -1,
+                                amount: SUPPORT_SCORING.intrusionPenalty,
                                 details: `Intruding on session claimed by ${claimResult.intruding.claimedBy} in ${channelId}`,
                             });
-                            await logToChannel(client,"support_points", staffPenaltyEmbed(
-                                member.id, -1, `Intruding on session claimed by <@${claimResult.intruding.claimedBy}>`,
+                            await logToChannel(client, "support_points", staffPenaltyEmbed(
+                                member.id, SUPPORT_SCORING.intrusionPenalty, COMMUNITY_MESSAGES.penaltyReasons.intruding(claimResult.intruding.claimedBy),
                             ));
                         }
                     }
@@ -250,16 +122,16 @@ export default {
                             Logger.debug(`[activity:track2] Post-warning staff message from ${member.id} in channelId=${channelId}, deducting points`, client.botName);
 
                             await ActivityRepository.findOrCreate(member.id, guildId, "staff");
-                            await ActivityRepository.addSupportPoints(member.id, guildId, -1);
+                            await ActivityRepository.addSupportPoints(member.id, guildId, SUPPORT_SCORING.staffChatPenalty);
                             await ActivityLogRepository.log({
                                 guildId,
                                 userId: member.id,
                                 type: "support_penalty",
-                                amount: -1,
-                                details: "Continued staff-to-staff chatting after warning",
+                                amount: SUPPORT_SCORING.staffChatPenalty,
+                                details: COMMUNITY_MESSAGES.penaltyReasons.staffChatAfterWarning,
                             });
-                            await logToChannel(client,"support_points", staffPenaltyEmbed(
-                                member.id, -1, "Continued staff-to-staff chatting after warning",
+                            await logToChannel(client, "support_points", staffPenaltyEmbed(
+                                member.id, SUPPORT_SCORING.staffChatPenalty, COMMUNITY_MESSAGES.penaltyReasons.staffChatAfterWarning,
                             ));
                         }
                     }
@@ -273,7 +145,7 @@ export default {
                         client.botName,
                     );
 
-                    await logToChannel(client,"ai", aiDecisionEmbed(
+                    await logToChannel(client, "ai", aiDecisionEmbed(
                         username, member.id,
                         analysis.classification.classification,
                         analysis.classification.confidence,
@@ -286,7 +158,7 @@ export default {
                             if (session.claimedBy === member.id) {
                                 await handleSessionResolution(
                                     message, session, guildId, normalizedContent,
-                                    member.id, "AI-detected conversation end (staff)", client,
+                                    member.id, COMMUNITY_MESSAGES.resolutionReasons.aiConversationEndStaff, client,
                                 );
                                 resetClaimIntrusion(member.id, channelId);
                             }
@@ -306,7 +178,7 @@ export default {
                     const hasRef = Boolean(message.reference?.messageId);
                     const analysis = await analyzeSupportMessage(normalizedContent, hasRef);
 
-                    await logToChannel(client,"ai", aiDecisionEmbed(
+                    await logToChannel(client, "ai", aiDecisionEmbed(
                         username, member.id,
                         analysis.classification.classification,
                         analysis.classification.confidence,
@@ -320,14 +192,14 @@ export default {
                             if (session.userId === member.id) {
                                 await handleSessionResolution(
                                     message, session, guildId, normalizedContent,
-                                    member.id, "Member ended conversation", client,
+                                    member.id, COMMUNITY_MESSAGES.resolutionReasons.memberEnded, client,
                                 );
                             }
                         }
                     } else {
                         const created = await createSession(guildId, channelId, message.id, member.id);
                         if (created) {
-                            await logToChannel(client,"support_points", supportSessionEmbed(
+                            await logToChannel(client, "support_points", supportSessionEmbed(
                                 "created", member.id,
                             ));
                         }
@@ -344,7 +216,7 @@ export default {
                     const result = await grantXP(member.id, guildId, username, message.guild, content);
                     if (result) {
                         Logger.debug(`[activity] Granted ${result.xp} XP to ${username} (levelUp=${result.leveledUp}, level=${result.newLevel})`, client.botName);
-                        await logToChannel(client,"xp_gain", xpGainEmbed(
+                        await logToChannel(client, "xp_gain", xpGainEmbed(
                             username, member.id, result.xp, result.leveledUp, result.newLevel,
                         ));
                     }
@@ -355,13 +227,13 @@ export default {
                 Logger.debug(`[activity] Staff member ${username}, tracking staff activity`, client.botName);
                 const staffResult = await trackStaffChat(member, guildId, channelId, username, content);
                 if (staffResult) {
-                    await logToChannel(client,"staff_activity", staffActivityEmbed(
+                    await logToChannel(client, "staff_activity", staffActivityEmbed(
                         member.id, username, staffResult, "staff",
                     ));
                 } else if (isXPCh) {
                     const publicResult = await trackPublicChat(member, guildId, username, content);
                     if (publicResult) {
-                        await logToChannel(client,"staff_activity", staffActivityEmbed(
+                        await logToChannel(client, "staff_activity", staffActivityEmbed(
                             member.id, username, publicResult, "public",
                         ));
                     }

@@ -18,7 +18,7 @@ export class UserRepository {
         return User.findOneAndUpdate(
             { discordId },
             { $set: { preferredLang: lang }, $setOnInsert: { username } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<IUser>;
     }
 
@@ -31,7 +31,7 @@ export class UserRepository {
         return User.findOneAndUpdate(
             { discordId },
             { $set: { displayName }, $setOnInsert: { username } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<IUser>;
     }
 
@@ -44,7 +44,7 @@ export class UserRepository {
         return User.findOneAndUpdate(
             { discordId },
             { $set: { privateProfile: value }, $setOnInsert: { username } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<IUser>;
     }
 }

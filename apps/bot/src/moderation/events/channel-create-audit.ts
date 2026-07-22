@@ -1,8 +1,8 @@
 import { AuditLogEvent, Events, type GuildChannel } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { getModerationSecurityConfig, resolveLogChannel, recordSecurityEvent } from "../utils/security";
 import { channelCreateEmbed } from "../utils/embed";
-import { sendToServerLog } from "@shared/utils/sendToServerLog";
+import { sendToServerLog } from "@shared/utils/server-log";
 
 export default {
     name: Events.ChannelCreate,

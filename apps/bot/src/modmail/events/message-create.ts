@@ -1,11 +1,11 @@
 import { Events, type Message } from "discord.js";
 import { ModMailRepository } from "@database/repositories";
-import { handleModMailDM } from "../utils/handleModMailDM";
-import { handleModMailStaff } from "../utils/handleModMailStaff";
-import { handleReplyCommand } from "../handlers/replyHandler";
-import { handleTagCommand } from "../handlers/tagHandler";
-import { handleNoteCommand } from "../handlers/noteHandler";
-import type { BotClient } from "@core/BotClient";
+import { handleModMailDM } from "../utils/handle-mod-mail-dm";
+import { handleModMailStaff } from "../utils/handle-mod-mail-staff";
+import { handleReplyCommand } from "../handlers/reply-handler";
+import { handleTagCommand } from "../handlers/tag-handler";
+import { handleNoteCommand } from "../handlers/note-handler";
+import type { BotClient } from "@core/bot-client";
 
 export default {
     name: Events.MessageCreate,

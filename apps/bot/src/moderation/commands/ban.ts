@@ -10,14 +10,15 @@ import {
     type GuildMember,
     type TextChannel,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { BRANCH_CONFIG, Colors, MembersPunishments, PunishmentsSystem } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { BRANCH_CONFIG } from "@config";
+import { COLORS, MEMBER_PUNISHMENTS, PUNISHMENT_POINTS } from "@constants";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
-import { errorEmbed } from "@core/utils";
+import { errorEmbed } from "@utils";
 import { getUserLang, t } from "@shared/utils/lang";
-import { getLogChannel } from "@shared/utils/getLogChannel";
+import { getLogChannel } from "@shared/utils/server-log";
 import { recordSecurityEvent } from "../utils/security";
-import { needsProof, buildProofModal, sendShortcutProofDM } from "../utils/punishFlow";
+import { needsProof, buildProofModal, sendShortcutProofDM } from "../utils/punish-flow";
 
 export async function executeBan(
     client: BotClient,
@@ -49,11 +50,11 @@ export async function executeBan(
         active: true,
     });
 
-    const newLevel = await PunishmentRepository.addPunishmentLevel(targetId, targetUsername, PunishmentsSystem.ban);
+    const newLevel = await PunishmentRepository.addPunishmentLevel(targetId, targetUsername, PUNISHMENT_POINTS.ban);
     const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
 
     if (member) {
-        const allPunishmentRoleIds = Object.values(MembersPunishments).map(p => p.id);
+        const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
         const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
         for (const [, role] of rolesToRemove) {
             await member.roles.remove(role).catch(() => null);
@@ -63,7 +64,7 @@ export async function executeBan(
         }
 
         if (permanent) {
-            await member.roles.add(MembersPunishments.permBan.id).catch(() => null);
+            await member.roles.add(MEMBER_PUNISHMENTS.permBan.id).catch(() => null);
         } else {
             const timeoutMs = Math.min(durationMs!, 28 * 24 * 60 * 60 * 1000);
             await member.timeout(timeoutMs, `Ban: ${reason}`).catch(() => null);
@@ -77,7 +78,7 @@ export async function executeBan(
 
         const dmEmbed = new EmbedBuilder()
             .setTitle(permanent ? t("moderation.ban_title_perm", lang) : t("moderation.ban_title_temp", lang))
-            .setColor(Colors.moderation)
+            .setColor(COLORS.moderation)
             .setDescription(
                 permanent
                     ? t("moderation.ban_desc_perm", lang, { reason: localReason })
@@ -98,7 +99,7 @@ export async function executeBan(
 
     const logEmbed = new EmbedBuilder()
         .setTitle(permanent ? "🔨 Permanent Ban" : "🔨 Temporary Ban")
-        .setColor(Colors.moderation)
+        .setColor(COLORS.moderation)
         .addFields(
             { name: "User", value: `<@${targetId}>`, inline: true },
             { name: "Moderator", value: `<@${moderatorId}>`, inline: true },
@@ -250,14 +251,14 @@ export default {
             await PunishmentRepository.deactivate(caseId);
 
             if (member) {
-                await member.roles.remove(MembersPunishments.permBan.id).catch(() => null);
+                await member.roles.remove(MEMBER_PUNISHMENTS.permBan.id).catch(() => null);
                 await member.timeout(null, `Unban: ${reason}`).catch(() => null);
             }
 
             const level = await PunishmentRepository.getPunishmentLevel(target.id);
             const embed = new EmbedBuilder()
                 .setTitle("✅ User Unbanned (Remove)")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .addFields(
                     { name: "User", value: `<@${target.id}>`, inline: true },
                     { name: "Case", value: `\`${caseId}\``, inline: true },
@@ -288,13 +289,13 @@ export default {
             }
 
             await PunishmentRepository.appeal(caseId, reason);
-            const newLevel = await PunishmentRepository.removePunishmentLevel(target.id, target.username, PunishmentsSystem.ban);
+            const newLevel = await PunishmentRepository.removePunishmentLevel(target.id, target.username, PUNISHMENT_POINTS.ban);
             const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
 
             if (member) {
-                await member.roles.remove(MembersPunishments.permBan.id).catch(() => null);
+                await member.roles.remove(MEMBER_PUNISHMENTS.permBan.id).catch(() => null);
                 await member.timeout(null, `Appeal: ${reason}`).catch(() => null);
-                const allPunishmentRoleIds = Object.values(MembersPunishments).map(p => p.id);
+                const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
                 const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
                 for (const [, role] of rolesToRemove) {
                     await member.roles.remove(role).catch(() => null);
@@ -306,7 +307,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle("✅ Ban Appealed")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .addFields(
                     { name: "User", value: `<@${target.id}>`, inline: true },
                     { name: "Case", value: `\`${caseId}\``, inline: true },
@@ -325,7 +326,7 @@ export default {
 
             if (!banRecords.length) {
                 await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no bans.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
+                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no bans.`).setColor(COLORS.info)], flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -338,7 +339,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle(`🔨 Bans for ${target.username}`)
                 .setDescription(lines.join("\n\n"))
-                .setColor(Colors.moderation)
+                .setColor(COLORS.moderation)
                 .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${banRecords.length} ban(s)` })
                 .setTimestamp();
 

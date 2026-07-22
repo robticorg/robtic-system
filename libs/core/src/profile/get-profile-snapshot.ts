@@ -1,0 +1,97 @@
+import type { ProfileSnapshot } from "@typings/profile";
+import {
+    ActivityRepository,
+    StreakRepository,
+    ComboRepository,
+    ComboUserStatsRepository,
+    UserRepository,
+} from "@database/repositories";
+import { calculateLevel, xpForLevel } from "@core/xp";
+import { levelForScore } from "@core/combo/level-for-score";
+import { favoritePartnerWeight } from "@core/combo/favorite-partner-weight";
+import { nextClaimAt } from "@core/streak/next-claim-at";
+import { streakExpiresAt } from "@core/streak/streak-expires-at";
+
+interface SnapshotInput {
+    guildId: string;
+    /** Whose profile to read. */
+    targetId: string;
+    /** Who is asking — controls the privacy gate. */
+    viewerId: string;
+    username: string;
+    avatarUrl?: string | null;
+}
+
+/**
+ * Single source of the profile view for every surface (bot embed, Activity, future dashboard).
+ * Reads repositories directly so it stays free of any discord.js/interaction coupling.
+ */
+export async function getProfileSnapshot(input: SnapshotInput): Promise<ProfileSnapshot> {
+    const { guildId, targetId, viewerId, username } = input;
+    const isSelf = targetId === viewerId;
+
+    const isPrivate = !isSelf && await UserRepository.getPrivateProfile(targetId);
+    const displayName = await UserRepository.getDisplayName(targetId) ?? username;
+
+    const xpRecord = await ActivityRepository.findOrCreate(targetId, guildId, username);
+    const level = calculateLevel(xpRecord.totalXP);
+    const levelFloor = xpForLevel(level);
+    const progress = xpRecord.totalXP - levelFloor;
+    const needed = xpForLevel(level + 1) - levelFloor;
+    const rank = await ActivityRepository.getRank(targetId, guildId);
+
+    const streakRecord = await StreakRepository.findOrCreate(targetId, guildId, username);
+    const streakRank = await StreakRepository.getRank(targetId, guildId);
+    const streakBestRank = await StreakRepository.getBestRank(targetId, guildId);
+
+    const activePairs = await ComboRepository.findActiveForUser(guildId, targetId);
+    const bestActive = activePairs.length
+        ? activePairs.reduce((a, b) => (a.currentScore >= b.currentScore ? a : b))
+        : null;
+    const activePartnerId = bestActive
+        ? (bestActive.userLowId === targetId ? bestActive.userHighId : bestActive.userLowId)
+        : null;
+
+    const comboStats = await ComboUserStatsRepository.get(guildId, targetId);
+    const favorite = comboStats?.partners?.length
+        ? [...comboStats.partners].sort((a, b) => favoritePartnerWeight(b) - favoritePartnerWeight(a))[0]
+        : null;
+
+    return {
+        discordId: targetId,
+        username,
+        displayName,
+        avatarUrl: input.avatarUrl ?? null,
+        isPrivate,
+        isSelf,
+        xp: {
+            totalXP: xpRecord.totalXP,
+            level,
+            progress,
+            needed,
+            rank,
+            messageCount: xpRecord.messageCount,
+        },
+        streak: {
+            current: streakRecord.currentStreak,
+            best: streakRecord.bestStreak,
+            active: streakRecord.active,
+            rank: streakRank,
+            bestRank: streakBestRank,
+            nextClaimMs: streakRecord.active
+                ? Math.max(0, nextClaimAt(streakRecord.lastIncrement).getTime() - Date.now())
+                : 0,
+            expiresInMs: streakRecord.active
+                ? Math.max(0, streakExpiresAt(streakRecord.lastIncrement).getTime() - Date.now())
+                : null,
+        },
+        combo: {
+            activeScore: bestActive?.currentScore ?? null,
+            activePartnerId,
+            activeLevel: bestActive ? levelForScore(bestActive.currentScore) : null,
+            bestScore: comboStats?.bestComboScore ?? 0,
+            totalConversations: comboStats?.totalConversations ?? 0,
+            favoritePartnerId: favorite?.partnerId ?? null,
+        },
+    };
+}

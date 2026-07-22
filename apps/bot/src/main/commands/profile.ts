@@ -7,16 +7,16 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { PunishmentRepository, NoteRepository, ActivityRepository, ComboUserStatsRepository, UserRepository } from "@database/repositories";
 import { getMemberLevel, isStaff } from "@shared/utils/access";
-import { calculateLevel, xpForLevel } from "../../community/services/xp-service";
+import { calculateLevel, xpForLevel } from "../../community/services/xp";
 import { getStaffActivity, getSupportStats } from "@shared/utils/staff-activity";
 import { getStreakSummary } from "../services/streak-service";
-import { getUserHighestCombo } from "../services/combo-service";
+import { getUserHighestCombo } from "../services/combo";
 import { getUserLang, t } from "@shared/utils/lang";
-import emoji from "@shared/emojis.json";
+import { BRANCH_EMOJIS as emoji } from "@config";
 
 export default {
     data: new SlashCommandBuilder()
@@ -84,7 +84,7 @@ export default {
         const embed = new EmbedBuilder()
             .setTitle(`${emoji.user} ${t("profile.title", lang, { username: displayName })}`)
             .setThumbnail(target.displayAvatarURL({ size: 256 }))
-            .setColor(!isPrivate && punishmentLevel >= 60 ? Colors.moderation : !isPrivate && punishmentLevel >= 20 ? Colors.warning : Colors.info)
+            .setColor(!isPrivate && punishmentLevel >= 60 ? COLORS.moderation : !isPrivate && punishmentLevel >= 20 ? COLORS.warning : COLORS.info)
             .addFields(
                 { name: t("profile.field_user", lang), value: `<@${target.id}>`, inline: true },
                 { name: t("profile.field_account_created", lang), value: `<t:${Math.floor(target.createdTimestamp / 1000)}:R>`, inline: true },

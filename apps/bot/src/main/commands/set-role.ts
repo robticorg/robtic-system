@@ -6,7 +6,7 @@ import {
     TextInputStyle,
     ActionRowBuilder,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 
 const ROLE_LABELS: Record<string, string> = {
     en: "English Role",

@@ -1,7 +1,7 @@
 import { AuditLogEvent, EmbedBuilder, Events, type Role } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
-import { sendToServerLog } from "@shared/utils/sendToServerLog";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
+import { sendToServerLog } from "@shared/utils/server-log";
 
 export default {
     name: Events.GuildRoleUpdate,
@@ -21,7 +21,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("📘 Audit: Role Updated")
-            .setColor(Colors.warning)
+            .setColor(COLORS.warning)
             .addFields(
                 { name: "Role", value: `<@&${newRole.id}> (\`${newRole.id}\`)` },
                 { name: "Changes", value: changes.join("\n") },

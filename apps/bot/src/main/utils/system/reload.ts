@@ -1,5 +1,5 @@
-import type { ClientManager } from "@core/ClientManager";
-import { BOT_DEFINITIONS } from "@core/config";
+import type { ClientManager } from "@core/client-manager";
+import { BOT_DEFINITIONS } from "@config";
 import type { ChatInputCommandInteraction } from "discord.js";
 
 export async function systemReload(interaction: ChatInputCommandInteraction, manager: ClientManager) {

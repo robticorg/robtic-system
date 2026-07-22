@@ -1,8 +1,8 @@
 import { Events, type Message } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { DEFAULT_PREFIX } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { DEFAULT_PREFIX } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
-import { parsePrefixCommand, runPrefixShortcut } from "@shared/utils/prefixShortcutRunner";
+import { parsePrefixCommand, runPrefixShortcut } from "@shared/utils/prefix";
 
 // ban/mute/warn have their own dedicated router (punish-shortcut.ts). Every other moderation
 // command is handled here, gated by its own normal checkPermissions — same as `/command`.

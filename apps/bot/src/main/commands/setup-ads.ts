@@ -5,11 +5,11 @@ import {
     PermissionFlagsBits,
     type TextChannel,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { AdsConfigRepository } from "@database/repositories";
-import { buildAdsPanel } from "../utils/adsPanels";
-import { buildConfigRoot } from "../utils/adsConfigViews";
-import { Logger } from "@core/libs";
+import { buildAdsPanel } from "../utils/ads-panels";
+import { buildConfigRoot } from "../utils/ads-config-views";
+import { Logger } from "@logger";
 
 export default {
     data: new SlashCommandBuilder()

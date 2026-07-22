@@ -1,7 +1,7 @@
 import { Events, type Message, type GuildMember } from "discord.js";
 import { ServerConfigRepository } from "@database/repositories";
-import { looksLikeCommand } from "@core/utils";
-import { STREAK_CONFIG } from "@core/config";
+import { looksLikeCommand } from "@utils";
+import { STREAK_CONFIG } from "@constants";
 import { getUserLang, t } from "@shared/utils/lang";
 import { handleError, BotError } from "@core/handlers";
 

@@ -1,8 +1,8 @@
 import { Events, type GuildMember } from "discord.js";
 import { PartnerRepository } from "@database/repositories";
-import { Logger } from "@core/libs";
-import { ensurePartnerRole } from "../utils/partnerRole";
-import { buildPartnerListMessage } from "../utils/partnerExploreView";
+import { Logger } from "@logger";
+import { ensurePartnerRole } from "../utils/partner-role";
+import { buildPartnerListMessage } from "../utils/partner-explore-view";
 
 export default {
     name: Events.GuildMemberAdd,

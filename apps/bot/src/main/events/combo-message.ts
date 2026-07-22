@@ -1,5 +1,5 @@
 import { Events, type Message } from "discord.js";
-import { processComboMessage } from "../services/combo-service";
+import { processComboMessage } from "../services/combo";
 import { handleError, BotError } from "@core/handlers";
 
 export default {

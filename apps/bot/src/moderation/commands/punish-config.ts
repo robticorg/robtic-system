@@ -5,8 +5,8 @@ import {
     EmbedBuilder,
     type GuildMember,
 } from "discord.js";
-import { Colors } from "@core/config";
-import { errorEmbed } from "@core/utils";
+import { COLORS } from "@constants";
+import { errorEmbed } from "@utils";
 import { getMemberLevel, isManagerOf } from "@shared/utils/access";
 import { PunishConfigRepository } from "@database/repositories";
 
@@ -74,7 +74,7 @@ export default {
             const role = interaction.options.getRole("role", true);
             await PunishConfigRepository.addShortcutRole(guildId, role.id);
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Added <@&${role.id}> to punishment shortcut roles.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Added <@&${role.id}> to punishment shortcut roles.`)],
             });
             return;
         }
@@ -83,7 +83,7 @@ export default {
             const role = interaction.options.getRole("role", true);
             await PunishConfigRepository.removeShortcutRole(guildId, role.id);
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Removed <@&${role.id}> from punishment shortcut roles.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Removed <@&${role.id}> from punishment shortcut roles.`)],
             });
             return;
         }
@@ -92,7 +92,7 @@ export default {
             const amount = interaction.options.getInteger("amount", true);
             await PunishConfigRepository.setPointsPerAction(guildId, amount);
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Warn/mute now awards **${amount}** point(s) to the moderator.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Warn/mute now awards **${amount}** point(s) to the moderator.`)],
             });
             return;
         }
@@ -101,7 +101,7 @@ export default {
             const channel = interaction.options.getChannel("channel", true);
             await PunishConfigRepository.setProofChannel(guildId, channel.id);
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(Colors.success).setDescription(`Proof channel set to <#${channel.id}>.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Proof channel set to <#${channel.id}>.`)],
             });
             return;
         }
@@ -110,7 +110,7 @@ export default {
         const config = await PunishConfigRepository.findOrCreate(guildId);
         const embed = new EmbedBuilder()
             .setTitle("🔧 Punish Config")
-            .setColor(Colors.info)
+            .setColor(COLORS.info)
             .addFields(
                 { name: "Shortcut Roles", value: config.shortcutRoleIds.length ? config.shortcutRoleIds.map(id => `<@&${id}>`).join(", ") : "None" },
                 { name: "Points per warn/mute", value: `${config.pointsPerAction}`, inline: true },

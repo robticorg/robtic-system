@@ -31,7 +31,7 @@ export class CommandAccessRepository {
         const entry = await CommandAccess.findOneAndUpdate(
             { guildId, commandName },
             { $addToSet: { allowedRoleIds: roleId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as ICommandAccess;
         this.invalidate(guildId);
         return entry;
@@ -41,7 +41,7 @@ export class CommandAccessRepository {
         const entry = await CommandAccess.findOneAndUpdate(
             { guildId, commandName },
             { $pull: { allowedRoleIds: roleId } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as ICommandAccess;
         this.invalidate(guildId);
         return entry;
@@ -51,7 +51,7 @@ export class CommandAccessRepository {
         const entry = await CommandAccess.findOneAndUpdate(
             { guildId, commandName },
             { $addToSet: { allowedCategoryKeys: categoryKey } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as ICommandAccess;
         this.invalidate(guildId);
         return entry;
@@ -61,7 +61,7 @@ export class CommandAccessRepository {
         const entry = await CommandAccess.findOneAndUpdate(
             { guildId, commandName },
             { $pull: { allowedCategoryKeys: categoryKey } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as ICommandAccess;
         this.invalidate(guildId);
         return entry;

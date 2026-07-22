@@ -1,7 +1,7 @@
 import { EmbedBuilder, Events, type Message } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
-import { sendToServerLog } from "@shared/utils/sendToServerLog";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
+import { sendToServerLog } from "@shared/utils/server-log";
 
 export default {
     name: Events.MessageUpdate,
@@ -13,7 +13,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("📘 Audit: Message Edited")
-            .setColor(Colors.warning)
+            .setColor(COLORS.warning)
             .addFields(
                 { name: "Author", value: `<@${newMessage.author.id}> (\`${newMessage.author.id}\`)`, inline: true },
                 { name: "Channel", value: `${newMessage.channel.toString()} (\`${newMessage.channelId}\`)`, inline: true },

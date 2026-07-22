@@ -4,9 +4,9 @@ import {
     EmbedBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { LevelRewardRepository } from "@database/repositories";
-import { Colors } from "@core/config";
+import { COLORS } from "@constants";
 
 export default {
     data: new SlashCommandBuilder()
@@ -80,7 +80,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle("Level Rewards")
                 .setDescription(lines.join("\n"))
-                .setColor(Colors.activity)
+                .setColor(COLORS.activity)
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });

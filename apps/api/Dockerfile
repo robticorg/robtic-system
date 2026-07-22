@@ -29,4 +29,6 @@ COPY package.json tsconfig.json ./
 COPY apps/api ./apps/api
 COPY libs ./libs
 
-CMD ["bun", "apps/api/src/index.ts"]
+# --preload stubs node:v8 for BSON/mongoose on Bun (same shim the bot uses). The api now
+# touches the database (profile / leaderboard / admin config), so without this it crash-loops.
+CMD ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/api/src/index.ts"]

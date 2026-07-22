@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags, type TextChannel } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { requireOpenTicket, requireTicketStaff } from "../utils/ticketGuard";
+import type { BotClient } from "@core/bot-client";
+import { requireOpenTicket, requireTicketStaff } from "../utils/ticket-guard";
 
 export default {
     data: new SlashCommandBuilder()

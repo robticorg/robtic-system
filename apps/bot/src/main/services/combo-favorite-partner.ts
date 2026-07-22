@@ -1,5 +1,5 @@
 import type { IComboUserStats, IComboPartnerTally } from "@database/models";
-import { favoritePartnerWeight } from "@core/utils";
+import { favoritePartnerWeight } from "@core/combo/favorite-partner-weight";
 
 /** Stats' partners are already kept sorted by favorite-weight on write, so this is just a safe read of the top entry. */
 export function getFavoritePartner(stats: IComboUserStats | null): IComboPartnerTally | null {

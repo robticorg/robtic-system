@@ -110,6 +110,12 @@ export class StreakRepository {
         return Streak.countDocuments({ guildId });
     }
 
+    /** Every active streak whose current value equals `value` — backs the admin `!check streak <n>` lookup. */
+    static async findByCurrentStreak(guildId: string, value: number): Promise<IStreak[]> {
+        return Streak.find({ guildId, active: true, currentStreak: value })
+            .sort({ lastIncrement: -1 });
+    }
+
     /**
      * Copies every streak record from sourceGuildId into destGuildId. Where a destination record
      * already exists, currentStreak/bestStreak are each kept at whichever side is higher, and the

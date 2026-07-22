@@ -1,8 +1,8 @@
 import { Events } from "discord.js";
-import type { BotClient } from "@core/BotClient.ts";
-import { Logger } from "@core/libs";
+import type { BotClient } from "@core/bot-client";
+import { Logger } from "@logger";
 import { setPresence, setupGuildGuard } from "@shared/index";
-import { BRANCH_CONFIG } from "@core/config";
+import { BRANCH_CONFIG } from "@config";
 
 export default {
     name: Events.ClientReady,

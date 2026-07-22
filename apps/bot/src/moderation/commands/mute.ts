@@ -10,13 +10,14 @@ import {
     type GuildMember,
     type TextChannel,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { BRANCH_CONFIG, Colors, MembersPunishments, PunishmentsSystem } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { BRANCH_CONFIG } from "@config";
+import { COLORS, MEMBER_PUNISHMENTS, PUNISHMENT_POINTS } from "@constants";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
-import { errorEmbed } from "@core/utils";
+import { errorEmbed } from "@utils";
 import { getUserLang, t } from "@shared/utils/lang";
-import { getLogChannel } from "@shared/utils/getLogChannel";
-import { needsProof, buildProofModal, sendShortcutProofDM, awardPunishPoints } from "../utils/punishFlow";
+import { getLogChannel } from "@shared/utils/server-log";
+import { needsProof, buildProofModal, sendShortcutProofDM, awardPunishPoints } from "../utils/punish-flow";
 
 export async function executeMute(
     client: BotClient,
@@ -45,11 +46,11 @@ export async function executeMute(
         active: true,
     });
 
-    const newLevel = await PunishmentRepository.addPunishmentLevel(targetId, targetUsername, PunishmentsSystem.mute);
+    const newLevel = await PunishmentRepository.addPunishmentLevel(targetId, targetUsername, PUNISHMENT_POINTS.mute);
     const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
 
     if (member) {
-        const allPunishmentRoleIds = Object.values(MembersPunishments).map(p => p.id);
+        const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
         const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
         for (const [, role] of rolesToRemove) {
             await member.roles.remove(role).catch(() => null);
@@ -58,8 +59,8 @@ export async function executeMute(
             await member.roles.add(levelInfo.roleId).catch(() => null);
         }
         await member.timeout(durationMs, `Mute: ${reason}`).catch(() => null);
-        if (newLevel >= MembersPunishments.permBan.level) {
-            await member.roles.add(MembersPunishments.permBan.id).catch(() => null);
+        if (newLevel >= MEMBER_PUNISHMENTS.permBan.level) {
+            await member.roles.add(MEMBER_PUNISHMENTS.permBan.id).catch(() => null);
         }
     }
 
@@ -72,7 +73,7 @@ export async function executeMute(
 
         const dmEmbed = new EmbedBuilder()
             .setTitle(t("moderation.mute_title", lang))
-            .setColor(Colors.moderation)
+            .setColor(COLORS.moderation)
             .setDescription(t("moderation.mute_desc", lang, { reason: localReason, duration: String(durationHours) }))
             .setTimestamp();
 
@@ -89,7 +90,7 @@ export async function executeMute(
 
     const logEmbed = new EmbedBuilder()
         .setTitle("🔇 User Muted")
-        .setColor(Colors.moderation)
+        .setColor(COLORS.moderation)
         .addFields(
             { name: "User", value: `<@${targetId}>`, inline: true },
             { name: "Moderator", value: `<@${moderatorId}>`, inline: true },
@@ -234,7 +235,7 @@ export default {
             const level = await PunishmentRepository.getPunishmentLevel(target.id);
             const embed = new EmbedBuilder()
                 .setTitle("🔊 User Unmuted (Remove)")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .addFields(
                     { name: "User", value: `<@${target.id}>`, inline: true },
                     { name: "Case", value: `\`${caseId}\``, inline: true },
@@ -265,12 +266,12 @@ export default {
             }
 
             await PunishmentRepository.appeal(caseId, reason);
-            const newLevel = await PunishmentRepository.removePunishmentLevel(target.id, target.username, PunishmentsSystem.mute);
+            const newLevel = await PunishmentRepository.removePunishmentLevel(target.id, target.username, PUNISHMENT_POINTS.mute);
             const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
 
             if (member) {
                 await member.timeout(null, `Appeal: ${reason}`).catch(() => null);
-                const allPunishmentRoleIds = Object.values(MembersPunishments).map(p => p.id);
+                const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
                 const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
                 for (const [, role] of rolesToRemove) {
                     await member.roles.remove(role).catch(() => null);
@@ -282,7 +283,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle("✅ Mute Appealed")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .addFields(
                     { name: "User", value: `<@${target.id}>`, inline: true },
                     { name: "Case", value: `\`${caseId}\``, inline: true },
@@ -300,7 +301,7 @@ export default {
 
             if (!mutes.length) {
                 await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no mutes.`).setColor(Colors.info)], flags: MessageFlags.Ephemeral });
+                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no mutes.`).setColor(COLORS.info)], flags: MessageFlags.Ephemeral });
                 return;
             }
 
@@ -312,7 +313,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle(`🔇 Mutes for ${target.username}`)
                 .setDescription(lines.join("\n\n"))
-                .setColor(Colors.moderation)
+                .setColor(COLORS.moderation)
                 .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${mutes.length} mute(s)` })
                 .setTimestamp();
 

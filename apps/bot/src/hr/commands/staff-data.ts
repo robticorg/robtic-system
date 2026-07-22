@@ -5,8 +5,8 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { StaffRepository } from "@database/repositories";
 import { hasDepartmentAuthority, hasFullPower } from "@shared/utils/access";
 
@@ -62,7 +62,7 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setColor(Colors.success)
+                    .setColor(COLORS.success)
                     .setTitle("✅ تم تحديث البيانات")
                     .addFields(
                         { name: "الاسم", value: updated?.realName ?? "غير محدد", inline: true },
@@ -76,7 +76,7 @@ export default {
         // sub === "view"
         const embed = new EmbedBuilder()
             .setTitle(`بيانات ${target.username}`)
-            .setColor(Colors.info)
+            .setColor(COLORS.info)
             .addFields(
                 { name: "الاسم", value: staffRecord.realName ?? "غير محدد", inline: true },
                 { name: "العمر", value: staffRecord.age ? `${staffRecord.age}` : "غير محدد", inline: true },

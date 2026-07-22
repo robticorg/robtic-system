@@ -1,5 +1,5 @@
-import { resultChannelId, STAFF_TRAINEE_ROLE_ID } from "../config/departments";
-import { STAFF_TEAM_ROLE_ID } from "@core/config/constants";
+import { BRANCH_CONFIG } from "@config";
+import { STAFF_TEAM_ROLE_ID } from "@constants";
 import {
   SlashCommandBuilder,
   EmbedBuilder,
@@ -7,9 +7,9 @@ import {
   MessageFlags,
   type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { StaffRepository, SubmissionTypeRepository } from "@database/repositories";
-import { interviewCollectors } from "../utils/interviewCollectors";
+import { interviewCollectors } from "../utils/interview-collectors";
 import { hasFullPower } from "@shared/utils/access";
 
 export default {
@@ -63,7 +63,7 @@ export default {
         await member?.roles.add([
           ...(type?.grantRoleIds ?? []),
           STAFF_TEAM_ROLE_ID,
-          STAFF_TRAINEE_ROLE_ID,
+          BRANCH_CONFIG.roles.hrStaffTrainee,
         ]);
       } catch (err) {
         await interaction.editReply({
@@ -121,7 +121,7 @@ export default {
       .setColor(sub === "accept" ? "Green" : "Red")
       .setTimestamp();
 
-    const resultChannel = interaction.guild?.channels.cache.get(resultChannelId);
+    const resultChannel = interaction.guild?.channels.cache.get(BRANCH_CONFIG.channels.hrResult);
     if (!resultChannel?.isTextBased()) return;
     resultChannel?.send({
       embeds: [embed],

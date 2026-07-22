@@ -1,6 +1,6 @@
 import { PeriodicStat, type IPeriodicStat, type PeriodicStatMetric } from "@database/models/PeriodicStat";
-import { COMBO_LEADERBOARD_PERIODS, type ComboLeaderboardPeriod } from "@core/config";
-import { periodKeyFor } from "@core/utils";
+import { COMBO_LEADERBOARD_PERIODS, type ComboLeaderboardPeriod } from "@constants";
+import { periodKeyFor } from "@utils";
 
 export class PeriodicStatRepository {
     /** Adds `amount` to every period bucket (daily/weekly/monthly/alltime) for one user's metric in one call. */

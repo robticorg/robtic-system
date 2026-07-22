@@ -1,8 +1,8 @@
 import { Events, type Message, type GuildMember } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { DEFAULT_PREFIX, STREAK_CONFIG } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { DEFAULT_PREFIX, STREAK_CONFIG } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
-import { parsePrefixCommand, runPrefixShortcut } from "@shared/utils/prefixShortcutRunner";
+import { parsePrefixCommand, runPrefixShortcut } from "@shared/utils/prefix";
 import { getUserLang, t } from "@shared/utils/lang";
 
 export default {

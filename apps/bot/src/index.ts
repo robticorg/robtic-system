@@ -1,6 +1,6 @@
-import { ClientManager } from "@core/ClientManager";
+import { ClientManager } from "@core/client-manager";
 import { connectDatabase } from "@database/connection";
-import { Logger } from "@core/libs";
+import { Logger } from "@logger";
 import { SuperUserRepository } from "@database/repositories";
 
 await connectDatabase(process.env.MONGODB_URI!);

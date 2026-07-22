@@ -4,9 +4,9 @@ import {
     EmbedBuilder,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
-import { formatDuration } from "@core/utils";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
+import { formatDuration } from "@utils";
 import { getStreakSummary } from "../services/streak-service";
 import { getUserLang, t } from "@shared/utils/lang";
 
@@ -34,7 +34,7 @@ export default {
         const embed = new EmbedBuilder()
             .setTitle(t("streak.title", lang, { username: target.username }))
             .setThumbnail(target.displayAvatarURL({ size: 256 }))
-            .setColor(record.active ? Colors.activity : Colors.info)
+            .setColor(record.active ? COLORS.activity : COLORS.info)
             .addFields(
                 { name: t("streak.current_streak", lang), value: `🔥 ${record.currentStreak}`, inline: true },
                 { name: t("streak.best_streak", lang), value: `🏆 ${record.bestStreak}`, inline: true },

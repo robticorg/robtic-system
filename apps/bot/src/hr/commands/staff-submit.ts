@@ -6,11 +6,11 @@ import {
     MessageFlags,
     PermissionFlagsBits,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { StaffRepository, SubmitConfigRepository, SubmissionTypeRepository } from "@database/repositories";
-import { updatePanel } from "../utils/updatePanel";
-import { buildConfigPanel } from "../utils/configPanel";
+import { updatePanel } from "../utils/update-panel";
+import { buildConfigPanel } from "../utils/config-panel";
 
 export default {
     data: new SlashCommandBuilder()
@@ -105,7 +105,7 @@ export default {
                     new EmbedBuilder()
                         .setTitle(`📋 ${type.name} — Opened`)
                         .setDescription(`Applications for **${type.name}** are now open. The panel has been updated.`)
-                        .setColor(Colors.success),
+                        .setColor(COLORS.success),
                 ],
             });
             return;
@@ -138,7 +138,7 @@ export default {
                     new EmbedBuilder()
                         .setTitle(`🔒 ${type.name} — Closed`)
                         .setDescription(`Applications for **${type.name}** are now closed and removed from the panel.`)
-                        .setColor(Colors.error),
+                        .setColor(COLORS.error),
                 ],
             });
             return;
@@ -196,7 +196,7 @@ export default {
                     { name: "Review Channel", value: reviewChannelMention, inline: true },
                     { name: "Panel Channel", value: panelChannelMention, inline: true },
                 )
-                .setColor(Colors.info)
+                .setColor(COLORS.info)
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });

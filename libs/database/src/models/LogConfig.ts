@@ -1,5 +1,5 @@
 import { Schema, model, type Document } from "mongoose";
-import type { LogKey } from "@shared/config/log-registry";
+import type { LogKey } from "@constants";
 
 export interface ILogConfig extends Document {
     key: LogKey;

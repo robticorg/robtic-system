@@ -23,7 +23,16 @@
       "@shared/*": ["apps/bot/src/shared/*"],
       "@database/*": ["libs/database/src/*"],
       "@core/*": ["libs/core/src/*"],
-      "@types/*": ["libs/types/src/*"]
+      "@types/*": ["libs/types/src/*"],
+      "@typings/*": ["libs/types/src/*"],
+      "@config": ["libs/config/src/index.ts"],
+      "@config/*": ["libs/config/src/*"],
+      "@constants": ["libs/constants/src/index.ts"],
+      "@constants/*": ["libs/constants/src/*"],
+      "@utils": ["libs/utils/src/index.ts"],
+      "@utils/*": ["libs/utils/src/*"],
+      "@logger": ["libs/logger/src/index.ts"],
+      "@logger/*": ["libs/logger/src/*"]
     }
   },
   "include": ["apps", "libs"],

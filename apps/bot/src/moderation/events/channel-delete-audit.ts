@@ -1,8 +1,8 @@
 import { AuditLogEvent, EmbedBuilder, Events, type GuildChannel } from "discord.js";
-import { Colors } from "@core/config";
+import { COLORS } from "@constants";
 import { recordSecurityEvent, sendAuditLog } from "../utils/security";
-import type { BotClient } from "@core/BotClient";
-import { sendToServerLog } from "@shared/utils/sendToServerLog";
+import type { BotClient } from "@core/bot-client";
+import { sendToServerLog } from "@shared/utils/server-log";
 
 export default {
     name: Events.ChannelDelete,
@@ -13,7 +13,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("📘 Audit: Channel Deleted")
-            .setColor(Colors.error)
+            .setColor(COLORS.error)
             .addFields(
                 { name: "Channel", value: `${channel.name} (${channel.id})` },
                 { name: "Type", value: channel.type.toString(), inline: true },

@@ -4,13 +4,13 @@ import {
     EmbedBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
-import { ClientManager } from "@core/ClientManager";
-import { Logger } from "@core/libs";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
+import { ClientManager } from "@core/client-manager";
+import { Logger } from "@logger";
 import { GlobalConfigRepository } from "@database/repositories";
-import { SERVER_LOG_CHANNELS } from "@shared/config/server-log-channels";
-import { ensureServerLogChannels } from "@shared/utils/serverLogSetup";
+import { SERVER_LOG_CHANNELS } from "@constants";
+import { ensureServerLogChannels } from "@shared/utils/server-log";
 
 export default {
     data: new SlashCommandBuilder()
@@ -37,7 +37,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setDescription(`❌ Bot is not in guild \`${guildId}\`. Make sure the bot is a member of that server.`)
-                    .setColor(Colors.error)],
+                    .setColor(COLORS.error)],
             });
             return;
         }
@@ -64,7 +64,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("✅ Server Log Guild Set")
-            .setColor(Colors.success)
+            .setColor(COLORS.success)
             .addFields(
                 { name: "Guild", value: `${guild.name} (\`${guildId}\`)` },
                 { name: "Categories", value: "One category per server ID, created automatically the moment the moderation bot joins that server.", inline: false },

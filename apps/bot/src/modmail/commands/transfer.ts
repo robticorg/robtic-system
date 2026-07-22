@@ -5,7 +5,7 @@ import {
     type GuildMember,
 } from "discord.js";
 import { ModMailRepository } from "@database/repositories";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { hasDepartmentAuthority } from "@shared/utils/access";
 import messages from "../utils/messages.json";
 

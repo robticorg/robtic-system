@@ -2,8 +2,8 @@ import { Events, type Message, AttachmentBuilder } from "discord.js";
 import path from "path";
 import { existsSync } from "fs";
 import { ServerConfigRepository } from "@database/repositories";
-import emojis from "@shared/emojis.json";
-import type { BotClient } from "@core/BotClient";
+import { BRANCH_EMOJIS as emojis } from "@config";
+import type { BotClient } from "@core/bot-client";
 
 const LINE_IMAGE_PATH = path.join(process.cwd(), "images", "line.png");
 

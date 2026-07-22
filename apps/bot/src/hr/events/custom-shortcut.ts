@@ -1,6 +1,6 @@
 import { Events, type Message } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { findShortcutMatch, runCustomCommandShortcut } from "@shared/utils/customShortcutRunner";
+import type { BotClient } from "@core/bot-client";
+import { findShortcutMatch, runCustomCommandShortcut } from "@shared/utils/prefix";
 
 /** Lets /shortcut add (main bot) target hr commands too — e.g. a custom trigger for staff-warn. */
 export default {

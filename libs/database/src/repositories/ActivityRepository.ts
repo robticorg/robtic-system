@@ -166,4 +166,24 @@ export class ActivityRepository {
             })
             .limit(limit);
     }
+
+    /** Single-element result (or empty) so id lookups and name searches share one call shape. */
+    static async findByDiscordId(guildId: string, discordId: string): Promise<IActivityXP[]> {
+        const record = await ActivityXP.findOne({ guildId, discordId });
+        return record ? [record] : [];
+    }
+
+    /** Case-insensitive username substring match, most-active first. Backs the Activity's profile search. */
+    static async searchByUsername(guildId: string, query: string, limit = 8): Promise<IActivityXP[]> {
+        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return ActivityXP.find({ guildId, username: { $regex: escaped, $options: "i" } })
+            .sort({ totalXP: -1 })
+            .limit(limit);
+    }
+
+    /** Bulk username lookup used to label leaderboard rows without an N+1 query per rank. */
+    static async findManyByDiscordIds(guildId: string, discordIds: string[]): Promise<IActivityXP[]> {
+        if (discordIds.length === 0) return [];
+        return ActivityXP.find({ guildId, discordId: { $in: discordIds } });
+    }
 }

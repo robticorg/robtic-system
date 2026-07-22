@@ -1,8 +1,8 @@
 import { Events, type Guild } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Logger } from "@core/libs";
+import type { BotClient } from "@core/bot-client";
+import { Logger } from "@logger";
 import { GlobalConfigRepository } from "@database/repositories";
-import { ensureServerLogChannels } from "@shared/utils/serverLogSetup";
+import { ensureServerLogChannels } from "@shared/utils/server-log";
 
 const CTX = "moderation:guild-create";
 

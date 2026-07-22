@@ -6,9 +6,9 @@ import {
     PermissionFlagsBits,
     MessageFlags,
 } from "discord.js";
-import { ClientManager } from "@core/ClientManager";
+import { ClientManager } from "@core/client-manager";
 import { ServerConfigRepository } from "@database/repositories/ServerConfigRepository";
-import { Colors } from "@core/config";
+import { COLORS } from "@constants";
 
 // Executed only by moderation bot's message-create.ts (the ChatUtils utility actions) — listed
 // here just so /shortcut's autocomplete/labeling knows about them without importing moderation's
@@ -129,7 +129,7 @@ export default {
             const embed = new EmbedBuilder()
                 .setTitle("Shortcuts")
                 .setDescription(shortcuts.map(s => `• \`${s.trigger}\` → \`${CHAT_UTIL_COMMANDS.includes(s.command) ? `/chat ${s.command}` : `/${s.command}`}\``).join("\n"))
-                .setColor(Colors.info || 0x3498DB);
+                .setColor(COLORS.info || 0x3498DB);
 
             await interaction.editReply({ embeds: [embed] });
         }

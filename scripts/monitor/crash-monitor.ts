@@ -1,5 +1,5 @@
 import pm2 from "pm2"
-import { reportServiceStatus } from "../../libs/core/src/utils/statusSystem/status";
+import { reportServiceStatus } from "../../libs/core/src/status/status";
 
 interface Pm2Packet {
     process: {

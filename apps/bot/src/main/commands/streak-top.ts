@@ -6,7 +6,7 @@ import {
     ButtonStyle,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { getLeaderboard, buildLeaderboardEmbed, type LeaderboardMode } from "../services/streak-service";
 import { getUserLang, t, type Lang } from "@shared/utils/lang";
 

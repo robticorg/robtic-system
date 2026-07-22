@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, type GuildMember } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { buildTopCategoryRow, buildTopPeriodRow } from "../components/topControls";
-import { buildTopEmbed } from "../services/top-service";
+import type { BotClient } from "@core/bot-client";
+import { buildTopCategoryRow, buildTopPeriodRow } from "../utils/top-controls";
+import { buildTopEmbed } from "../services/top";
 import { getUserLang, t } from "@shared/utils/lang";
 
 export default {

@@ -7,11 +7,11 @@ import {
     type GuildMember,
     type TextChannel,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors, SUPER_ADMIN_ID } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS, SUPER_ADMIN_ID } from "@constants";
 import { StaffRepository, HrConfigRepository } from "@database/repositories";
 import { hasFullPower, hasDepartmentAuthority } from "@shared/utils/access";
-import { syncStaffWarnRole } from "../utils/staffWarnRole";
+import { syncStaffWarnRole } from "../utils/staff-warn-role";
 
 export default {
     data: new SlashCommandBuilder()
@@ -124,7 +124,7 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setColor(Colors.warning)
+                    .setColor(COLORS.warning)
                     .setDescription(`✅ | تم تحذير <@${target.id}>.\nالسبب: ${reason}\nإجمالي التحذيرات: ${warningCount}`)],
             });
             return;
@@ -132,7 +132,7 @@ export default {
 
         // sub === "list"
         if (!staffRecord.warnings.length) {
-            await interaction.editReply({ embeds: [new EmbedBuilder().setColor(Colors.info).setDescription(`لا توجد تحذيرات لـ <@${target.id}>.`)] });
+            await interaction.editReply({ embeds: [new EmbedBuilder().setColor(COLORS.info).setDescription(`لا توجد تحذيرات لـ <@${target.id}>.`)] });
             return;
         }
 
@@ -144,7 +144,7 @@ export default {
             embeds: [new EmbedBuilder()
                 .setTitle(`⚠️ تحذيرات ${target.username}`)
                 .setDescription(lines.join("\n"))
-                .setColor(Colors.warning)
+                .setColor(COLORS.warning)
                 .setFooter({ text: `الإجمالي: ${staffRecord.warnings.length} تحذير` })],
         });
     },

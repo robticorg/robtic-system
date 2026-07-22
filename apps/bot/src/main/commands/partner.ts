@@ -7,7 +7,7 @@ import {
     ActionRowBuilder,
     PermissionFlagsBits,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 
 export default {
     data: new SlashCommandBuilder()

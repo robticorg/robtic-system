@@ -12,11 +12,16 @@ export default defineConfig({
     envDir: "../..",
     server: {
         port: 5173,
+        allowedHosts: [".trycloudflare.com"],
         proxy: {
             "/.proxy": {
                 target: `http://localhost:${process.env.API_PORT ?? 3001}`,
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/\.proxy/, ""),
+            },
+            "/api": {
+                target: `http://localhost:${process.env.API_PORT ?? 3001}`,
+                changeOrigin: true,
             },
         },
     },

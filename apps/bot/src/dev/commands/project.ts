@@ -1,7 +1,7 @@
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
-import { shareProject } from "@bot/dev/lib/share";
-import { Logger } from "@core/libs";
+import { Logger } from "@logger";
+import { showShareProjectModal } from "@bot/dev/utils/share-modal";
 
 export default {
     data: new SlashCommandBuilder()
@@ -17,8 +17,8 @@ export default {
         const subcommand = interaction.options.getSubcommand();
         Logger.debug(`Received /project ${subcommand} command from ${interaction.user.tag}`, client.botName);
 
-        if(subcommand === "share") {
-            await shareProject(interaction);
+        if (subcommand === "share") {
+            await showShareProjectModal(interaction);
         }
     }
-}
+};

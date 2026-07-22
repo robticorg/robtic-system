@@ -6,8 +6,8 @@ import {
     MessageFlags,
     ChannelType,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
 export default {
@@ -64,7 +64,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setDescription("❌ This command can only be used in a server.")
-                    .setColor(Colors.error)],
+                    .setColor(COLORS.error)],
             });
             return;
         }
@@ -77,7 +77,7 @@ export default {
 
             const embed = new EmbedBuilder()
                 .setTitle("✅ Line Channel Added")
-                .setColor(Colors.success)
+                .setColor(COLORS.success)
                 .setDescription(`Every message sent in <#${channel.id}> will now automatically get the line image attached and reacted to.`)
                 .setTimestamp();
 
@@ -91,7 +91,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("✅ Line Channel Removed")
-            .setColor(Colors.success)
+            .setColor(COLORS.success)
             .setDescription(`<#${channelId}> will no longer get the line image attached or reacted to.`)
             .setTimestamp();
 

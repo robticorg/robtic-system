@@ -6,8 +6,8 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/BotClient";
-import { Colors } from "@core/config";
+import type { BotClient } from "@core/bot-client";
+import { COLORS } from "@constants";
 import { StaffRepository, StaffTierRepository } from "@database/repositories";
 import { hasDepartmentAuthority, hasFullPower } from "@shared/utils/access";
 
@@ -78,7 +78,7 @@ export default {
 
         const embed = new EmbedBuilder()
             .setTitle("❌ تم إنهاء الخدمة")
-            .setColor(Colors.error)
+            .setColor(COLORS.error)
             .addFields(
                 { name: "الموظف", value: `<@${targetId}>`, inline: true },
                 { name: "القسم السابق", value: staffRecord.department, inline: true },

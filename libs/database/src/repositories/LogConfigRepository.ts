@@ -1,5 +1,5 @@
 import { LogConfig, type ILogConfig } from "@database/models/LogConfig";
-import type { LogKey } from "@shared/config/log-registry";
+import type { LogKey } from "@constants";
 
 export class LogConfigRepository {
     static async findByKey(key: LogKey): Promise<ILogConfig | null> {
@@ -14,7 +14,7 @@ export class LogConfigRepository {
         return LogConfig.findOneAndUpdate(
             { key },
             { key, serverId, channelId, setBy },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as Promise<ILogConfig>;
     }
 

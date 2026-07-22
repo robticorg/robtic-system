@@ -1,4 +1,4 @@
-import { BRANCH_CONFIG } from "@core/config";
+import { BRANCH_CONFIG } from "@config";
 
 export interface TicketCategory {
     /** Internal id — stored on the Ticket record and used as the panel select menu option value. */

@@ -1,6 +1,7 @@
 import { Events } from "discord.js";
-import type { BotClient } from "@core/BotClient.ts";
-import { Logger } from "@core/libs";
+import type { BotClient } from "@core/bot-client";
+import { Logger } from "@logger";
+import { BRANCH_CONFIG } from "@config";
 import { setPresence, setupGuildGuard } from "@shared/index";
 
 export default {
@@ -11,10 +12,6 @@ export default {
         Logger.debug(`Bot ID: ${client.user?.id}`, client.botName);
         Logger.debug(`Serving ${client.guilds.cache.size} guild(s)`, client.botName);
 
-        const activityNames = [
-            "DM for moderation help 🛡️",
-            "Moderation engine active 🟢"
-        ]
-        setPresence(client, "idle", "Listening", activityNames)
+        setPresence(client, "idle", "Listening", [...BRANCH_CONFIG.presence.modmail])
     },
 };

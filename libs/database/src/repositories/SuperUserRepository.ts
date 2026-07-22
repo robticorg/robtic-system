@@ -21,6 +21,16 @@ export class SuperUserRepository {
         return cache.has(userId);
     }
 
+    /**
+     * Synchronous variant for callers that can't await (e.g. hasFullPower, used inside sync guards).
+     * Reads only the already-warmed cache — `preload()` runs at boot, and if it somehow hasn't yet,
+     * this returns false and the caller falls through to the normal permission checks. Fail-closed:
+     * it can under-grant for a moment, never over-grant.
+     */
+    static isWhitelistedCached(userId: string): boolean {
+        return this.cache?.has(userId) ?? false;
+    }
+
     /** Warm the cache at boot so the first command doesn't pay a DB round-trip. */
     static async preload(): Promise<void> {
         await this.getCache();
@@ -30,7 +40,7 @@ export class SuperUserRepository {
         const doc = await SuperUser.findOneAndUpdate(
             { userId },
             { $set: { addedBy } },
-            { upsert: true, returnDocument: "after", new: true }
+            { upsert: true, returnDocument: "after" }
         ) as ISuperUser;
 
         const cache = await this.getCache();

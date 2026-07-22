@@ -10,11 +10,15 @@ import {
 } from "discord.js";
 import { StreakRepository, StreakSettingsRepository, StreakRewardRepository, StreakRewardClaimRepository } from "@database/repositories";
 import type { IStreak, IStreakSettings } from "@database/models";
-import { Colors, STREAK_CONFIG } from "@core/config";
-import { Logger } from "@core/libs";
-import { isClaimable, isStreakExpired, nextClaimAt, streakExpiresAt, isAcceptableMessage } from "@core/utils";
-import { getLogChannel } from "@shared/utils/getLogChannel";
-import { applyStreakRole } from "../utils/streakRole";
+import { COLORS, STREAK_CONFIG } from "@constants";
+import { Logger } from "@logger";
+import { isAcceptableMessage } from "@utils";
+import { isClaimable } from "@core/streak/is-claimable";
+import { isStreakExpired } from "@core/streak/is-streak-expired";
+import { nextClaimAt } from "@core/streak/next-claim-at";
+import { streakExpiresAt } from "@core/streak/streak-expires-at";
+import { getLogChannel } from "@shared/utils/server-log";
+import { applyStreakRole } from "../utils/streak-role";
 import { t, type Lang } from "@shared/utils/lang";
 
 const CTX = "main:streak";
@@ -112,7 +116,7 @@ async function checkStreakRewards(guild: Guild, user: User, guildId: string, cur
 
         const embed = new EmbedBuilder()
             .setTitle("🎁 مكافأة تتابع جديدة!")
-            .setColor(Colors.activity)
+            .setColor(COLORS.activity)
             .setDescription(`<@${user.id}> وصل إلى **${reward.threshold}** يوم تتابع متواصل! 🔥\nالمكافأة: ${reward.offer}`)
             .setTimestamp();
 
@@ -159,7 +163,7 @@ export function buildLeaderboardEmbed(guildName: string, mode: LeaderboardMode, 
     return new EmbedBuilder()
         .setTitle(t(mode === "current" ? "streakTop.title_current" : "streakTop.title_best", lang, { guild: guildName }))
         .setDescription(lines)
-        .setColor(Colors.activity)
+        .setColor(COLORS.activity)
         .setFooter({ text: guildName })
         .setTimestamp();
 }
@@ -172,7 +176,7 @@ async function sendStreakDM(user: User, streak: IStreak): Promise<void> {
             { name: "أفضل تتابع", value: `${streak.bestStreak}`, inline: true },
         )
         .setDescription("التتابع القادم متاح غداً.")
-        .setColor(Colors.activity)
+        .setColor(COLORS.activity)
         .setTimestamp();
 
     await user.send({ embeds: [embed] }).catch(() => null);

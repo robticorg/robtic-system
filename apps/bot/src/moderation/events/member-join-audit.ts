@@ -1,8 +1,8 @@
 import { Events, type GuildMember } from "discord.js";
-import type { BotClient } from "@core/BotClient";
+import type { BotClient } from "@core/bot-client";
 import { getModerationSecurityConfig, resolveLogChannel } from "../utils/security";
 import { memberJoinEmbed } from "../utils/embed";
-import { sendToServerLog } from "@shared/utils/sendToServerLog";
+import { sendToServerLog } from "@shared/utils/server-log";
 
 export default {
     name: Events.GuildMemberAdd,
