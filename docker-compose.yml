@@ -28,4 +28,4 @@ services:
     depends_on:
       - robtic-api
     ports:
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:9452:80"
