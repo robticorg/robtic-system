@@ -4,6 +4,7 @@ import { COLORS } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("set-commands-channel")
         .setDescription("Set the channel where only bot commands are allowed")

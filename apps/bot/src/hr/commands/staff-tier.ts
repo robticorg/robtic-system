@@ -21,6 +21,7 @@ const CATEGORY_LABELS: Record<keyof typeof CATEGORY_SCORES, string> = {
 };
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("staff-tier")
         .setDescription("Configure this server's own staff tiers, departments, and role bindings")

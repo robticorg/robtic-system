@@ -107,6 +107,10 @@ export class StaffRepository {
     });
   }
 
+  static async findAllSubmissions(): Promise<ISubmission[]> {
+    return Submission.find().sort({ createdAt: -1 });
+  }
+
   static async getSubmission(userId: string): Promise<ISubmission | null> {
     return Submission.findOne({
       userId,

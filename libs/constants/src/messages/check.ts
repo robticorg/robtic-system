@@ -10,6 +10,24 @@ export const CHECK_MESSAGES = {
         `**${count}** member${count === 1 ? "" : "s"} currently on a **${value}-day** streak:`,
     streakLine: (rank: number, discordId: string) => `**${rank}.** <@${discordId}>`,
     truncatedNote: (shown: number, total: number) => `\n\n…and ${total - shown} more (showing first ${shown}).`,
+
+    staffTitle: "🛡️ Staff Activity Overview",
+    staffNone: "No staff activity has been recorded in this server yet.",
+    staffSummary: (count: number) =>
+        `**${count}** staff member${count === 1 ? "" : "s"} with recorded activity, ranked by total points:`,
+    staffLine: (
+        rank: number,
+        discordId: string,
+        total: number,
+        staff: { supportPoints: number; publicChatPoints: number; staffChatPoints: number; moderationPoints: number; penalties: number },
+    ) =>
+        `**${rank}.** <@${discordId}> — **${total}** pts\n` +
+        `> 🎧 ${staff.supportPoints} · 💬 ${staff.publicChatPoints} · 👥 ${staff.staffChatPoints} · 🔨 ${staff.moderationPoints}${staff.penalties > 0 ? ` · ⚠️ -${staff.penalties}` : ""}`,
+
+    staffUserTitle: (username: string) => `🛡️ Staff Activity — ${username}`,
+    staffMemberNotFound: "That user is not in this server.",
+    staffNotStaff: (discordId: string) => `<@${discordId}> is not a staff member.`,
+    staffLegend: "🎧 support · 💬 public chat · 👥 staff chat · 🔨 moderation · ⚠️ penalties",
 } as const;
 
 /** Maximum members listed in one `/check` result before the list is truncated. */

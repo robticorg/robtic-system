@@ -12,6 +12,7 @@ import { buildConfigRoot } from "../utils/ads-config-views";
 import { Logger } from "@logger";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("setup-ads")
         .setDescription("Configure the advertisement system")

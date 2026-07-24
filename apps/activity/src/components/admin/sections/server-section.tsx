@@ -4,6 +4,7 @@ import { channelOptions, roleOptions } from "../../../utils/to-options";
 import { SectionShell } from "../section-shell";
 import { TextField } from "../text-field";
 import { EntitySelect } from "../entity-select";
+import { EntityMultiSelect } from "../entity-multi-select";
 
 interface Props {
     initial: AdminServerConfig;
@@ -53,6 +54,13 @@ export function ServerSection({ initial, channels, roles }: Props) {
             <EntitySelect label="Bots role" value={draft.roles.bots} options={roleOpts} onChange={(v) => setRole("bots", v)} />
             <EntitySelect label="English role" value={draft.roles.en} options={roleOpts} onChange={(v) => setRole("en", v)} />
             <EntitySelect label="Arabic role" value={draft.roles.ar} options={roleOpts} onChange={(v) => setRole("ar", v)} />
+            <EntityMultiSelect
+                label="Admin panel access roles"
+                hint="Members with any of these roles can open this admin panel — no Administrator permission needed."
+                selected={draft.adminPanelRoles}
+                options={roleOpts}
+                onChange={(ids) => setDraft({ ...draft, adminPanelRoles: ids })}
+            />
         </SectionShell>
     );
 }

@@ -15,6 +15,7 @@ import { tagHelpEmbed } from "@shared/utils/help";
 import messages from "../utils/messages.json";
 
 export default {
+    category: "Tags",
     data: new SlashCommandBuilder()
         .setName("tag")
         .setDescription("Manage reusable tags")

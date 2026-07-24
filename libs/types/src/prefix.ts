@@ -1,6 +1,7 @@
 /** One option node of a slash command's registered JSON schema. */
 export interface OptionJSON {
     name: string;
+    description?: string;
     type: number;
     required?: boolean;
     channel_types?: number[];
@@ -10,6 +11,8 @@ export interface OptionJSON {
 /** The JSON shape of a registered slash command (`command.data.toJSON()`). */
 export interface CommandJSON {
     name: string;
+    description?: string;
+    type?: number;
     options?: OptionJSON[];
 }
 

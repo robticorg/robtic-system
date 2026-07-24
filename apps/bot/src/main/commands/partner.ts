@@ -10,6 +10,7 @@ import {
 import type { BotClient } from "@core/bot-client";
 
 export default {
+    category: "Partnership",
     data: new SlashCommandBuilder()
         .setName("partner")
         .setDescription("Manage Robtic partner servers")

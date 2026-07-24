@@ -29,6 +29,7 @@ function commandExists(command: string): boolean {
 }
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("shortcut")
         .setDescription("Manage custom message-trigger shortcuts, for any bot's commands")

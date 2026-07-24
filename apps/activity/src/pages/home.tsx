@@ -2,28 +2,29 @@ import { useState } from "react";
 import { useDiscordAuth } from "../hooks/use-discord-auth";
 import { useAdminConfig } from "../hooks/use-admin-config";
 import { UserSearch } from "../components/user-search";
-import { Logo } from "../components/logo";
-import { Icon, type IconName } from "../components/icon";
+import { UserMenu, type UserMenuItem } from "../components/user-menu";
+import { Icon } from "../components/icon";
+import { Landing } from "./landing";
 import { ProfileView } from "./profile-view";
 import { LeaderboardView } from "./leaderboard-view";
+import { ProjectsView } from "./projects-view";
 import { AdminView } from "./admin-view";
 import { ModerationView } from "./moderation-view";
+import { BotAdminView } from "./bot-admin-view";
+import { StaffAdminView } from "./staff-admin-view";
+import { LangToggle } from "../components/lang-toggle";
 
-type Tab = "profile" | "top" | "moderation" | "admin";
+type Tab = "home" | "profile" | "top" | "projects" | "moderation" | "admin" | "staff" | "bot";
 
-const BASE_TABS: { id: Tab; label: string; icon: IconName }[] = [
-    { id: "profile", label: "Profile", icon: "user" },
-    { id: "top", label: "Top", icon: "trophy" },
-];
-
-const ADMIN_TABS: { id: Tab; label: string; icon: IconName }[] = [
-    { id: "moderation", label: "Moderate", icon: "scale" },
-    { id: "admin", label: "Admin", icon: "gear" },
-];
+function viewerAvatarUrl(userId: string, avatar: string | null | undefined): string | null {
+    if (!avatar) return null;
+    const ext = avatar.startsWith("a_") ? "gif" : "png";
+    return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.${ext}?size=128`;
+}
 
 export function Home() {
     const state = useDiscordAuth();
-    const [tab, setTab] = useState<Tab>("profile");
+    const [tab, setTab] = useState<Tab>("home");
     /** Null means "the signed-in user"; set when a search result or leaderboard row is opened. */
     const [viewedUserId, setViewedUserId] = useState<string | null>(null);
 
@@ -31,6 +32,9 @@ export function Home() {
     const authed = state.status === "authenticated" && Boolean(state.session.guildId);
     const admin = useAdminConfig(authed);
     const isAdmin = admin.status === "ready" && admin.data.isAdmin;
+    const isSuperUser = admin.status === "ready" && admin.data.isSuperUser;
+    // Projects exist only inside the configured dev server.
+    const isDevGuild = admin.status === "ready" && admin.data.isDevGuild;
 
     if (state.status === "connecting") {
         return (
@@ -62,52 +66,82 @@ export function Home() {
         );
     }
 
+    const viewer = state.session.auth.user;
+    const viewerName = ("global_name" in viewer && viewer.global_name) || viewer.username;
+    const viewerAvatar = viewerAvatarUrl(viewer.id, viewer.avatar);
+
     function openProfile(userId: string) {
         setViewedUserId(userId);
         setTab("profile");
     }
 
-    const tabs = isAdmin ? [...BASE_TABS, ...ADMIN_TABS] : BASE_TABS;
-    // If a non-admin lands on an admin tab (bootstrap resolved late), fall back to profile.
-    const activeTab: Tab = (tab === "admin" || tab === "moderation") && !isAdmin ? "profile" : tab;
+    function navigate(destination: Tab) {
+        if (destination === "profile") setViewedUserId(null);
+        setTab(destination);
+    }
+
+    /** Everything lives in the avatar dropdown; the topbar itself stays search + lang + Top. */
+    const menuItems: UserMenuItem[] = [
+        { id: "home", label: "Home", icon: "home" },
+        { id: "profile", label: "My Profile", icon: "user" },
+        ...(isDevGuild ? [{ id: "projects", label: "Projects", icon: "rocket" } as UserMenuItem] : []),
+        ...(isAdmin ? [
+            { id: "staff", label: "Staff", icon: "users" } as UserMenuItem,
+            { id: "moderation", label: "Moderate", icon: "scale" } as UserMenuItem,
+            { id: "admin", label: "Admin Panel", icon: "gear" } as UserMenuItem,
+        ] : []),
+        ...(isSuperUser ? [{ id: "bot", label: "Bot Admin", icon: "shield" } as UserMenuItem] : []),
+    ];
+
+    // If a gated tab is open without the matching flag (bootstrap resolved late), fall back home.
+    let activeTab: Tab = tab;
+    if ((tab === "admin" || tab === "moderation" || tab === "staff") && !isAdmin) activeTab = "home";
+    if (tab === "bot" && !isSuperUser) activeTab = "home";
+    if (tab === "projects" && !isDevGuild) activeTab = "home";
 
     return (
         <div className="app">
             <nav className="topbar">
                 <div className="topbar__inner">
-                    <div className="brand">
-                        <Logo size={30} />
-                        <span className="brand__word">Robtic</span>
-                    </div>
-
-                    <div className="tabs" role="tablist">
-                        {tabs.map((t) => (
-                            <button
-                                key={t.id}
-                                type="button"
-                                className="tab"
-                                role="tab"
-                                aria-selected={activeTab === t.id}
-                                title={t.label}
-                                onClick={() => { setTab(t.id); if (t.id === "profile") setViewedUserId(null); }}
-                            >
-                                <Icon name={t.icon} size={17} />
-                                <span className="tab__label">{t.label}</span>
-                            </button>
-                        ))}
-                    </div>
+                    <UserMenu
+                        userName={viewerName}
+                        avatarUrl={viewerAvatar}
+                        userId={viewer.id}
+                        items={menuItems}
+                        activeId={activeTab}
+                        onSelect={(id) => navigate(id as Tab)}
+                    />
 
                     <UserSearch onSelect={(r) => openProfile(r.discordId)} />
+
+                    <LangToggle enabled={authed} />
+
+                    <button
+                        type="button"
+                        className="leaderboard-button"
+                        title="Leaderboard"
+                        aria-pressed={activeTab === "top"}
+                        onClick={() => setTab("top")}
+                    >
+                        <Icon name="trophy" size={17} />
+                        <span className="leaderboard-button__label">Top</span>
+                    </button>
                 </div>
             </nav>
 
             <div className="app__body">
+                {activeTab === "home" && (
+                    <Landing userName={viewerName} avatarUrl={viewerAvatar} userId={viewer.id} />
+                )}
                 {activeTab === "profile" && (
                     <ProfileView userId={viewedUserId} onBack={viewedUserId ? () => setViewedUserId(null) : null} />
                 )}
                 {activeTab === "top" && <LeaderboardView onSelectUser={openProfile} />}
+                {activeTab === "projects" && isDevGuild && <ProjectsView />}
+                {activeTab === "staff" && isAdmin && <StaffAdminView />}
                 {activeTab === "moderation" && isAdmin && <ModerationView />}
                 {activeTab === "admin" && isAdmin && admin.status === "ready" && <AdminView data={admin.data} />}
+                {activeTab === "bot" && isSuperUser && <BotAdminView currentGuildId={state.session.guildId} />}
             </div>
         </div>
     );

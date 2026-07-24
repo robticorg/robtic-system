@@ -7,6 +7,7 @@ import type { BotClient } from "@core/bot-client";
 import { modmailHelpEmbed } from "@shared/utils/help";
 
 export default {
+    category: "Utility",
     data: new SlashCommandBuilder()
         .setName("mod")
         .setDescription("Modmail staff utilities")

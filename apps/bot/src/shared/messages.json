@@ -164,6 +164,7 @@
             "category_combo": "Combo",
             "category_xp": "XP",
             "category_messages": "Messages",
+            "category_coins": "Coins",
             "period_daily": "Daily",
             "period_weekly": "Weekly",
             "period_monthly": "Monthly",
@@ -171,7 +172,8 @@
             "unit_streak": "day streak",
             "unit_combo": "combo score",
             "unit_xp": "XP",
-            "unit_messages": "messages"
+            "unit_messages": "messages",
+            "unit_coins": "coins"
         }
     },
     "ar": {
@@ -339,6 +341,7 @@
             "category_combo": "الكومبو",
             "category_xp": "الخبرة",
             "category_messages": "الرسائل",
+            "category_coins": "العملات",
             "period_daily": "يومي",
             "period_weekly": "أسبوعي",
             "period_monthly": "شهري",
@@ -346,7 +349,8 @@
             "unit_streak": "يوم تتابع",
             "unit_combo": "نقطة كومبو",
             "unit_xp": "خبرة",
-            "unit_messages": "رسالة"
+            "unit_messages": "رسالة",
+            "unit_coins": "عملة"
         }
     }
 }

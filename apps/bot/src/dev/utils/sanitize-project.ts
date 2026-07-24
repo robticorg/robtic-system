@@ -1,4 +1,5 @@
-import { GENERIC_URL_REGEX, YOUTUBE_URL_REGEX, PROJECT_TYPE_OPTIONS } from "@constants";
+import { GENERIC_URL_REGEX, YOUTUBE_URL_REGEX } from "@constants";
+import { normalizeProjectType } from "@core/projects";
 
 type SanitizableProject = {
     projectType: string;
@@ -6,16 +7,8 @@ type SanitizableProject = {
     youtubeTutorialLink?: string;
 };
 
-export type ProjectKind = typeof PROJECT_TYPE_OPTIONS[number];
-
-/** Normalizes a legacy/free-form project type onto one of PROJECT_TYPE_OPTIONS. */
-export function normalizeProjectType(raw: string): ProjectKind {
-    const lowered = raw.toLowerCase();
-    if (lowered.startsWith("w")) return "web";
-    if (lowered.startsWith("d")) return "discord";
-    if ((PROJECT_TYPE_OPTIONS as readonly string[]).includes(lowered)) return lowered as ProjectKind;
-    return "other";
-}
+// Normalization moved to @core/projects so the Activity API shares it; re-exported for existing imports.
+export { normalizeProjectType, type ProjectKind } from "@core/projects";
 
 /** Drops any stored link that no longer passes validation, so old records can't render bad URLs. */
 export function sanitizeProject(project: SanitizableProject): void {

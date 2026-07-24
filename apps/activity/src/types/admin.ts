@@ -1,10 +1,11 @@
-export type AdminConfigSection = "server" | "xp" | "streak" | "combo" | "punish" | "logs";
+export type AdminConfigSection = "server" | "xp" | "streak" | "combo" | "punish" | "logs" | "coins";
 
 export interface AdminServerConfig {
     prefix: string | null;
     commandsChannelId: string | null;
     modmailChannelId: string | null;
     roles: { members: string | null; bots: string | null; en: string | null; ar: string | null };
+    adminPanelRoles: string[];
 }
 
 export interface AdminXpConfig {
@@ -37,6 +38,12 @@ export interface AdminLogsConfig {
     channels: Record<string, string | null>;
 }
 
+export interface AdminCoinsConfig {
+    messagesPerCoin: number;
+    comboPerCoin: number;
+    streakRewards: { streak: number; coins: number }[];
+}
+
 export interface AdminConfigSnapshot {
     server: AdminServerConfig;
     xp: AdminXpConfig;
@@ -44,6 +51,7 @@ export interface AdminConfigSnapshot {
     combo: AdminComboConfig;
     punish: AdminPunishConfig;
     logs: AdminLogsConfig;
+    coins: AdminCoinsConfig;
 }
 
 export interface GuildChannelInfo {
@@ -64,7 +72,17 @@ export interface GuildRoleInfo {
 
 export interface AdminBootstrap {
     isAdmin: boolean;
+    /** Whitelisted bot owner — unlocks the bot admin panel. */
+    isSuperUser: boolean;
+    /** True when the Activity was opened inside the configured dev server (unlocks Projects). */
+    isDevGuild: boolean;
     config?: AdminConfigSnapshot;
     channels?: GuildChannelInfo[];
     roles?: GuildRoleInfo[];
+}
+
+/** Bot-wide settings, super users only. */
+export interface BotAdminConfig {
+    isSuperUser: boolean;
+    devGuildId?: string | null;
 }

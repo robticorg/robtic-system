@@ -9,6 +9,7 @@ import { ChatUtils } from "../utils/chat";
 import { BRANCH_EMOJIS as emoji } from "@config";
 
 export default {
+    category: "Moderation",
     data: new SlashCommandBuilder()
         .setName("chat")
         .setDescription("Manage channel chat settings")

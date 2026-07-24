@@ -11,6 +11,7 @@ import { getStreakSummary } from "../services/streak-service";
 import { getUserLang, t } from "@shared/utils/lang";
 
 export default {
+    category: "Streak",
     data: new SlashCommandBuilder()
         .setName("streak")
         .setDescription("View your (or another member's) daily streak")

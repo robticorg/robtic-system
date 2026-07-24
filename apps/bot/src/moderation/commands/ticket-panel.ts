@@ -43,6 +43,7 @@ export function buildTicketPanel(): ContainerBuilder {
 }
 
 export default {
+    category: "Tickets",
     data: new SlashCommandBuilder()
         .setName("ticket-panel")
         .setDescription("Send the ticket-opening panel to a channel")

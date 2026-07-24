@@ -11,6 +11,7 @@ import { StaffRepository } from "@database/repositories";
 import { hasDepartmentAuthority, hasFullPower } from "@shared/utils/access";
 
 export default {
+    category: "Staff",
     data: new SlashCommandBuilder()
         .setName("staff-data")
         .setDescription("بيانات الموظفين")

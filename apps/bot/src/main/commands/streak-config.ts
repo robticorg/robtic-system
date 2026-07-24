@@ -15,6 +15,7 @@ import { formatDuration } from "@utils";
 import { applyStreakRole } from "../utils/streak-role";
 
 export default {
+    category: "Streak",
     data: new SlashCommandBuilder()
         .setName("streak-config")
         .setDescription("Configure the streak system for this server")

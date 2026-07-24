@@ -5,6 +5,7 @@ import { buildComboNavRow, isComboAdmin } from "../utils/combo-components";
 import { getUserLang, t } from "@shared/utils/lang";
 
 export default {
+    category: "Activity",
     data: new SlashCommandBuilder()
         .setName("combo")
         .setDescription("View your conversation combo status"),

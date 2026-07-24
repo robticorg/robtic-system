@@ -4,6 +4,7 @@ import { COLORS, DEFAULT_PREFIX } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("set-prefix")
         .setDescription("Set the text-command prefix for this server")

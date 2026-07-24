@@ -10,6 +10,7 @@ import { hasDepartmentAuthority } from "@shared/utils/access";
 import messages from "../utils/messages.json";
 
 export default {
+    category: "Threads",
     data: new SlashCommandBuilder()
         .setName("transfer")
         .setDescription("Transfer this modmail thread to another staff member")

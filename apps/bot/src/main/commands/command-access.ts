@@ -12,6 +12,7 @@ import { CommandAccessRepository, StaffTierRepository } from "@database/reposito
 import { hasFullPower } from "@shared/utils/access";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("command-access")
         .setDescription("Grant a role or staff-tier category direct access to a command")

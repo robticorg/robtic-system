@@ -6,18 +6,20 @@ import {
     ComboSettingsRepository,
     PunishConfigRepository,
     LogConfigRepository,
+    CoinSettingsRepository,
 } from "@database/repositories";
-import { LOG_REGISTRY, STREAK_CONFIG } from "@constants";
+import { COIN_DEFAULTS, LOG_REGISTRY, STREAK_CONFIG } from "@constants";
 
 /** Reads every editable config section for a guild into one snapshot for the admin panel. */
 export async function getAdminConfig(guildId: string): Promise<AdminConfigSnapshot> {
-    const [server, xp, streak, combo, punish, logConfigs] = await Promise.all([
+    const [server, xp, streak, combo, punish, logConfigs, coins] = await Promise.all([
         ServerConfigRepository.find(guildId),
         XPSettingsRepository.get(guildId),
         StreakSettingsRepository.get(guildId),
         ComboSettingsRepository.get(guildId),
         PunishConfigRepository.findOrCreate(guildId),
         LogConfigRepository.findAll(),
+        CoinSettingsRepository.get(guildId),
     ]);
 
     const logChannels: Record<string, string | null> = {};
@@ -38,6 +40,7 @@ export async function getAdminConfig(guildId: string): Promise<AdminConfigSnapsh
                 en: server?.roles?.en ?? null,
                 ar: server?.roles?.ar ?? null,
             },
+            adminPanelRoles: server?.adminPanelRoles ?? [],
         },
         xp: {
             chatChannels: xp?.chatChannels ?? [],
@@ -63,6 +66,11 @@ export async function getAdminConfig(guildId: string): Promise<AdminConfigSnapsh
         },
         logs: {
             channels: logChannels,
+        },
+        coins: {
+            messagesPerCoin: coins?.messagesPerCoin ?? COIN_DEFAULTS.messagesPerCoin,
+            comboPerCoin: coins?.comboPerCoin ?? COIN_DEFAULTS.comboPerCoin,
+            streakRewards: (coins?.streakRewards ?? []).map(r => ({ streak: r.streak, coins: r.coins })),
         },
     };
 }

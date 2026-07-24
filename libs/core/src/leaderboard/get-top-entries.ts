@@ -1,4 +1,4 @@
-import { ComboLeaderboardRepository, PeriodicStatRepository } from "@database/repositories";
+import { CoinsRepository, ComboLeaderboardRepository, PeriodicStatRepository } from "@database/repositories";
 import { TOP_DISPLAY_LIMIT, type ComboLeaderboardPeriod, type TopCategory } from "@constants";
 import { periodKeyFor } from "@utils";
 import type { TopEntry } from "@typings/top";
@@ -20,6 +20,11 @@ export async function getTopEntries(
     if (category === "xp" || category === "messages") {
         const rows = await PeriodicStatRepository.getTop(guildId, period, category, limit);
         return rows.map(r => ({ discordId: r.discordId, value: r.value }));
+    }
+    if (category === "coins") {
+        // Coin balances are cumulative — every period shows the all-time standings.
+        const rows = await CoinsRepository.getTop(guildId, limit);
+        return rows.map(r => ({ discordId: r.discordId, value: r.coins }));
     }
     return getStreakTopEntries(guildId, period, limit);
 }

@@ -8,6 +8,7 @@ import { COLORS } from "@constants";
 import { StreakRepository, StreakRewardRepository, StreakRewardClaimRepository } from "@database/repositories";
 
 export default {
+    category: "Streak",
     data: new SlashCommandBuilder()
         .setName("streak-check")
         .setDescription("التحقق من حالة مكافآت التتابع لعضو")

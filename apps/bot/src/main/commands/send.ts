@@ -10,6 +10,7 @@ import {
 import { Send } from "@database/models";
 
 export default {
+    category: "Utility",
     data: new SlashCommandBuilder()
         .setName("send")
         .setDescription("Send an embed message to a channel")

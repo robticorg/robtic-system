@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { panelList, panelSend, panelDelete, panelAutocompleteChoices, sentPanelAutocomplete } from "../utils/panels";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("panels")
         .setDescription("Manage server panels")

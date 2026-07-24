@@ -15,6 +15,7 @@ import { COLORS } from "@constants";
 import messages from "../utils/messages.json";
 
 export default {
+    category: "Threads",
     data: new SlashCommandBuilder()
         .setName("thread")
         .setDescription("Manage modmail thread state")

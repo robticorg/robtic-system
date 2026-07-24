@@ -11,6 +11,7 @@ import { XPSettingsRepository } from "@database/repositories";
 import { COLORS } from "@constants";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("xp-settings")
         .setDescription("Configure XP system settings")

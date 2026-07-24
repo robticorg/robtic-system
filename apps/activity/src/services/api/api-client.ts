@@ -1,5 +1,8 @@
-import type { LeaderboardResponse, Profile, SearchResult, TopCategory, TopPeriod } from "../../types/profile";
-import type { AdminBootstrap, AdminConfigSection, AdminConfigSnapshot } from "../../types/admin";
+import type { LeaderboardResponse, Profile, ProfileDetails, SearchResult, TopCategory, TopPeriod } from "../../types/profile";
+import type { AdminBootstrap, AdminConfigSection, AdminConfigSnapshot, BotAdminConfig } from "../../types/admin";
+import type { UserSettings, UserSettingsUpdate } from "../../types/settings";
+import type { OwnProject, ProjectSubmission } from "../../types/projects";
+import type { BotProfile, StaffOverview } from "../../types/staff-admin";
 
 /** Discord rewrites /.proxy to the backend in production; the Vite dev server proxies it locally. */
 const API_BASE = "/.proxy/api";
@@ -42,8 +45,18 @@ export async function searchUsers(query: string): Promise<SearchResult[]> {
     return results;
 }
 
-export function fetchLeaderboard(category: TopCategory, period: TopPeriod): Promise<LeaderboardResponse> {
-    return request<LeaderboardResponse>("/top", { category, period });
+export function fetchLeaderboard(
+    category: TopCategory,
+    period: TopPeriod,
+    page = 1,
+    pageSize = 10,
+): Promise<LeaderboardResponse> {
+    return request<LeaderboardResponse>("/top", {
+        category,
+        period,
+        page: String(page),
+        pageSize: String(pageSize),
+    });
 }
 
 async function postJson<T>(path: string, payload: Record<string, unknown>): Promise<T> {
@@ -69,6 +82,63 @@ async function postJson<T>(path: string, payload: Record<string, unknown>): Prom
 
 export function fetchAdminConfig(): Promise<AdminBootstrap> {
     return request<AdminBootstrap>("/admin/config");
+}
+
+export async function saveProfileCustomization(update: {
+    displayName?: string;
+    profileColor?: string;
+    textColor?: string;
+    bannerUrl?: string;
+    bio?: string;
+    template?: string;
+}): Promise<void> {
+    await postJson<{ ok: true }>("/profile/customize", { ...update });
+}
+
+export function fetchStaffOverview(): Promise<StaffOverview> {
+    return request<StaffOverview>("/admin/staff");
+}
+
+export async function setApplyTypeOpen(key: string, isOpen: boolean): Promise<void> {
+    await postJson<{ ok: true }>("/admin/staff/apply", { key, isOpen });
+}
+
+export function fetchBotProfile(): Promise<BotProfile> {
+    return request<BotProfile>("/admin/bot-profile");
+}
+
+export async function saveBotProfile(update: { nick?: string; avatar?: string | null; bio?: string }): Promise<void> {
+    await postJson<{ ok: true }>("/admin/bot-profile", { ...update });
+}
+
+export function fetchBotAdminConfig(): Promise<BotAdminConfig> {
+    return request<BotAdminConfig>("/bot-admin/config");
+}
+
+export function saveBotAdminConfig(devGuildId: string | null): Promise<BotAdminConfig> {
+    return postJson<BotAdminConfig>("/bot-admin/config", { devGuildId });
+}
+
+export function fetchProfileDetails(userId: string): Promise<ProfileDetails> {
+    return request<ProfileDetails>(`/profile/${userId}/details`);
+}
+
+export function fetchSettings(): Promise<UserSettings> {
+    return request<UserSettings>("/settings");
+}
+
+export function saveSettings(update: UserSettingsUpdate): Promise<UserSettings> {
+    return postJson<UserSettings>("/settings", { ...update });
+}
+
+export async function fetchMyProjects(): Promise<OwnProject[]> {
+    const { projects } = await request<{ projects: OwnProject[] }>("/projects/mine");
+    return projects;
+}
+
+export async function submitProject(submission: ProjectSubmission): Promise<string> {
+    const { projectId } = await postJson<{ ok: true; projectId: string }>("/projects", { ...submission });
+    return projectId;
 }
 
 export type ModerationAction = "ban" | "unban" | "kick" | "timeout" | "untimeout";

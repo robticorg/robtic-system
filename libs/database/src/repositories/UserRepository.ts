@@ -47,4 +47,45 @@ export class UserRepository {
             { upsert: true, returnDocument: "after" }
         ) as Promise<IUser>;
     }
+
+    static async getCustomization(discordId: string): Promise<{
+        profileColor: string | null;
+        textColor: string | null;
+        bannerUrl: string | null;
+        bio: string | null;
+        profileTemplate: string | null;
+    }> {
+        const user = await User.findOne({ discordId });
+        return {
+            profileColor: user?.profileColor ?? null,
+            textColor: user?.textColor ?? null,
+            bannerUrl: user?.bannerUrl ?? null,
+            bio: user?.bio ?? null,
+            profileTemplate: user?.profileTemplate ?? null,
+        };
+    }
+
+    /** Partial write — only the provided keys change; empty strings clear a field. */
+    static async setCustomization(
+        discordId: string,
+        username: string,
+        update: Partial<{ profileColor: string; textColor: string; bannerUrl: string; bio: string; profileTemplate: string }>,
+    ): Promise<IUser> {
+        const set: Record<string, string> = {};
+        const unset: Record<string, 1> = {};
+        for (const [key, value] of Object.entries(update)) {
+            if (value === undefined) continue;
+            if (value === "") unset[key] = 1;
+            else set[key] = value;
+        }
+        return User.findOneAndUpdate(
+            { discordId },
+            {
+                ...(Object.keys(set).length ? { $set: set } : {}),
+                ...(Object.keys(unset).length ? { $unset: unset } : {}),
+                $setOnInsert: { username },
+            },
+            { upsert: true, returnDocument: "after" }
+        ) as Promise<IUser>;
+    }
 }

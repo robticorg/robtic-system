@@ -9,6 +9,7 @@ import { LevelRewardRepository } from "@database/repositories";
 import { COLORS } from "@constants";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("level-rewards")
         .setDescription("Manage level reward roles")

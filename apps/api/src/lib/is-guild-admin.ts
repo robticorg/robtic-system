@@ -1,5 +1,4 @@
-import { SuperUserRepository } from "@database/repositories";
-import { FULL_POWER_ROLE_IDS } from "@constants";
+import { ServerConfigRepository, SuperUserRepository } from "@database/repositories";
 import { discordBotGet } from "./discord-api";
 
 const ADMINISTRATOR = 1n << 3n;
@@ -12,10 +11,11 @@ interface RoleInfo { id: string; permissions: string }
 const cache = new Map<string, { isAdmin: boolean; expiresAt: number }>();
 
 /**
- * Admin gate for the config panel. True when the caller is a whitelisted super user, holds one of
- * the branch's full-power roles, is the guild owner, or holds a role with the Administrator
- * permission. Mirrors the bot's hasFullPower + Administrator checks. Resolved via the bot token —
- * the client can't assert this itself. Cached briefly so repeated panel loads don't hammer Discord.
+ * Gate for the guild admin panel. True when the caller is a whitelisted super user, the guild
+ * owner, holds a role with the Administrator permission, or holds one of the guild's configured
+ * admin-panel access roles (ServerConfig.adminPanelRoles, editable in the panel itself).
+ * Resolved via the bot token — the client can't assert this itself. Cached briefly so repeated
+ * panel loads don't hammer Discord.
  */
 export async function isGuildAdmin(guildId: string, userId: string): Promise<boolean> {
     if (await SuperUserRepository.isWhitelisted(userId)) return true;
@@ -30,15 +30,16 @@ export async function isGuildAdmin(guildId: string, userId: string): Promise<boo
 }
 
 async function resolveGuildAdmin(guildId: string, userId: string): Promise<boolean> {
-    const [guild, member, roles] = await Promise.all([
+    const [guild, member, roles, accessRoles] = await Promise.all([
         discordBotGet<GuildInfo>(`/guilds/${guildId}`),
         discordBotGet<MemberInfo>(`/guilds/${guildId}/members/${userId}`),
         discordBotGet<RoleInfo[]>(`/guilds/${guildId}/roles`),
+        ServerConfigRepository.getAdminPanelRoles(guildId),
     ]);
 
     if (!guild || !member || !roles) return false;
     if (guild.owner_id === userId) return true;
-    if (member.roles.some(roleId => FULL_POWER_ROLE_IDS.includes(roleId))) return true;
+    if (accessRoles.length > 0 && member.roles.some(roleId => accessRoles.includes(roleId))) return true;
 
     const permissionByRole = new Map(roles.map(role => [role.id, BigInt(role.permissions)]));
     // @everyone (id === guildId) always applies, plus each role the member holds.

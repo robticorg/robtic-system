@@ -29,6 +29,19 @@ export class ServerConfigRepository {
         return config?.roles?.[type] ?? null;
     }
 
+    static async getAdminPanelRoles(guildId: string): Promise<string[]> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.adminPanelRoles ?? [];
+    }
+
+    static async setAdminPanelRoles(guildId: string, roleIds: string[]): Promise<IServerConfig> {
+        return ServerConfig.findOneAndUpdate(
+            { guildId },
+            { $set: { adminPanelRoles: roleIds } },
+            { upsert: true, returnDocument: "after" }
+        ) as Promise<IServerConfig>;
+    }
+
     static async setModmailChannel(guildId: string, channelId: string): Promise<IServerConfig> {
         return ServerConfig.findOneAndUpdate(
             { guildId },

@@ -132,6 +132,7 @@ export async function executeBan(
 }
 
 export default {
+    category: "Moderation",
     data: new SlashCommandBuilder()
         .setName("ban")
         .setDescription("Manage user bans")

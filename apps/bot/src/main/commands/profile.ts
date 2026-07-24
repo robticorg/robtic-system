@@ -15,10 +15,13 @@ import { calculateLevel, xpForLevel } from "../../community/services/xp";
 import { getStaffActivity, getSupportStats } from "@shared/utils/staff-activity";
 import { getStreakSummary } from "../services/streak-service";
 import { getUserHighestCombo } from "../services/combo";
+import { getCoinSummary } from "@core/coins";
+import { getProfileBadges } from "@core/profile";
 import { getUserLang, t } from "@shared/utils/lang";
 import { BRANCH_EMOJIS as emoji } from "@config";
 
 export default {
+    category: "Profile",
     data: new SlashCommandBuilder()
         .setName("profile")
         .setDescription("View a user's profile and information")
@@ -80,11 +83,28 @@ export default {
         }
 
         const displayName = await UserRepository.getDisplayName(target.id) ?? target.username;
+        const customization = await UserRepository.getCustomization(target.id);
+        const coinSummary = await getCoinSummary(guildId, target.id);
+
+        // The user's chosen accent color styles their profile unless a punishment tier overrides it.
+        const profileColor = customization.profileColor && /^#[0-9a-f]{6}$/i.test(customization.profileColor)
+            ? Number.parseInt(customization.profileColor.slice(1), 16)
+            : null;
+        const embedColor = !isPrivate && punishmentLevel >= 60 ? COLORS.moderation
+            : !isPrivate && punishmentLevel >= 20 ? COLORS.warning
+            : profileColor ?? COLORS.info;
+
+        // Achievement crowns next to the name — same badges the Activity shows.
+        const badges = await getProfileBadges(guildId, target.id, streak.record.currentStreak);
+        const badgeSuffix = [
+            badges.some(b => b.id === "top-combo") ? "👑💬" : "",
+            badges.some(b => b.id === "top-streak") ? "👑🔥" : "",
+        ].filter(Boolean).join(" ");
 
         const embed = new EmbedBuilder()
-            .setTitle(`${emoji.user} ${t("profile.title", lang, { username: displayName })}`)
+            .setTitle(`${emoji.user} ${t("profile.title", lang, { username: displayName })}${badgeSuffix ? ` ${badgeSuffix}` : ""}`)
             .setThumbnail(target.displayAvatarURL({ size: 256 }))
-            .setColor(!isPrivate && punishmentLevel >= 60 ? COLORS.moderation : !isPrivate && punishmentLevel >= 20 ? COLORS.warning : COLORS.info)
+            .setColor(embedColor)
             .addFields(
                 { name: t("profile.field_user", lang), value: `<@${target.id}>`, inline: true },
                 { name: t("profile.field_account_created", lang), value: `<t:${Math.floor(target.createdTimestamp / 1000)}:R>`, inline: true },
@@ -94,8 +114,16 @@ export default {
                 { name: t("profile.field_total_xp", lang), value: `${xpRecord.totalXP}`, inline: true },
                 { name: t("profile.field_streak", lang), value: t("profile.streak_value", lang, { current: `${streak.record.currentStreak}`, best: `${streak.record.bestStreak}` }), inline: true },
                 { name: t("profile.field_combo", lang), value: comboValue, inline: true },
+                { name: "🪙 Coins", value: `${coinSummary.coins}${coinSummary.rank > 0 ? ` (#${coinSummary.rank})` : ""}`, inline: true },
                 ...(!isPrivate ? [{ name: t("profile.field_roles", lang), value: roles }] : []),
             );
+
+        if (customization.bio) {
+            embed.setDescription(`> ${customization.bio}`);
+        }
+        if (customization.bannerUrl) {
+            embed.setImage(customization.bannerUrl);
+        }
 
         if (memberIsStaff) {
             const staffData = await getStaffActivity(target.id, guildId);

@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { requireOpenTicket, requireTicketStaff } from "../utils/ticket-guard";
 
 export default {
+    category: "Tickets",
     data: new SlashCommandBuilder()
         .setName("remove")
         .setDescription("Remove a user from the current ticket")

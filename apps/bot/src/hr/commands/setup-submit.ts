@@ -14,6 +14,7 @@ import { SubmitConfigRepository, SubmissionTypeRepository } from "@database/repo
 import { updatePanel } from "../utils/update-panel";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("setup-submit")
         .setDescription("Configure the staff submission system")

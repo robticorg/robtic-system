@@ -4,6 +4,7 @@ import { TicketRepository } from "@database/repositories";
 import { requireOpenTicket, requireTicketStaff } from "../utils/ticket-guard";
 
 export default {
+    category: "Tickets",
     data: new SlashCommandBuilder()
         .setName("claim")
         .setDescription("Claim the current ticket as yours to handle"),

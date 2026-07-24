@@ -13,6 +13,7 @@ import { interviewCollectors } from "../utils/interview-collectors";
 import { hasFullPower } from "@shared/utils/access";
 
 export default {
+    category: "Staff",
   data: new SlashCommandBuilder()
     .setName("interview")
     .setDescription("interview command")

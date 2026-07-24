@@ -33,6 +33,8 @@ export interface IServerConfig extends Document {
     prefix?: string;
     /** Channel where plain chat is auto-deleted, keeping it command-only (see commands-channel-guard.ts). */
     commandsChannelId?: string;
+    /** Roles allowed into the Activity's guild admin panel (besides owner/Administrator). */
+    adminPanelRoles: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -72,6 +74,7 @@ const serverConfigSchema = new Schema<IServerConfig>(
         lineChannelIds: { type: [String], default: [] },
         prefix: { type: String },
         commandsChannelId: { type: String },
+        adminPanelRoles: { type: [String], default: [] },
     },
     { timestamps: true }
 );

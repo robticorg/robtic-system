@@ -15,6 +15,7 @@ import { ticketCard } from "../utils/ticket-card";
 import { TICKET_CLOSED_COLOR, TICKET_REPORT_CHANNEL_ID } from "../config/ticket";
 
 export default {
+    category: "Tickets",
     data: new SlashCommandBuilder()
         .setName("close")
         .setDescription("Close the current ticket")

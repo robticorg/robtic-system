@@ -6,8 +6,12 @@ import {
     ComboSettingsRepository,
     PunishConfigRepository,
     LogConfigRepository,
+    CoinSettingsRepository,
 } from "@database/repositories";
-import { LOG_REGISTRY, ADMIN_CONFIG_LIMITS, SERVER_ROLE_SLOTS, type LogKey } from "@constants";
+import {
+    LOG_REGISTRY, ADMIN_CONFIG_LIMITS, SERVER_ROLE_SLOTS,
+    COIN_RATE_LIMITS, COIN_STREAK_REWARDS_MAX, type LogKey,
+} from "@constants";
 
 const clampInt = (value: number, { min, max }: { min: number; max: number }): number =>
     Math.max(min, Math.min(max, Math.round(Number.isFinite(value) ? value : min)));
@@ -40,6 +44,7 @@ export async function updateAdminConfig<S extends AdminConfigSection>(
             for (const slot of SERVER_ROLE_SLOTS) {
                 await ServerConfigRepository.setRole(guildId, slot, idOrEmpty(v.roles?.[slot]));
             }
+            await ServerConfigRepository.setAdminPanelRoles(guildId, cleanIds(v.adminPanelRoles, ADMIN_CONFIG_LIMITS.maxChannelsPerField));
             return;
         }
 
@@ -82,6 +87,29 @@ export async function updateAdminConfig<S extends AdminConfigSection>(
             await PunishConfigRepository.setPointsPerAction(guildId, clampInt(v.pointsPerAction, ADMIN_CONFIG_LIMITS.punishPointsPerAction));
             await PunishConfigRepository.setProofChannel(guildId, idOrEmpty(v.proofChannelId));
             await PunishConfigRepository.setShortcutRoles(guildId, cleanIds(v.shortcutRoleIds, ADMIN_CONFIG_LIMITS.maxRolesPerField));
+            return;
+        }
+
+        case "coins": {
+            const v = values as AdminConfigUpdate["coins"];
+            await CoinSettingsRepository.setRates(
+                guildId,
+                clampInt(v.messagesPerCoin, COIN_RATE_LIMITS),
+                clampInt(v.comboPerCoin, COIN_RATE_LIMITS),
+            );
+            const cleaned = Array.isArray(v.streakRewards)
+                ? v.streakRewards
+                    .filter(r => Number.isFinite(r?.streak) && Number.isFinite(r?.coins))
+                    .map(r => ({
+                        streak: clampInt(r.streak, { min: 1, max: 10000 }),
+                        coins: clampInt(r.coins, { min: 1, max: 10000 }),
+                    }))
+                : [];
+            // One payout per day-count — last entry for a duplicate streak wins.
+            const rewards = [...new Map(cleaned.map(r => [r.streak, r])).values()]
+                .sort((a, b) => a.streak - b.streak)
+                .slice(0, COIN_STREAK_REWARDS_MAX);
+            await CoinSettingsRepository.setStreakRewards(guildId, rewards);
             return;
         }
 

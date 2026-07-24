@@ -157,6 +157,47 @@ export class ActivityRepository {
         await ActivityXP.updateOne({ discordId, guildId }, { "decay.enabled": enabled });
     }
 
+    /** Members with any recorded staff points, sorted by net total (points minus penalties). */
+    static async getStaffActivityOverview(
+        guildId: string,
+        limit = 50,
+    ): Promise<Array<{ discordId: string; staff: IActivityXP["staff"]; totalStaffPoints: number }>> {
+        return ActivityXP.aggregate([
+            {
+                $match: {
+                    guildId,
+                    $or: [
+                        { "staff.supportPoints": { $gt: 0 } },
+                        { "staff.publicChatPoints": { $gt: 0 } },
+                        { "staff.staffChatPoints": { $gt: 0 } },
+                        { "staff.moderationPoints": { $gt: 0 } },
+                        { "staff.penalties": { $gt: 0 } },
+                    ],
+                },
+            },
+            {
+                $addFields: {
+                    totalStaffPoints: {
+                        $subtract: [
+                            {
+                                $add: [
+                                    "$staff.supportPoints",
+                                    "$staff.publicChatPoints",
+                                    "$staff.staffChatPoints",
+                                    "$staff.moderationPoints",
+                                ],
+                            },
+                            "$staff.penalties",
+                        ],
+                    },
+                },
+            },
+            { $sort: { totalStaffPoints: -1 } },
+            { $limit: limit },
+            { $project: { _id: 0, discordId: 1, staff: 1, totalStaffPoints: 1 } },
+        ]);
+    }
+
     static async getStaffLeaderboard(guildId: string, limit = 10): Promise<IActivityXP[]> {
         return ActivityXP.find({ guildId })
             .sort({

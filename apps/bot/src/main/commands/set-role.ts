@@ -16,6 +16,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("set-role")
         .setDescription("Configure a role for this server")

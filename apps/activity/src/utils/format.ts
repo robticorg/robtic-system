@@ -20,3 +20,10 @@ export function formatDuration(ms: number): string {
 export function formatRank(rank: number): string {
     return rank > 0 ? `#${rank}` : "—";
 }
+
+/** Compact "3d ago" / "5m ago" style relative timestamp for detail lists. */
+export function formatTimeAgo(timestampMs: number): string {
+    const elapsed = Date.now() - timestampMs;
+    if (elapsed < 60_000) return "just now";
+    return `${formatDuration(elapsed)} ago`;
+}

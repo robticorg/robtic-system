@@ -7,6 +7,7 @@ import type { BotClient } from "@core/bot-client";
 import { moderationHelpEmbed } from "@shared/utils/help";
 
 export default {
+    category: "Utility",
     data: new SlashCommandBuilder()
         .setName("mod")
         .setDescription("Moderation staff utilities")

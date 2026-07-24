@@ -13,6 +13,7 @@ import { updatePanel } from "../utils/update-panel";
 import { buildConfigPanel } from "../utils/config-panel";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("staff-submit")
         .setDescription("Manage staff submission types")

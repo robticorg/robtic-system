@@ -15,6 +15,7 @@ import type { BotClient } from "@core/bot-client";
 import { needsProof } from "../utils/punish-flow";
 
 export default {
+    category: "Moderation",
     data: new ContextMenuCommandBuilder()
         .setName("Mute User")
         .setType(ApplicationCommandType.User),

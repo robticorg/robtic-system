@@ -9,6 +9,7 @@ import {
 import type { BotClient } from "@core/bot-client";
 
 export default {
+    category: "Utility",
     data: new SlashCommandBuilder()
         .setName("note")
         .setDescription("Add a note about a user")

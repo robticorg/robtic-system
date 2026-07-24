@@ -5,6 +5,7 @@ import { ChannelType, ChatInputCommandInteraction, SlashCommandBuilder } from "d
 const validBotNames = BOT_DEFINITIONS.map((d) => d.name);
 
 export default {
+    category: "Admin",
     data: new SlashCommandBuilder()
         .setName("system")
         .setDescription("System management commands")

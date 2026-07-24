@@ -8,6 +8,7 @@ import { COLORS } from "@constants";
 import { calculateLevel, xpForLevel } from "../services/xp";
 
 export default {
+    category: "Leveling",
     data: new SlashCommandBuilder()
         .setName("level")
         .setDescription("Check your level and XP")

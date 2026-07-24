@@ -9,6 +9,7 @@ import { COLORS } from "@constants";
 import { StreakRewardRepository } from "@database/repositories";
 
 export default {
+    category: "Streak",
     data: new SlashCommandBuilder()
         .setName("streak-reward")
         .setDescription("إدارة مكافآت التتابع")

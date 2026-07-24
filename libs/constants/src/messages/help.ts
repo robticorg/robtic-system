@@ -1,3 +1,44 @@
+/** Labels and copy for the dynamic per-bot `!help` command (overview + category dropdown). */
+export const HELP = {
+    /** Category bucket for commands that declare no `category`. Always sorted first. */
+    generalCategory: "General",
+    overviewSelectLabel: "🏠 Overview",
+    overviewSelectValue: "__overview__",
+    selectCustomId: "help:category",
+    selectPlaceholder: "📂 Select a command category…",
+    title: (botName: string) => `📖 ${botName} — Command Help`,
+    categoryTitle: (botName: string, category: string) => `📖 ${botName} — ${category}`,
+    intro: (prefix: string) =>
+        `Every command works two ways: type \`${prefix}command\` in chat, or use \`/command\`.\n` +
+        `Get a command wrong (e.g. a missing argument) and I'll reply with its correct usage.`,
+    categoriesLine: (categories: string[]) => `**Categories:** ${categories.join(" • ")}`,
+    pickPrompt: "Use the menu below to browse a category's commands and their usage.",
+    slashOnlyNote: (prefix: string, name: string) => `⚠️ Slash only — use \`/${name}\` (opens a form).`,
+    footer: (count: number) => `${count} command${count === 1 ? "" : "s"} • ! or / both work`,
+    emptyCategory: "No commands in this category.",
+    noCommands: "No commands are available here.",
+} as const;
+
+/** Per-category emoji for the help dropdown/embeds; falls back to 📁. */
+export const HELP_CATEGORY_EMOJI: Record<string, string> = {
+    General: "📋",
+    Streak: "🔥",
+    Economy: "🪙",
+    Activity: "💬",
+    Profile: "🪪",
+    Leaderboard: "🏆",
+    Leveling: "📈",
+    Moderation: "🛡️",
+    Tickets: "🎫",
+    Tags: "🏷️",
+    Threads: "📨",
+    Staff: "👔",
+    Partnership: "🤝",
+    Configuration: "⚙️",
+    Admin: "🔑",
+    Utility: "🧰",
+};
+
 /** Static content of the ModMail command-reference embed. */
 export const MODMAIL_HELP = {
     title: "📖 ModMail Command Reference",

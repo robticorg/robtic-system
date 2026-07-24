@@ -35,6 +35,10 @@ export class ProjectShareRepository {
         return PendingProject.findById(pendingId);
     }
 
+    static async findPendingByUserId(userId: string): Promise<IPendingProject[]> {
+        return PendingProject.find({ userId }).sort({ createdAt: -1 });
+    }
+
     static async updatePendingById(pendingId: string, update: Record<string, unknown>): Promise<IPendingProject | null> {
         return PendingProject.findByIdAndUpdate(pendingId, update, { returnDocument: "after" });
     }

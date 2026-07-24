@@ -13,6 +13,7 @@ import { hasDepartmentAuthority, hasFullPower } from "@shared/utils/access";
 import { moveStaffTier, categoryLabel } from "../utils/staff-promotion";
 
 export default {
+    category: "Staff",
     data: new SlashCommandBuilder()
         .setName("promote")
         .setDescription("ترقية موظف رتبة واحدة")

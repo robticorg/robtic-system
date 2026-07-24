@@ -28,6 +28,7 @@ export function buildStreakTopButtons(activeMode: LeaderboardMode, lang: Lang): 
 }
 
 export default {
+    category: "Streak",
     data: new SlashCommandBuilder()
         .setName("streak-top")
         .setDescription("View the top 5 daily streaks"),

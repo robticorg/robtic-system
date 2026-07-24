@@ -14,6 +14,7 @@ import { hasFullPower, hasDepartmentAuthority } from "@shared/utils/access";
 import { syncStaffWarnRole } from "../utils/staff-warn-role";
 
 export default {
+    category: "Staff",
     data: new SlashCommandBuilder()
         .setName("staff-warn")
         .setDescription("نظام تحذير الموظفين")

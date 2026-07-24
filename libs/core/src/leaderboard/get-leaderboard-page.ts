@@ -10,20 +10,26 @@ import { getTopEntries } from "./get-top-entries";
 
 /**
  * Leaderboard rows labelled with usernames/display names, plus the viewer's own row even when they
- * rank below the returned page — the Activity always shows "where you stand".
+ * rank below the returned page — the Activity always shows "where you stand". Paginated so the
+ * Activity can walk through every ranked member.
  */
 export async function getLeaderboardPage(
     guildId: string,
     category: TopCategory,
     period: ComboLeaderboardPeriod,
     viewerId: string,
-    limit = ACTIVITY_LEADERBOARD_LIMIT,
+    page = 1,
+    pageSize = ACTIVITY_LEADERBOARD_LIMIT,
 ): Promise<LeaderboardResponse> {
-    const entries = await getTopEntries(guildId, category, period, limit);
+    const offset = (page - 1) * pageSize;
+    // Fetch one extra entry past the requested page to learn whether another page exists.
+    const ranked = await getTopEntries(guildId, category, period, offset + pageSize + 1);
+    const hasMore = ranked.length > offset + pageSize;
+    const entries = ranked.slice(offset, offset + pageSize);
 
     const viewerInPage = entries.some(e => e.discordId === viewerId);
     const scanned = viewerInPage
-        ? entries
+        ? ranked
         : await getTopEntries(guildId, category, period, VIEWER_RANK_SCAN_LIMIT);
     const viewerIndex = scanned.findIndex(e => e.discordId === viewerId);
 
@@ -47,12 +53,12 @@ export async function getLeaderboardPage(
         };
     };
 
-    const rows = await Promise.all(entries.map((e, i) => toRow(e.discordId, e.value, i + 1)));
+    const rows = await Promise.all(entries.map((e, i) => toRow(e.discordId, e.value, offset + i + 1)));
 
     const viewer = viewerIndex === -1
         ? null
         : rows.find(r => r.discordId === viewerId)
             ?? await toRow(viewerId, scanned[viewerIndex].value, viewerIndex + 1);
 
-    return { category, period, rows, viewer };
+    return { category, period, rows, viewer, page, pageSize, hasMore };
 }

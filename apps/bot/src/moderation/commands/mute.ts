@@ -114,6 +114,7 @@ export async function executeMute(
 }
 
 export default {
+    category: "Moderation",
     data: new SlashCommandBuilder()
         .setName("mute")
         .setDescription("Manage user mutes")

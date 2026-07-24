@@ -9,6 +9,7 @@ import { COLORS } from "@constants";
 import { calculateLevel } from "../services/xp";
 
 export default {
+    category: "Leveling",
     data: new SlashCommandBuilder()
         .setName("leaderboard")
         .setDescription("View the XP leaderboard")

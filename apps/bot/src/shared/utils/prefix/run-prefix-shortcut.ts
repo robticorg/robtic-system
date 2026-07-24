@@ -1,9 +1,21 @@
 import type { Message } from "discord.js";
 import type { BotClient } from "@core/bot-client";
 import type { CommandConfig } from "@typings/command";
-import { PREFIX_MESSAGES } from "@constants";
+import { PREFIX_MESSAGES, PREFIX_USAGE_DELETE_MS } from "@constants";
 import { checkPermissions, cooldowns, commandError, releaseCooldown } from "@shared/utils/interaction";
 import { buildPrefixInteraction } from "./build-prefix-interaction";
+
+/**
+ * Sends a short-lived usage/validation notice, then deletes both the bot's reply and the user's
+ * triggering message after PREFIX_USAGE_DELETE_MS so a mistyped command doesn't linger in chat.
+ */
+async function replyTransientNotice(message: Message, content: string): Promise<void> {
+    const notice = await message.reply({ content, allowedMentions: { repliedUser: false } }).catch(() => null);
+    setTimeout(() => {
+        notice?.delete().catch(() => null);
+        message.delete().catch(() => null);
+    }, PREFIX_USAGE_DELETE_MS);
+}
 
 /** Shared by every bot's shortcut listener — runs the same checkPermissions/cooldowns/run pipeline a real slash invocation would use. */
 export async function runPrefixShortcut(
@@ -15,9 +27,7 @@ export async function runPrefixShortcut(
     prefix: string,
 ): Promise<void> {
     if (command.modalOnly) {
-        await message
-            .reply({ content: PREFIX_MESSAGES.modalOnlyCommand(commandName), allowedMentions: { repliedUser: false } })
-            .catch(() => null);
+        await replyTransientNotice(message, PREFIX_MESSAGES.modalOnlyCommand(commandName));
         return;
     }
 
@@ -25,7 +35,7 @@ export async function runPrefixShortcut(
 
     const { interaction, error } = await buildPrefixInteraction(message, client, command, argString, prefix);
     if (error) {
-        await message.reply({ content: error, allowedMentions: { repliedUser: false } }).catch(() => null);
+        await replyTransientNotice(message, error);
         return;
     }
 

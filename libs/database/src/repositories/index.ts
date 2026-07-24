@@ -28,6 +28,8 @@ export * from "./SavedRolesRepository";
 export * from "./StreakRepository";
 export * from "./StreakSettingsRepository";
 export * from "./StreakRecoveryRepository";
+export * from "./CoinsRepository";
+export * from "./CoinSettingsRepository";
 export * from "./ComboRepository";
 export * from "./ComboHistoryRepository";
 export * from "./ComboUserStatsRepository";

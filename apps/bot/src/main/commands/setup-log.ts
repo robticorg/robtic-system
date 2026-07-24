@@ -10,6 +10,7 @@ import type { BotClient } from "@core/bot-client";
 import { LOG_REGISTRY, LOG_SETUP_MESSAGES } from "@constants";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("setup-log")
         .setDescription("Configure a global log channel"),

@@ -2,6 +2,7 @@ export * from "./activity-log";
 export * from "./admin-config";
 export * from "./ai-thresholds";
 export * from "./colors";
+export * from "./coins";
 export * from "./combo";
 export * from "./dev-projects";
 export * from "./hr";

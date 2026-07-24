@@ -1,5 +1,5 @@
 /** Which bot subsystem a config write targets. */
-export type AdminConfigSection = "server" | "xp" | "streak" | "combo" | "punish" | "logs";
+export type AdminConfigSection = "server" | "xp" | "streak" | "combo" | "punish" | "logs" | "coins";
 
 export interface AdminServerConfig {
     prefix: string | null;
@@ -11,6 +11,8 @@ export interface AdminServerConfig {
         en: string | null;
         ar: string | null;
     };
+    /** Roles allowed into the Activity's guild admin panel (besides owner/Administrator). */
+    adminPanelRoles: string[];
 }
 
 export interface AdminXpConfig {
@@ -44,6 +46,15 @@ export interface AdminLogsConfig {
     channels: Record<string, string | null>;
 }
 
+export interface AdminCoinsConfig {
+    /** Real messages needed per earned coin. */
+    messagesPerCoin: number;
+    /** Combo score needed per earned coin. */
+    comboPerCoin: number;
+    /** Streak day-counts that pay out coins when reached. */
+    streakRewards: { streak: number; coins: number }[];
+}
+
 /** The full editable config surface for one guild. */
 export interface AdminConfigSnapshot {
     server: AdminServerConfig;
@@ -52,6 +63,7 @@ export interface AdminConfigSnapshot {
     combo: AdminComboConfig;
     punish: AdminPunishConfig;
     logs: AdminLogsConfig;
+    coins: AdminCoinsConfig;
 }
 
 /** Per-section payload shapes for a config write. */
@@ -62,4 +74,5 @@ export interface AdminConfigUpdate {
     combo: AdminComboConfig;
     punish: AdminPunishConfig;
     logs: AdminLogsConfig;
+    coins: AdminCoinsConfig;
 }

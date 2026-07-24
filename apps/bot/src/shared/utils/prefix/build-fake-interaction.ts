@@ -66,11 +66,16 @@ export function buildFakeInteraction(
         },
         async reply(opts: any) {
             fake.replied = true;
-            await sendOrEdit(opts);
+            return sendOrEdit(opts);
         },
         async editReply(opts: any) {
             fake.replied = true;
-            await sendOrEdit(opts);
+            return sendOrEdit(opts);
+        },
+        // Real interactions expose fetchReply() to grab the sent Message (e.g. to attach a component
+        // collector). Prefix mode already holds that Message, so hand it back for parity.
+        async fetchReply() {
+            return sentMessage;
         },
         async deleteReply() {
             if (sentMessage) {

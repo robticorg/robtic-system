@@ -18,6 +18,7 @@ import { isStreakExpired } from "@core/streak/is-streak-expired";
 import { nextClaimAt } from "@core/streak/next-claim-at";
 import { streakExpiresAt } from "@core/streak/streak-expires-at";
 import { getLogChannel } from "@shared/utils/server-log";
+import { awardStreakCoin } from "@core/coins";
 import { applyStreakRole } from "../utils/streak-role";
 import { t, type Lang } from "@shared/utils/lang";
 
@@ -99,6 +100,9 @@ export async function processStreakMessage(message: Message): Promise<void> {
     await sendPublicReply(message, updated);
     await sendStreakDM(message.author, updated);
     await checkStreakRewards(message.guild, message.author, guildId, updated.currentStreak);
+    await awardStreakCoin(guildId, message.author.id, message.author.username, updated.currentStreak).catch(err =>
+        Logger.warn(`Failed to award streak coins for ${message.author.id} in ${guildId}: ${err}`, CTX)
+    );
 }
 
 /** `<=` (not `===`) so a streak jump from /streak-config sync|return still catches up on skipped thresholds; the unique index stops repeat announcements. */

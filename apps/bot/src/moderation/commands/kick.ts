@@ -11,6 +11,7 @@ import type { BotClient } from "@core/bot-client";
 import { recordSecurityEvent, sendAuditLog } from "../utils/security";
 
 export default {
+    category: "Moderation",
     data: new SlashCommandBuilder()
         .setName("kick")
         .setDescription("Kick a member from the server")

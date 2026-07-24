@@ -22,7 +22,14 @@ export async function getLeaderboard(request: Request, url: URL): Promise<Respon
         ? requestedPeriod
         : "alltime";
 
-    const page = await getLeaderboardPage(guildId, category, period, viewer.id);
+    const clamp = (raw: string | null, fallback: number, min: number, max: number): number => {
+        const parsed = Number.parseInt(raw ?? "", 10);
+        return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
+    };
+    const pageNumber = clamp(url.searchParams.get("page"), 1, 1, 1000);
+    const pageSize = clamp(url.searchParams.get("pageSize"), 10, 5, 50);
+
+    const page = await getLeaderboardPage(guildId, category, period, viewer.id, pageNumber, pageSize);
 
     const ids = [...page.rows.map(r => r.discordId), ...(page.viewer ? [page.viewer.discordId] : [])];
     const avatars = await fetchDiscordProfiles(ids);

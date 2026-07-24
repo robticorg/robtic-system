@@ -9,3 +9,6 @@ export const PREFIX_MESSAGES = {
     noSubcommand: "No subcommand specified",
     noSubcommandGroup: "No subcommand group specified",
 } as const;
+
+/** How long a prefix usage/validation notice (and the mistyped trigger message) stays before auto-deletion. */
+export const PREFIX_USAGE_DELETE_MS = 5_000;

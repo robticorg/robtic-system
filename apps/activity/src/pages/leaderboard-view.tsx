@@ -10,6 +10,7 @@ const CATEGORIES: { value: TopCategory; label: string; icon: IconName }[] = [
     { value: "combo", label: "Combo", icon: "message" },
     { value: "xp", label: "XP", icon: "zap" },
     { value: "messages", label: "Messages", icon: "activity" },
+    { value: "coins", label: "Coins", icon: "coin" },
 ];
 
 const PERIODS: { value: TopPeriod; label: string }[] = [
@@ -20,6 +21,8 @@ const PERIODS: { value: TopPeriod; label: string }[] = [
 ];
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+
+const PAGE_SIZES = [10, 25, 50];
 
 function Row({ row, isViewer, onSelect }: { row: LeaderboardRow; isViewer: boolean; onSelect: (id: string) => void }) {
     return (
@@ -41,22 +44,30 @@ function Row({ row, isViewer, onSelect }: { row: LeaderboardRow; isViewer: boole
 export function LeaderboardView({ onSelectUser }: { onSelectUser: (userId: string) => void }) {
     const [category, setCategory] = useState<TopCategory>("streak");
     const [period, setPeriod] = useState<TopPeriod>("alltime");
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [data, setData] = useState<LeaderboardResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    // Changing what is ranked (or how many rows per page) starts back at page 1.
+    function changeFilters(update: () => void) {
+        setPage(1);
+        update();
+    }
 
     useEffect(() => {
         let cancelled = false;
         setData(null);
         setError(null);
 
-        fetchLeaderboard(category, period)
+        fetchLeaderboard(category, period, page, pageSize)
             .then((result) => { if (!cancelled) setData(result); })
             .catch((err: unknown) => {
                 if (!cancelled) setError(err instanceof Error ? err.message : String(err));
             });
 
         return () => { cancelled = true; };
-    }, [category, period]);
+    }, [category, period, page, pageSize]);
 
     const viewerInRows = data?.viewer
         ? data.rows.some((row) => row.discordId === data.viewer!.discordId)
@@ -72,7 +83,7 @@ export function LeaderboardView({ onSelectUser }: { onSelectUser: (userId: strin
                         type="button"
                         className="chip"
                         aria-pressed={category === option.value}
-                        onClick={() => setCategory(option.value)}
+                        onClick={() => changeFilters(() => setCategory(option.value))}
                     >
                         <Icon name={option.icon} size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
                         {option.label}
@@ -87,11 +98,21 @@ export function LeaderboardView({ onSelectUser }: { onSelectUser: (userId: strin
                         type="button"
                         className="chip"
                         aria-pressed={period === option.value}
-                        onClick={() => setPeriod(option.value)}
+                        onClick={() => changeFilters(() => setPeriod(option.value))}
                     >
                         {option.label}
                     </button>
                 ))}
+
+                <span className="filters__spacer" />
+                <select
+                    className="page-size"
+                    value={pageSize}
+                    aria-label="Users per page"
+                    onChange={(event) => changeFilters(() => setPageSize(Number(event.target.value)))}
+                >
+                    {PAGE_SIZES.map((size) => <option key={size} value={size}>{size} / page</option>)}
+                </select>
             </div>
 
             {error && <p className="error">{error}</p>}
@@ -99,7 +120,7 @@ export function LeaderboardView({ onSelectUser }: { onSelectUser: (userId: strin
 
             {data && (
                 data.rows.length === 0 ? (
-                    <p className="muted">No entries for this period yet.</p>
+                    <p className="muted">{page > 1 ? "No more members on this page." : "No entries for this period yet."}</p>
                 ) : (
                     <ul className="rows">
                         {data.rows.map((row) => (
@@ -119,6 +140,28 @@ export function LeaderboardView({ onSelectUser }: { onSelectUser: (userId: strin
                         )}
                     </ul>
                 )
+            )}
+
+            {data && (data.hasMore || page > 1) && (
+                <div className="pager">
+                    <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={page === 1}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                        <Icon name="chevron-left" size={14} style={{ verticalAlign: "-2px" }} /> Prev
+                    </button>
+                    <span className="pager__page">Page {data.page}</span>
+                    <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={!data.hasMore}
+                        onClick={() => setPage((p) => p + 1)}
+                    >
+                        Next <Icon name="chevron-right" size={14} style={{ verticalAlign: "-2px" }} />
+                    </button>
+                </div>
             )}
         </>
     );

@@ -13,6 +13,7 @@ import { SERVER_LOG_CHANNELS } from "@constants";
 import { ensureServerLogChannels } from "@shared/utils/server-log";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("set-log-guild")
         .setDescription("Set the centralized server log guild")

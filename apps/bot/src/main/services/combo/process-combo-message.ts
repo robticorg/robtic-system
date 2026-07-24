@@ -9,6 +9,7 @@ import { getCachedPartner, cachePartners } from "./active-partner-cache";
 import { isStale } from "./is-stale";
 import { getScoreRange } from "./score-range-cache";
 import { finalizeCombo } from "./finalize-combo";
+import { awardComboCoin } from "@core/coins";
 
 export async function processComboMessage(message: Message): Promise<void> {
     if (!message.guild || message.author.bot || message.webhookId) return;
@@ -60,5 +61,6 @@ export async function processComboMessage(message: Message): Promise<void> {
     if (!updated) return;
 
     cachePartners(guildId, authorId, partnerId, updated.currentScore);
+    await awardComboCoin(guildId, authorId, message.author.username, scoreGain);
     await checkLiveRecords(guildId, updated, updated.userLowId, updated.userHighId);
 }

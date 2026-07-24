@@ -12,6 +12,7 @@ import { applyStreakRole } from "../utils/streak-role";
 import { getUserLang, t } from "@shared/utils/lang";
 
 export default {
+    category: "Streak",
     data: new SlashCommandBuilder()
         .setName("streak-return")
         .setDescription("Recover your last streak, if it broke recently"),

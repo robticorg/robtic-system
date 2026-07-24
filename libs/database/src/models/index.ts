@@ -24,6 +24,8 @@ export { SavedRoles, type ISavedRoles } from "./SavedRoles";
 export { Streak, type IStreak } from "./Streak";
 export { StreakSettings, type IStreakSettings } from "./StreakSettings";
 export { StreakRecovery, type IStreakRecovery } from "./StreakRecovery";
+export { Coin, type ICoin } from "./Coin";
+export { CoinSettings, type ICoinSettings, type ICoinStreakReward } from "./CoinSettings";
 export { Combo, type ICombo, type ComboStatus } from "./Combo";
 export { ComboHistory, type IComboHistory } from "./ComboHistory";
 export { ComboUserStats, type IComboUserStats, type IComboPartnerTally } from "./ComboUserStats";

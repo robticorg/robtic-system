@@ -13,6 +13,7 @@ const MOD_CHANNEL_REGISTRY = {
 } as const;
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("set-mod-channel")
         .setDescription("Configure a moderation channel for this server"),

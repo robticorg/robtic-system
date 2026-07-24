@@ -15,6 +15,7 @@ import { ReasonRepository } from "@database/repositories";
 import { errorEmbed } from "@utils";
 
 export default {
+    category: "Moderation",
     data: new SlashCommandBuilder()
         .setName("reason")
         .setDescription("Manage punishment reasons")

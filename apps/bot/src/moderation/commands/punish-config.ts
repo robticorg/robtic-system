@@ -17,6 +17,7 @@ async function managerOnly(member: GuildMember): Promise<boolean> {
 }
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("punish-config")
         .setDescription("Configure ban/mute/warn shortcuts, proof channel, and moderation points")

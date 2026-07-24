@@ -19,6 +19,8 @@ export interface CommandConfig {
     requiredPermission?: number;
     department?: Department;
     cooldown?: number;
+    /** Grouping label shown in the `!help` category dropdown (e.g. "Streak", "Moderation"). Uncategorized commands fall under "General". */
+    category?: string;
     /** Opens a modal as its primary flow — can't be driven by a prefix text command, so the prefix router skips it. */
     modalOnly?: boolean;
     run: (interaction: any, client: BotClient) => Promise<void>;

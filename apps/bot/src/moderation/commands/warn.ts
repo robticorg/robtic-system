@@ -100,6 +100,7 @@ export async function executeWarn(
 }
 
 export default {
+    category: "Moderation",
     data: new SlashCommandBuilder()
         .setName("warn")
         .setDescription("Manage user warnings")

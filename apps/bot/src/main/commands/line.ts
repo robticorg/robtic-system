@@ -11,6 +11,7 @@ import { COLORS } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("line")
         .setDescription("Manage the channels that auto-attach the line image and react to every message")

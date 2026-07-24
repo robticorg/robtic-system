@@ -10,6 +10,7 @@ import { ReplyRepository } from "@database/repositories/ReplyRepository";
 import { COLORS } from "@constants";
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("reply")
         .setDescription("Manage auto-replies for messages")

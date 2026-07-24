@@ -66,6 +66,7 @@ function describeRule(rule: SecurityRule, index: number): string {
 }
 
 export default {
+    category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("security")
         .setDescription("Configure moderation audit and security guard")

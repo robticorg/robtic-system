@@ -5,6 +5,7 @@ import { buildTopEmbed } from "../services/top";
 import { getUserLang, t } from "@shared/utils/lang";
 
 export default {
+    category: "Leaderboard",
     data: new SlashCommandBuilder()
         .setName("top")
         .setDescription("View the top 5 members for streak, combo, XP, or messages"),

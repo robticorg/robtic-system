@@ -12,6 +12,7 @@ import { StaffRepository, StaffTierRepository } from "@database/repositories";
 import { hasDepartmentAuthority, hasFullPower } from "@shared/utils/access";
 
 export default {
+    category: "Staff",
     data: new SlashCommandBuilder()
         .setName("fire")
         .setDescription("إنهاء خدمة موظف وإزالة جميع رولاته الوظيفية")

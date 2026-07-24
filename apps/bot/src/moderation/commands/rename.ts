@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { requireOpenTicket, requireTicketStaff } from "../utils/ticket-guard";
 
 export default {
+    category: "Tickets",
     data: new SlashCommandBuilder()
         .setName("rename")
         .setDescription("Rename the current ticket channel")
