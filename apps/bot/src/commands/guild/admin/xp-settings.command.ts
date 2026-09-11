@@ -20,13 +20,13 @@ export default {
         .addSubcommand(sub =>
             sub
                 .setName("add-channel")
-                .setDescription("Add an XP-earning channel")
+                .setDescription("Add a channel with special XP/message handling")
                 .addChannelOption(opt =>
                     opt.setName("channel").setDescription("Channel to add").addChannelTypes(ChannelType.GuildText).setRequired(true)
                 )
                 .addStringOption(opt =>
                     opt.setName("type").setDescription("Channel type").addChoices(
-                        { name: "Chat (member XP)", value: "chat" },
+                        { name: "Excluded (no XP, no message count)", value: "excluded" },
                         { name: "Support", value: "support" },
                         { name: "Staff", value: "staff" },
                     ).setRequired(true)
@@ -35,10 +35,10 @@ export default {
         .addSubcommand(sub =>
             sub
                 .setName("remove-channel")
-                .setDescription("Remove an XP channel")
+                .setDescription("Remove a channel from special XP/message handling")
                 .addStringOption(opt =>
                     opt.setName("type").setDescription("Channel type").addChoices(
-                        { name: "Chat (member XP)", value: "chat" },
+                        { name: "Excluded (no XP, no message count)", value: "excluded" },
                         { name: "Support", value: "support" },
                         { name: "Staff", value: "staff" },
                     ).setRequired(true)
@@ -81,12 +81,14 @@ export default {
             const channel = interaction.options.getChannel("channel", true);
             const type = interaction.options.getString("type", true);
 
-            if (type === "chat") await XPSettingsRepository.addChatChannel(guildId, channel.id);
+            if (type === "excluded") await XPSettingsRepository.addExcludedChannel(guildId, channel.id);
             else if (type === "support") await XPSettingsRepository.addSupportChannel(guildId, channel.id);
             else await XPSettingsRepository.addStaffChannel(guildId, channel.id);
 
             await interaction.editReply({
-                content: `Added <#${channel.id}> as a **${type}** channel.`,
+                content: type === "excluded"
+                    ? `Added <#${channel.id}> to **excluded** channels — XP and the message count will no longer be read there.`
+                    : `Added <#${channel.id}> as a **${type}** channel.`,
             });
         }
 
@@ -94,7 +96,7 @@ export default {
             const channelId = interaction.options.getString("channel", true);
             const type = interaction.options.getString("type", true);
 
-            if (type === "chat") await XPSettingsRepository.removeChatChannel(guildId, channelId);
+            if (type === "excluded") await XPSettingsRepository.removeExcludedChannel(guildId, channelId);
             else if (type === "support") await XPSettingsRepository.removeSupportChannel(guildId, channelId);
             else await XPSettingsRepository.removeStaffChannel(guildId, channelId);
 
@@ -125,14 +127,15 @@ export default {
 
         else if (sub === "view") {
             const settings = await XPSettingsRepository.getOrCreate(guildId);
-            const chatChs = settings.chatChannels.map(id => `<#${id}>`).join(", ") || "None";
+            const excludedChs = settings.excludedChannels.map(id => `<#${id}>`).join(", ") || "None";
             const supportChs = settings.supportChannels.map(id => `<#${id}>`).join(", ") || "None";
             const staffChs = settings.staffChannels.map(id => `<#${id}>`).join(", ") || "None";
 
             const embed = new EmbedBuilder()
                 .setTitle("XP Settings")
                 .addFields(
-                    { name: "Chat Channels", value: chatChs },
+                    { name: "Chat XP", value: "Every channel, except Support and Excluded channels below" },
+                    { name: "Excluded Channels", value: excludedChs },
                     { name: "Support Channels", value: supportChs },
                     { name: "Staff Channels", value: staffChs },
                     { name: "Decay Enabled", value: settings.decayEnabled ? "Yes" : "No", inline: true },
@@ -154,7 +157,7 @@ export default {
         if (!settings) return interaction.respond([]);
 
         let channelIds: string[] = [];
-        if (type === "chat") channelIds = settings.chatChannels;
+        if (type === "excluded") channelIds = settings.excludedChannels;
         else if (type === "support") channelIds = settings.supportChannels;
         else if (type === "staff") channelIds = settings.staffChannels;
 

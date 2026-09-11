@@ -51,7 +51,7 @@ export async function getAdminConfig(guildId: string): Promise<AdminConfigSnapsh
             botAdminRoles: server?.botAdminRoles ?? [],
         },
         xp: {
-            chatChannels: xp?.chatChannels ?? [],
+            excludedChannels: xp?.excludedChannels ?? [],
             supportChannels: xp?.supportChannels ?? [],
             staffChannels: xp?.staffChannels ?? [],
             allowedRoles: xp?.allowedRoles ?? [],

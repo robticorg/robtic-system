@@ -13,125 +13,125 @@ const TIER_CHOICES = QUEST_TIERS.map(tier => ({ name: tier, value: tier }));
  */
 export const questsFeature = defineFeature({
     key: "quests",
-    description: "Daily quests, rare challenges and a weekly community goal",
+    description: "مهام يومية، تحديات نادرة، وهدف أسبوعي للكوميونتي",
     activation: "opt-in",
     events: ["clientReady", "guildDelete"],
     components: ["quest"],
     commands: [
         {
             name: "quest",
-            description: "Your quests, the board, and how you are doing",
+            description: "مهامك، لوحة المهام، ووش وضعك فيها",
             scope: "guild",
             access: "general",
             category: "Activity",
             subcommands: [
-                { name: "board", description: "Every quest you can claim right now" },
-                { name: "active", description: "The quests you are working on" },
-                { name: "community", description: "This week's community challenge" },
+                { name: "board", description: "كل المهام اللي تقدر تطالب فيها الحين" },
+                { name: "active", description: "المهام اللي شغال عليها" },
+                { name: "community", description: "تحدي الكوميونتي لهالأسبوع" },
                 {
                     name: "stats",
-                    description: "Quest record for you or another member",
-                    options: [{ name: "user", description: "Member to check (defaults to yourself)", type: "user" }],
+                    description: "سجل المهام لك أو لعضو ثاني",
+                    options: [{ name: "user", description: "العضو اللي تبي تتأكد منه (لك أنت افتراضيًا)", type: "user" }],
                 },
-                { name: "top", description: "Members with the most completed quests" },
+                { name: "top", description: "الأعضاء اللي عندهم أكثر مهام مكتملة" },
                 {
                     name: "post",
-                    description: "Post a Special quest right now (server administrators only)",
+                    description: "انشر مهمة خاصة الحين (بس لأدمن السيرفر)",
                 },
             ],
         },
         {
             name: "quest-config",
-            description: "Configure the quest engine",
+            description: "إعداد نظام المهام",
             scope: "guild",
             access: "admin",
             category: "Configuration",
             groups: [
                 {
                     name: "channel",
-                    description: "Where quests are posted",
+                    description: "وين تُنشر المهام",
                     subcommands: [
                         {
                             name: "quest",
-                            description: "Channel for every quest — easy, normal, hard, golden and VIP",
-                            options: [{ name: "channel", description: "Target channel", type: "channel", required: true, channelTypes: [ChannelType.GuildText] }],
+                            description: "التشانل لكل المهام — سهلة، عادية، صعبة، ذهبية و VIP",
+                            options: [{ name: "channel", description: "التشانل المطلوب", type: "channel", required: true, channelTypes: [ChannelType.GuildText] }],
                         },
                         {
                             name: "community",
-                            description: "Channel for the weekly community challenge",
-                            options: [{ name: "channel", description: "Target channel", type: "channel", required: true, channelTypes: [ChannelType.GuildText] }],
+                            description: "التشانل لتحدي الكوميونتي الأسبوعي",
+                            options: [{ name: "channel", description: "التشانل المطلوب", type: "channel", required: true, channelTypes: [ChannelType.GuildText] }],
                         },
                     ],
                 },
                 {
                     name: "mention",
-                    description: "Role pinged when a quest is posted",
+                    description: "الرول اللي يتم منشنه لما تنشر مهمة",
                     subcommands: [
                         {
                             name: "set",
-                            description: "Set the role pinged for a quest type",
+                            description: "حدد الرول اللي يتمنشن لنوع مهمة معين",
                             options: [
                                 {
                                     name: "type",
-                                    description: "Which quest type",
+                                    description: "أي نوع مهمة",
                                     type: "string",
                                     required: true,
                                     choices: [...TIER_CHOICES, { name: "community", value: "community" }],
                                 },
-                                { name: "role", description: "Role to ping (omit to clear)", type: "role" },
+                                { name: "role", description: "الرول اللي يتمنشن (سيبه فاضي عشان تلغيه)", type: "role" },
                             ],
                         },
-                        { name: "list", description: "Show every configured mention role" },
+                        { name: "list", description: "اعرض كل رولات المنشن المعدّلة" },
                     ],
                 },
                 {
                     name: "vip-role",
-                    description: "Roles that may claim VIP quests",
+                    description: "الرولات اللي تقدر تطالب بمهام VIP",
                     subcommands: [
                         {
                             name: "add",
-                            description: "Let a role claim VIP quests",
-                            options: [{ name: "role", description: "Role to allow", type: "role", required: true }],
+                            description: "خلي رول يقدر يطالب بمهام VIP",
+                            options: [{ name: "role", description: "الرول اللي تبي تسمح له", type: "role", required: true }],
                         },
                         {
                             name: "remove",
-                            description: "Stop a role claiming VIP quests",
-                            options: [{ name: "role", description: "Role to remove", type: "role", required: true }],
+                            description: "امنع رول من المطالبة بمهام VIP",
+                            options: [{ name: "role", description: "الرول اللي تبي تشيله", type: "role", required: true }],
                         },
-                        { name: "list", description: "Show the VIP roles" },
+                        { name: "list", description: "اعرض رولات VIP" },
                     ],
                 },
                 {
                     name: "window",
-                    description: "Times of day quests may appear",
+                    description: "أوقات اليوم اللي ممكن تطلع فيها المهام",
                     subcommands: [
                         {
                             name: "add",
-                            description: "Add or replace a generation window",
+                            description: "ضيف أو غيّر فترة توليد",
                             options: [
-                                { name: "key", description: "Name for the window, e.g. morning", type: "string", required: true },
-                                { name: "start-hour", description: "Local hour it opens (0-23)", type: "integer", required: true, minValue: QUEST_LIMITS.windowHour.min, maxValue: QUEST_LIMITS.windowHour.max },
-                                { name: "end-hour", description: "Local hour it closes (0-23)", type: "integer", required: true, minValue: QUEST_LIMITS.windowHour.min, maxValue: QUEST_LIMITS.windowHour.max },
+                                { name: "key", description: "اسم الفترة، مثلاً morning", type: "string", required: true },
+                                { name: "start-hour", description: "الساعة المحلية اللي تبدأ فيها (0-23)", type: "integer", required: true, minValue: QUEST_LIMITS.windowHour.min, maxValue: QUEST_LIMITS.windowHour.max },
+                                { name: "end-hour", description: "الساعة المحلية اللي تخلص فيها (0-23)", type: "integer", required: true, minValue: QUEST_LIMITS.windowHour.min, maxValue: QUEST_LIMITS.windowHour.max },
                             ],
                         },
                         {
                             name: "remove",
-                            description: "Remove a window",
-                            options: [{ name: "key", description: "Window name", type: "string", required: true, autocomplete: true }],
+                            description: "احذف فترة",
+                            options: [{ name: "key", description: "اسم الفترة", type: "string", required: true, autocomplete: true }],
                         },
-                        { name: "list", description: "Show the windows and the server's clock" },
+                        { name: "list", description: "اعرض الفترات وتوقيت السيرفر" },
                     ],
                 },
                 {
                     name: "tier",
-                    description: "Turn individual quest types on or off",
+                    description: "شغّل أو أوقف نوع مهمة معين",
                     subcommands: [
                         {
                             name: "toggle",
-                            description: "Enable or disable a quest type here",
+                            description: "فعّل أو عطّل نوع مهمة بهذا السيرفر",
                             options: [
-                                { name: "type", description: "Which quest type", type: "string", required: true, choices: TIER_CHOICES },
-                                { name: "enabled", description: "Whether it generates", type: "boolean", required: true },
+                                { name: "type", description: "أي نوع مهمة", type: "string", required: true, choices: TIER_CHOICES },
+                                { name: "enabled", description: "تبي تتولد ولا لا", type: "boolean", required: true },
                             ],
                         },
                     ],
@@ -140,11 +140,11 @@ export const questsFeature = defineFeature({
             subcommands: [
                 {
                     name: "offset",
-                    description: "The server's clock, as minutes from UTC (e.g. 180 for UTC+3, 330 for UTC+5:30)",
+                    description: "توقيت السيرفر، بالدقايق من UTC (مثلاً 180 لتوقيت +3، 330 لتوقيت +5:30)",
                     options: [
                         {
                             name: "minutes",
-                            description: "Minutes east of UTC",
+                            description: "عدد الدقايق شرق UTC",
                             type: "integer",
                             required: true,
                             minValue: QUEST_LIMITS.utcOffsetMinutes.min,
@@ -154,14 +154,14 @@ export const questsFeature = defineFeature({
                 },
                 {
                     name: "community",
-                    description: "Weekly challenge settings",
+                    description: "إعدادات التحدي الأسبوعي",
                     options: [
-                        { name: "enabled", description: "Whether a challenge runs each week", type: "boolean" },
-                        { name: "reward", description: "Base points paid to every qualifying contributor", type: "integer", minValue: QUEST_LIMITS.communityRewardBase.min, maxValue: QUEST_LIMITS.communityRewardBase.max },
-                        { name: "minimum", description: "Contribution needed to be paid at all", type: "integer", minValue: QUEST_LIMITS.communityMinContribution.min, maxValue: QUEST_LIMITS.communityMinContribution.max },
+                        { name: "enabled", description: "هل يفتح تحدي كل أسبوع", type: "boolean" },
+                        { name: "reward", description: "النقاط الأساسية اللي تنعطى لكل مساهم مؤهل", type: "integer", minValue: QUEST_LIMITS.communityRewardBase.min, maxValue: QUEST_LIMITS.communityRewardBase.max },
+                        { name: "minimum", description: "أقل مساهمة عشان تستحق المكافأة", type: "integer", minValue: QUEST_LIMITS.communityMinContribution.min, maxValue: QUEST_LIMITS.communityMinContribution.max },
                     ],
                 },
-                { name: "status", description: "Show the whole quest configuration" },
+                { name: "status", description: "اعرض كل إعدادات نظام المهام" },
             ],
         },
     ],

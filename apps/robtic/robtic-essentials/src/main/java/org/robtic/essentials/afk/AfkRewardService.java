@@ -137,6 +137,9 @@ public final class AfkRewardService {
                 ? Robs.round((afkMillis / MILLIS_PER_HOUR) * config.robsPerHour())
                 : 0d;
 
+        plugin.getLogger().fine("AFK session ending: player=" + uuid + " session=" + sessionStartedAt
+                + " earned=" + robs);
+
         statistics.put(uuid, before.plus(config.trackTotalTime() ? afkMillis : 0L, robs));
 
         // Credited against the economy's own cache rather than a second balance of our own, so the
@@ -149,6 +152,9 @@ public final class AfkRewardService {
         JsonObject body = api.afkSessionBody(uuid, username, afkMillis, robs, sessionStartedAt);
         String requestId = SurvivalApi.afkRequestId(uuid, sessionStartedAt);
 
+        plugin.getLogger().fine("AFK settlement: player=" + uuid + " session=" + sessionStartedAt
+                + " transaction=" + requestId);
+
         if (immediate) {
             // No scheduler during disable, and no later chance to try: queued directly, saved by
             // onDisable, replayed on the next start under the session's own key.
@@ -157,7 +163,12 @@ public final class AfkRewardService {
         }
 
         gateway.submit("/api/survival/afk", body, requestId,
-                response -> reconcile(uuid, response),
+                response -> {
+                    reconcile(uuid, response);
+                    plugin.getLogger().fine("AFK settlement completed: player=" + uuid
+                            + " session=" + sessionStartedAt
+                            + " balance=" + balances.get(uuid).map(BalanceCache.Balance::total).orElse(robs));
+                },
                 error -> plugin.getLogger().fine(
                         "AFK session for " + username + " will be settled from the queue: " + error.getMessage()));
     }

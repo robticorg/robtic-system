@@ -27,7 +27,7 @@ export const utcClock = (minutes: number): string => {
 };
 
 const hourRange = (startHour: number, endHour: number): string =>
-    `${String(startHour).padStart(2, "0")}:00 → ${String(endHour).padStart(2, "0")}:00`;
+    `${String(startHour).padStart(2, "0")}:00 ← ${String(endHour).padStart(2, "0")}:00`;
 
 /**
  * A tuning value that may be fixed or rolled — `QuestRange` restated locally.
@@ -46,116 +46,116 @@ export const QUEST_CONFIG_MESSAGES = {
     utcClock,
 
     channel: {
-        quest: (mention: string) => `Every quest — easy, normal, hard, golden and VIP — will be posted in ${mention}.`,
+        quest: (mention: string) => `كل المهام — سهلة، عادية، صعبة، ذهبية و VIP — بتنشر في ${mention}.`,
         community: (mention: string) =>
-            `The weekly community challenge will be posted in ${mention}.\n` +
-            "The panel is posted once and edited all week — it is worth a channel members can find.",
+            `تحدي الكوميونتي الأسبوعي بينشر في ${mention}.\n` +
+            "اللوحة تنشر مرة وحدة وتتحدث طول الأسبوع — خلها تشانل الأعضاء يلقونه بسهولة.",
     },
 
     mention: {
-        communityLabel: "🌍 Community",
-        set: (label: string, roleId: string) => `${label} quests will ping <@&${roleId}>.`,
-        cleared: (label: string) => `${label} quests will no longer ping anyone.`,
-        listTitle: "Quest mention roles",
-        listRow: (label: string, roleId: string | null) => `${label} — ${roleId ? `<@&${roleId}>` : "*no ping*"}`,
+        communityLabel: "🌍 الكوميونتي",
+        set: (label: string, roleId: string) => `مهام ${label} بتمنشن <@&${roleId}>.`,
+        cleared: (label: string) => `مهام ${label} ما بتمنشن أحد بعد الحين.`,
+        listTitle: "رولات منشن المهام",
+        listRow: (label: string, roleId: string | null) => `${label} — ${roleId ? `<@&${roleId}>` : "*بدون منشن*"}`,
     },
 
     vipRole: {
         added: (roleId: string, count: number) =>
-            `<@&${roleId}> can now claim VIP quests — ${count} VIP role(s) configured.`,
-        removed: (roleId: string) => `<@&${roleId}> can no longer claim VIP quests.`,
-        removedLast: (roleId: string) => `<@&${roleId}> removed. With no VIP roles left, nobody can claim VIP quests.`,
-        listTitle: "VIP roles",
+            `<@&${roleId}> صار يقدر يطالب بمهام VIP — معدّل ${count} رول VIP.`,
+        removed: (roleId: string) => `<@&${roleId}> ما عاد يقدر يطالب بمهام VIP.`,
+        removedLast: (roleId: string) => `تم حذف <@&${roleId}>. بدون رولات VIP، محد بيقدر يطالب بمهام VIP.`,
+        listTitle: "رولات VIP",
         listRow: (roleId: string) => `• <@&${roleId}>`,
         listEmpty:
-            "No VIP roles configured, so VIP quests cannot be claimed by anyone.\n" +
-            "Add one with `/quest-config vip-role add`.",
+            "ما فيه رولات VIP معدّلة، يعني مهام VIP محد يقدر يطالب فيها.\n" +
+            "ضيف وحد بـ `/quest-config vip-role add`.",
     },
 
     window: {
-        unusableKey: "That name has no usable characters — try something like `morning`.",
-        tooMany: (max: number) => `This server already has ${max} windows — remove one before adding another.`,
+        unusableKey: "هذا الاسم ما فيه حروف صالحة — جرب شي زي `morning`.",
+        tooMany: (max: number) => `هذا السيرفر عنده ${max} فترة بالفعل — احذف وحدة قبل لا تضيف جديدة.`,
         describe: (window: QuestWindowShape) =>
             `**${window.key}** — ${hourRange(window.startHour, window.endHour)}` +
-            (window.endHour <= window.startHour ? " *(overnight)*" : "") +
-            (window.enabled ? "" : " *(disabled)*"),
+            (window.endHour <= window.startHour ? " *(تمتد لليوم الثاني)*" : "") +
+            (window.enabled ? "" : " *(متوقفة)*"),
         saved: (existed: boolean, described: string) =>
-            `${existed ? "Updated" : "Added"} window ${described}\n` +
-            "Quests appear at an unannounced minute inside it — the same minute for the whole server, " +
-            "different for every other server.",
-        notFound: (key: string) => `No window called **${key}**. \`/quest-config window list\` shows them.`,
-        removed: (key: string) => `Removed **${key}**.`,
-        removedLast: (key: string) => `Removed **${key}**. With no windows left, no daily quests will be generated.`,
-        listTitle: "Quest generation windows",
-        listEmpty: "No windows configured — no daily quests will be generated.",
-        listFooter: (clock: string) => `Hours are read in ${clock} · change it with /quest-config offset`,
+            `${existed ? "تم تحديث" : "تمت إضافة"} الفترة ${described}\n` +
+            "المهام تطلع بدقيقة غير معلنة داخل الفترة — نفس الدقيقة لكل السيرفر، " +
+            "وتختلف عن باقي السيرفرات.",
+        notFound: (key: string) => `ما فيه فترة اسمها **${key}**. شوف \`/quest-config window list\` عشان تشوفهم.`,
+        removed: (key: string) => `تم حذف **${key}**.`,
+        removedLast: (key: string) => `تم حذف **${key}**. بدون فترات، ما بتطلع أي مهام يومية.`,
+        listTitle: "فترات توليد المهام",
+        listEmpty: "ما فيه فترات معدّلة — ما بتطلع أي مهام يومية.",
+        listFooter: (clock: string) => `الساعات محسوبة بتوقيت ${clock} · غيّره بـ /quest-config offset`,
     },
 
     tier: {
-        cadenceDaily: (min: number, max: number) => `${min}–${max} per day`,
-        cadenceWeekly: (min: number, max: number) => `${min}–${max} per week`,
-        cadencePerWindow: "one per generation window",
-        slotsUnlimited: "unlimited claims",
-        slots: (slots: RangeLike) => `${range(slots)} claim slot(s)`,
+        cadenceDaily: (min: number, max: number) => `${min}–${max} باليوم`,
+        cadenceWeekly: (min: number, max: number) => `${min}–${max} بالأسبوع`,
+        cadencePerWindow: "وحدة لكل فترة توليد",
+        slotsUnlimited: "مطالبات غير محدودة",
+        slots: (slots: RangeLike) => `${range(slots)} مكان مطالبة`,
         enabled: (tierTitle: string, cadence: string, missions: RangeLike, reward: RangeLike, slots: string) =>
-            `${tierTitle} quests are on — ${cadence}, ${range(missions)} mission(s), ` +
-            `${range(reward)} points, ${slots}.`,
+            `مهام ${tierTitle} شغالة — ${cadence}، ${range(missions)} هدف، ` +
+            `${range(reward)} نقطة، ${slots}.`,
         disabled: (tierTitle: string) =>
-            `${tierTitle} quests are off. Any that are already live will finish normally.`,
+            `مهام ${tierTitle} متوقفة. أي مهمة شغالة الحين بتكمل عادي.`,
     },
 
     offset: {
         /** `localNow` is the bot's own idea of the wall clock, so an admin can sanity-check it. */
         saved: (clock: string, localNow: string) =>
-            `Quest windows are now read in **${clock}** — that makes it **${localNow}** here.\n` +
-            "Existing windows keep their hours; they just land at different real times.",
+            `فترات المهام الحين تُحسب بتوقيت **${clock}** — يعني الساعة عندكم الحين **${localNow}**.\n` +
+            "الفترات الموجودة تحافظ على ساعاتها، بس توقيتها الفعلي يتغير.",
     },
 
     community: {
-        title: "Weekly community challenge",
+        title: "التحدي الأسبوعي للكوميونتي",
         description: (enabled: boolean, reward: number, minimum: number, rankBonus: string) =>
-            `**Running:** ${enabled ? "yes, a new one opens each week" : "no"}\n` +
-            `**Base reward:** ${reward.toLocaleString()} points per qualifying contributor\n` +
-            `**Minimum contribution:** ${minimum.toLocaleString()}\n` +
-            `**Rank bonus:** ${rankBonus}`,
-        footer: "A challenge already under way keeps the numbers it started with.",
+            `**شغال:** ${enabled ? "أيوه، يفتح وحد جديد كل أسبوع" : "لا"}\n` +
+            `**المكافأة الأساسية:** ${reward.toLocaleString()} نقطة لكل مساهم مؤهل\n` +
+            `**أقل مساهمة:** ${minimum.toLocaleString()}\n` +
+            `**بونص الترتيب:** ${rankBonus}`,
+        footer: "التحدي اللي شغال حاليًا يحافظ على أرقامه اللي بدأ فيها.",
     },
 
     status: {
-        title: "Quest configuration",
-        notSet: "*not set*",
-        none: "*none*",
+        title: "إعدادات المهام",
+        notSet: "*غير محدد*",
+        none: "*لا يوجد*",
         noRole: "—",
-        communityLabel: "🌍 Community",
+        communityLabel: "🌍 الكوميونتي",
 
-        channelsField: "Channels",
+        channelsField: "التشانلات",
         channelsValue: (quest: string, community: string) =>
-            `Quests — ${quest}\nCommunity — ${community}`,
+            `المهام — ${quest}\nالكوميونتي — ${community}`,
 
-        mentionsField: "Mentions",
+        mentionsField: "المنشن",
         mentionRow: (label: string, roleId: string | null) => `${label} — ${roleId ? `<@&${roleId}>` : "—"}`,
 
-        difficultiesField: "Difficulties",
+        difficultiesField: "مستويات الصعوبة",
         difficultyRow: (enabled: boolean, tierTitle: string) => `${enabled ? "✅" : "🚫"} ${tierTitle}`,
 
-        windowsField: (clock: string) => `Windows (${clock})`,
+        windowsField: (clock: string) => `الفترات (${clock})`,
         windowRow: (window: QuestWindowShape) =>
             `${window.enabled ? "•" : "○"} **${window.key}** ${hourRange(window.startHour, window.endHour)}`,
 
-        vipRolesField: "VIP roles",
+        vipRolesField: "رولات VIP",
 
-        communityField: "Community challenge",
+        communityField: "تحدي الكوميونتي",
         communityOn: (reward: number, minimum: number) =>
-            `On · ${reward.toLocaleString()} points base · min ${minimum.toLocaleString()}`,
-        communityOff: "Off",
+            `شغال · أساس ${reward.toLocaleString()} نقطة · أقل مساهمة ${minimum.toLocaleString()}`,
+        communityOff: "متوقف",
 
-        warningsField: "⚠️ Needs attention",
+        warningsField: "⚠️ يحتاج انتباه",
         warningRow: (line: string) => `• ${line}`,
         warnings: {
-            noQuestChannel: "No quest channel — generated quests are posted nowhere.",
-            noCommunityChannel: "No community channel — the weekly challenge runs unseen.",
-            noVipRoles: "No VIP roles — VIP quests are posted but nobody can claim them.",
-            noWindows: "No enabled windows — nothing will be generated at all.",
+            noQuestChannel: "ما فيه تشانل مهام — المهام اللي تتولد ما تنشر بأي مكان.",
+            noCommunityChannel: "ما فيه تشانل كوميونتي — التحدي الأسبوعي يشتغل بدون ما أحد يشوفه.",
+            noVipRoles: "ما فيه رولات VIP — مهام VIP تنشر بس محد يقدر يطالب فيها.",
+            noWindows: "ما فيه فترات شغالة — ما بيتولد أي شي خالص.",
         },
     },
 } as const;

@@ -1,11 +1,11 @@
-import type { Client, TextChannel } from "discord.js";
+import { MessageFlags, TextDisplayBuilder, type Client, type TextChannel } from "discord.js";
 import type { ICommunityChallenge } from "@database/models";
 import { mentionRoleFor } from "@database/models";
 import { CommunityChallengeRepository, QuestSettingsRepository } from "@database/repositories";
 import { COMMUNITY_CONFIG } from "@constants";
 import { pendingTotal } from "@core/quests";
 import { Logger } from "@logger";
-import { buildCommunityEmbed } from "../../utils/community-embed";
+import { buildCommunityContainer } from "../../utils/community-embed";
 import { scheduleEdit, bypassThrottle, forgetThrottle, UNKNOWN_MESSAGE } from "../../utils/edit-throttle";
 
 const CTX = "quests";
@@ -28,8 +28,11 @@ export async function postCommunityPanel(client: Client, challenge: ICommunityCh
     const roleId = mentionRoleFor(settings, "community");
 
     const message = await channel.send({
-        content: roleId ? `<@&${roleId}>` : undefined,
-        embeds: [buildCommunityEmbed({ challenge })],
+        components: [
+            ...(roleId ? [new TextDisplayBuilder().setContent(`<@&${roleId}>`)] : []),
+            buildCommunityContainer({ challenge }),
+        ],
+        flags: MessageFlags.IsComponentsV2,
         allowedMentions: roleId ? { roles: [roleId] } : { parse: [] },
     });
 
@@ -60,7 +63,9 @@ export function refreshCommunityPanel(client: Client, challengeId: string, miles
             try {
                 const message = await (channel as TextChannel).messages.fetch(fresh.messageId);
                 await message.edit({
-                    embeds: [buildCommunityEmbed({ challenge: fresh, pending: pendingTotal(fresh.guildId) })],
+                    components: [buildCommunityContainer({ challenge: fresh, pending: pendingTotal(fresh.guildId) })],
+                    flags: MessageFlags.IsComponentsV2,
+                    allowedMentions: { parse: [] },
                 });
             } catch (err) {
                 if ((err as { code?: number }).code !== UNKNOWN_MESSAGE) throw err;
@@ -73,7 +78,14 @@ export function refreshCommunityPanel(client: Client, challengeId: string, miles
     })();
 }
 
-/** The final render: completion state and the top five, then no further edits. */
+/**
+ * The final render: completion state and the top five, then no further edits.
+ *
+ * Unlike an embed, a Components V2 text display genuinely pings a mentioned member — so the top
+ * five's `<@id>` mentions here are suppressed with `allowedMentions`. Nobody was notified by this
+ * panel before, and a settlement edit that started silently pinging five members would be a
+ * surprise regression, not a feature.
+ */
 export async function finalizeCommunityPanel(client: Client, challenge: ICommunityChallenge): Promise<void> {
     if (!challenge.channelId || !challenge.messageId) return;
 
@@ -87,7 +99,11 @@ export async function finalizeCommunityPanel(client: Client, challenge: ICommuni
     const message = await (channel as TextChannel).messages.fetch(challenge.messageId).catch(() => null);
     if (!message) return;
 
-    await message.edit({ embeds: [buildCommunityEmbed({ challenge, top })] }).catch(err =>
+    await message.edit({
+        components: [buildCommunityContainer({ challenge, top })],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: [] },
+    }).catch(err =>
         Logger.warn(`Could not finalize community embed for ${challenge.guildId}: ${err}`, CTX)
     );
 }

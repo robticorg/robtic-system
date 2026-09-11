@@ -1,7 +1,7 @@
-import type { Client, TextChannel } from "discord.js";
+import { MessageFlags, type Client, type TextChannel } from "discord.js";
 import { CommunityChallengeRepository } from "@database/repositories";
 import { Logger } from "@logger";
-import { buildCommunityEmbed } from "../../utils/community-embed";
+import { buildCommunityContainer } from "../../utils/community-embed";
 import { postCommunityPanel } from "./render-community-panel";
 
 const CTX = "quests";
@@ -39,7 +39,11 @@ export async function resumeCommunityPanels(client: Client): Promise<number> {
             continue;
         }
 
-        await message.edit({ embeds: [buildCommunityEmbed({ challenge })] }).catch(() => null);
+        await message.edit({
+            components: [buildCommunityContainer({ challenge })],
+            flags: MessageFlags.IsComponentsV2,
+            allowedMentions: { parse: [] },
+        }).catch(() => null);
         resumed++;
     }
 

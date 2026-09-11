@@ -1,6 +1,6 @@
 export { xpForLevel, calculateLevel } from "@core/xp";
 export { randomXP } from "./random-xp";
-export { isXPChannel } from "./is-xp-channel";
+export { isExcludedChannel } from "./is-excluded-channel";
 export { hasAllowedRole } from "./has-allowed-role";
 export { isOnXPCooldown } from "./is-on-xp-cooldown";
 export { grantXP } from "./grant-xp";

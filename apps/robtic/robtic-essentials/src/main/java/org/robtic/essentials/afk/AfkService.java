@@ -250,6 +250,8 @@ public final class AfkService {
      */
     private AfkSnapshot settle(UUID uuid, String username, AfkSnapshot snapshot, boolean stopping) {
         if (snapshot.isSettled()) {
+            plugin.getLogger().fine("AFK settlement already completed, skipping: player=" + uuid
+                    + " session=" + snapshot.enteredAt());
             return snapshot;
         }
 
@@ -334,6 +336,8 @@ public final class AfkService {
         }
 
         save();
+
+        plugin.getLogger().fine("AFK session started: player=" + uuid + " session=" + snapshot.enteredAt());
 
         // After the teleport, so the pass sees the player already standing in the AFK world and
         // hides them in the same tick they arrive rather than a moment later.

@@ -13,10 +13,10 @@ export class XPSettingsRepository {
         return settings;
     }
 
-    static async setChatChannels(guildId: string, channels: string[]): Promise<IXPSettings> {
+    static async setExcludedChannels(guildId: string, channels: string[]): Promise<IXPSettings> {
         return XPSettings.findOneAndUpdate(
             { guildId },
-            { chatChannels: channels },
+            { excludedChannels: channels },
             { upsert: true, returnDocument: "after" }
         );
     }
@@ -53,18 +53,18 @@ export class XPSettingsRepository {
         );
     }
 
-    static async addChatChannel(guildId: string, channelId: string): Promise<IXPSettings> {
+    static async addExcludedChannel(guildId: string, channelId: string): Promise<IXPSettings> {
         return XPSettings.findOneAndUpdate(
             { guildId },
-            { $addToSet: { chatChannels: channelId } },
+            { $addToSet: { excludedChannels: channelId } },
             { upsert: true, returnDocument: "after" }
         );
     }
 
-    static async removeChatChannel(guildId: string, channelId: string): Promise<IXPSettings> {
+    static async removeExcludedChannel(guildId: string, channelId: string): Promise<IXPSettings> {
         return XPSettings.findOneAndUpdate(
             { guildId },
-            { $pull: { chatChannels: channelId } },
+            { $pull: { excludedChannels: channelId } },
             { upsert: true, returnDocument: "after" }
         );
     }

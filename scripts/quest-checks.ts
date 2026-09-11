@@ -4,7 +4,18 @@ import { enumerateOccurrences, pickInstantIn, localWeekKey, localDateKey } from 
 import { rollMissions } from "@core/quests/missions/roll-missions";
 import "@core/quests/missions";
 import { DEFAULT_QUEST_WINDOWS, QUEST_TIER_SPECS, QUEST_TIERS, TIER_SLOT, questRangeBounds, rollQuestRange } from "@constants";
-import { buildQuestEmbed, buildQuestButtons } from "@bot/features/quests/utils/quest-embed";
+import { buildQuestContainer, buildClaimButton } from "@bot/features/quests/utils/quest-embed";
+
+/** Recursively sums every text-display's content length inside a Components V2 tree. */
+function totalTextLength(node: unknown): number {
+    if (!node || typeof node !== "object") return 0;
+    const obj = node as { content?: string; components?: unknown[] };
+    let sum = typeof obj.content === "string" ? obj.content.length : 0;
+    if (Array.isArray(obj.components)) {
+        for (const child of obj.components) sum += totalTextLength(child);
+    }
+    return sum;
+}
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -155,14 +166,12 @@ for (const tier of QUEST_TIERS) {
             })),
         } as never;
 
-        const json = buildQuestEmbed(quest).toJSON();
-        const size = (json.title?.length ?? 0) + (json.description?.length ?? 0) + (json.footer?.text.length ?? 0)
-            + (json.author?.name.length ?? 0)
-            + (json.fields ?? []).reduce((sum, f) => sum + f.name.length + f.value.length, 0);
+        const json = buildQuestContainer(quest).toJSON();
+        const size = totalTextLength(json);
 
-        check(`${tier} card fits (${taken}/${slots ?? "∞"} taken)`, size <= 6000 && (json.fields?.length ?? 0) <= 25, `${size} chars`);
+        check(`${tier} card fits (${taken}/${slots ?? "∞"} taken)`, size <= 4000, `${size} chars`);
 
-        const button = buildQuestButtons(quest).toJSON().components[0] as { label?: string; disabled?: boolean };
+        const button = buildClaimButton(quest).toJSON() as { label?: string; disabled?: boolean };
         check(`${tier} claim button label fits (${taken} taken)`, (button.label?.length ?? 0) <= 80, button.label ?? "");
 
         const full = slots !== null && taken >= slots;

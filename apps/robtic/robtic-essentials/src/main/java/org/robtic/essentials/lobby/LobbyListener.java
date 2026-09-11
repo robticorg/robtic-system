@@ -32,6 +32,10 @@ import java.util.logging.Level;
  * Multiverse-Inventories has already swapped it away. The last moment it is both current and in
  * memory is the world-change event *out of* a survival world, which is where this captures it.
  *
+ * "Survival world" is {@link LobbyConfiguration#isSurvivalWorld}, not "not the lobby" — Spawn and
+ * every other non-Survival world (an event arena, an admin world, and so on) must never be able to
+ * overwrite the Survival snapshot with their own per-world inventory on the way out.
+ *
  * The capture is read-only in every sense: it is never restored, never written back to a world, and
  * read only by the preview menu. Restoring inventories remains Multiverse-Inventories' job.
  */
@@ -81,7 +85,12 @@ public final class LobbyListener implements Listener {
 
         // Captured before the deferred evaluate, using the inventory as it is right now — which is
         // still the survival one for the first moments after the change.
-        if (!config.isLobby(from)) {
+        //
+        // Gated on the world actually being Survival, not merely on it not being the lobby: any
+        // other world — Spawn, an event arena, an admin world — has its own per-world inventory via
+        // Multiverse-Inventories, and capturing on the way out of one of those would overwrite the
+        // real Survival snapshot with whatever the player happened to be carrying there.
+        if (config.isSurvivalWorld(from)) {
             captureSurvivalInventory(player, from);
         }
 

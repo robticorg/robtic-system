@@ -19,7 +19,8 @@ export interface AdminServerConfig {
 }
 
 export interface AdminXpConfig {
-    chatChannels: string[];
+    /** Channels where neither chat XP nor the message count is read at all. */
+    excludedChannels: string[];
     supportChannels: string[];
     staffChannels: string[];
     allowedRoles: string[];

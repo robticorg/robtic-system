@@ -1,4 +1,4 @@
-import { EmbedBuilder } from "discord.js";
+import { ContainerBuilder } from "discord.js";
 import type { ICommunityChallenge, ICommunityContribution } from "@database/models";
 import { COLORS, QUEST_COMMUNITY_MESSAGES } from "@constants";
 
@@ -15,17 +15,21 @@ interface RenderInput {
     pending?: number;
     /** Populated only once the week is over. */
     top?: ICommunityContribution[];
+    /** This member's own share — `/quest community` adds it on top of the shared panel. */
+    yours?: { field: string; value: string };
+    /** How many distinct members have contributed — `/quest community` only. */
+    contributorCount?: number;
 }
 
 /**
- * The single embed edited all week.
+ * The single container edited all week, as a Components V2 layout.
  *
  * The remaining time uses Discord's relative timestamp, which the client renders itself — so the
  * countdown stays correct without the bot ever editing the message for it. That removes the only
  * reason this would need a heartbeat edit, and it is the largest saving available on a message
  * that lives for seven days.
  */
-export function buildCommunityEmbed({ challenge, pending = 0, top }: RenderInput): EmbedBuilder {
+export function buildCommunityContainer({ challenge, pending = 0, top, yours, contributorCount }: RenderInput): ContainerBuilder {
     const text = QUEST_COMMUNITY_MESSAGES;
 
     const total = challenge.total + pending;
@@ -34,46 +38,50 @@ export function buildCommunityEmbed({ challenge, pending = 0, top }: RenderInput
     const done = total >= challenge.target;
     const over = challenge.status !== "active";
 
-    const embed = new EmbedBuilder()
-        .setTitle(text.title)
-        .setColor(done ? COLORS.success : over ? COLORS.error : COLORS.activity)
-        .setDescription(challenge.missions.map(mission => text.mission(mission.label)).join("\n"))
-        .addFields(
-            {
-                name: text.progressField(percent),
-                value: text.progressValue(progressBar(fraction), total, challenge.target),
-            },
-            {
-                name: text.rewardField,
-                value: text.rewardValue(challenge.rewardBase),
-                inline: true,
-            },
+    const container = new ContainerBuilder()
+        .setAccentColor(done ? COLORS.success : over ? COLORS.error : COLORS.activity)
+        .addTextDisplayComponents(td => td.setContent(`# ${text.title}`))
+        .addTextDisplayComponents(td =>
+            td.setContent(challenge.missions.map(mission => text.mission(mission.label)).join("\n"))
+        )
+        .addSeparatorComponents(separator => separator)
+        .addTextDisplayComponents(td =>
+            td.setContent(
+                `**${text.progressField(percent)}**\n${text.progressValue(progressBar(fraction), total, challenge.target)}`
+            )
+        )
+        .addTextDisplayComponents(td =>
+            td.setContent(`**${text.rewardField}**  ${text.rewardValue(challenge.rewardBase)}`)
         );
 
     if (!over) {
-        embed.addFields({
-            name: text.timeLeftField,
-            value: text.timeLeftValue(challenge.endsAt),
-            inline: true,
-        });
+        container.addTextDisplayComponents(td =>
+            td.setContent(`**${text.timeLeftField}**  ${text.timeLeftValue(challenge.endsAt)}`)
+        );
     }
 
     if (top?.length) {
-        embed.addFields({
-            name: text.topField,
-            value: top
-                .map((row, index) => text.topRow(text.medals[index] ?? text.fallbackMedal(index), row.discordId, row.amount))
-                .join("\n"),
-        });
+        container.addTextDisplayComponents(td =>
+            td.setContent(
+                `**${text.topField}**\n` +
+                top.map((row, index) => text.topRow(text.medals[index] ?? text.fallbackMedal(index), row.discordId, row.amount)).join("\n")
+            )
+        );
     }
 
-    embed.setFooter({
-        text: over
-            ? done
-                ? text.footerCompleted(challenge.contributorCount || top?.length || 0)
-                : text.footerMissed
-            : text.footerRunning,
-    });
+    if (yours) {
+        container.addTextDisplayComponents(td => td.setContent(`**${yours.field}**  ${yours.value}`));
+    }
 
-    return embed.setTimestamp(challenge.endsAt);
+    if (contributorCount !== undefined) {
+        container.addTextDisplayComponents(td => td.setContent(`**${text.contributorsField}**  ${contributorCount.toLocaleString()}`));
+    }
+
+    container.addTextDisplayComponents(td =>
+        td.setContent(
+            `-# ${over ? (done ? text.footerCompleted(challenge.contributorCount || top?.length || 0) : text.footerMissed) : text.footerRunning}`
+        )
+    );
+
+    return container;
 }

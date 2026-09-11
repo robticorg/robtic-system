@@ -1,15 +1,15 @@
-import { EmbedBuilder } from "discord.js";
+import { ContainerBuilder, MessageFlags } from "discord.js";
 import type { FeatureSubcommandHandler } from "@typings/feature";
 import { COLORS, QUEST_COMMUNITY_MESSAGES } from "@constants";
 import { CommunityChallengeRepository, QuestSettingsRepository } from "@database/repositories";
 import { pendingTotal } from "@core/quests";
-import { buildCommunityEmbed } from "../utils/community-embed";
+import { buildCommunityContainer } from "../utils/community-embed";
 
 /**
  * A snapshot of the week's challenge, with this member's own share.
  *
  * The same renderer as the live panel, so the two can never drift apart — this adds the personal
- * fields the shared embed has no business carrying.
+ * fields the shared container has no business carrying.
  */
 export const community: FeatureSubcommandHandler = async (interaction, _client) => {
     const text = QUEST_COMMUNITY_MESSAGES;
@@ -20,10 +20,15 @@ export const community: FeatureSubcommandHandler = async (interaction, _client) 
         const settings = await QuestSettingsRepository.getCached(guildId);
 
         await interaction.editReply({
-            embeds: [new EmbedBuilder()
-                .setTitle(text.title)
-                .setColor(COLORS.info)
-                .setDescription(settings.communityEnabled ? text.noneRunning : text.disabled)],
+            components: [
+                new ContainerBuilder()
+                    .setAccentColor(COLORS.info)
+                    .addTextDisplayComponents(td => td.setContent(`# ${text.title}`))
+                    .addTextDisplayComponents(td =>
+                        td.setContent(settings.communityEnabled ? text.noneRunning : text.disabled)
+                    ),
+            ],
+            flags: MessageFlags.IsComponentsV2,
         });
         return;
     }
@@ -34,18 +39,26 @@ export const community: FeatureSubcommandHandler = async (interaction, _client) 
         CommunityChallengeRepository.countContributors(guildId, challenge.weekKey),
     ]);
 
-    const embed = buildCommunityEmbed({ challenge, pending: pendingTotal(guildId), top });
-
     const amount = mine?.amount ?? 0;
-    embed.addFields({
-        name: text.yourContributionField,
-        value: amount >= challenge.minContribution
-            ? text.yourContributionQualified(amount)
-            : text.yourContributionShort(amount, challenge.minContribution - amount),
-        inline: true,
+
+    const container = buildCommunityContainer({
+        challenge,
+        pending: pendingTotal(guildId),
+        top,
+        yours: {
+            field: text.yourContributionField,
+            value: amount >= challenge.minContribution
+                ? text.yourContributionQualified(amount)
+                : text.yourContributionShort(amount, challenge.minContribution - amount),
+        },
+        contributorCount: contributors,
     });
 
-    embed.addFields({ name: text.contributorsField, value: contributors.toLocaleString(), inline: true });
-
-    await interaction.editReply({ embeds: [embed] });
+    // A Components V2 text display genuinely pings a mentioned member, unlike an embed field — the
+    // top five's <@id> rows must not notify five people every time anyone runs this command.
+    await interaction.editReply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: [] },
+    });
 };

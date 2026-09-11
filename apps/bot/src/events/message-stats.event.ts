@@ -5,11 +5,13 @@ import { MESSAGE_STATS_CONFIG } from "@constants";
 import { handleError, BotError } from "@core/handlers";
 import { awardMessagePoint } from "@core/points";
 import { publishMetric } from "@core/metrics";
+import { isExcludedChannel } from "@bot/services/community/xp";
 
 /**
- * Counts every "real" message a user sends, guild-wide — unlike XP, this has no channel/role
- * restriction and no per-user cooldown, only the shared spam/short-message quality gate. Feeds
- * ActivityXP.realMessageCount (/profile) and the periodic Messages leaderboard (/top).
+ * Counts every "real" message a user sends, guild-wide — unlike XP, this has no role restriction
+ * and no per-user cooldown, only the shared spam/short-message quality gate and the same
+ * no-calculate channel exclusion XP uses. Feeds ActivityXP.realMessageCount (/profile) and the
+ * periodic Messages leaderboard (/top).
  */
 export default {
     name: Events.MessageCreate,
@@ -20,6 +22,7 @@ export default {
 
         const content = message.content.trim();
         if (!isAcceptableMessage(content, MESSAGE_STATS_CONFIG.minMessageLength)) return;
+        if (await isExcludedChannel(message.guild.id, message.channel.id)) return;
 
         try {
             await ActivityRepository.incrementRealMessageCount(message.author.id, message.guild.id, message.author.username);

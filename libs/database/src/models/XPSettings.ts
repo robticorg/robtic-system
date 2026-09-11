@@ -2,7 +2,8 @@ import { Schema, model, type Document } from "mongoose";
 
 export interface IXPSettings extends Document {
     guildId: string;
-    chatChannels: string[];
+    /** Channels where neither chat XP nor the real-message counter is read at all. */
+    excludedChannels: string[];
     supportChannels: string[];
     staffChannels: string[];
     allowedRoles: string[];
@@ -16,7 +17,7 @@ export interface IXPSettings extends Document {
 const xpSettingsSchema = new Schema<IXPSettings>(
     {
         guildId: { type: String, required: true, unique: true, index: true },
-        chatChannels: [{ type: String }],
+        excludedChannels: [{ type: String }],
         supportChannels: [{ type: String }],
         staffChannels: [{ type: String }],
         allowedRoles: [{ type: String }],

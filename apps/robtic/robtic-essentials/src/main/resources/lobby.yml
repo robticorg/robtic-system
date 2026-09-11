@@ -12,6 +12,14 @@ enabled: true
 # Must match the Multiverse world name exactly.
 world: spawn
 
+# The worlds that make up the player's Survival inventory. Only these are ever previewed or
+# captured for the lobby's read-only inventory preview — Spawn, event arenas, admin worlds and
+# anything else are never mistaken for Survival, however many other worlds the server runs.
+survival-worlds:
+  - world
+  - world_nether
+  - world_the_end
+
 # ─── Hotbar items ─────────────────────────────────────────────────────────────────────────────
 #
 # `slot` is a hotbar index, 0–8. `action` decides what a right-click opens:

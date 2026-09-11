@@ -36,8 +36,13 @@ public final class LobbyConfiguration {
     public record InfoEntry(int slot, Material material, String name, List<String> lore, String action, String value) {
     }
 
+    /** The only worlds ever treated as the player's Survival inventory, lowercased. */
+    private static final Set<String> DEFAULT_SURVIVAL_WORLDS =
+            Set.of("world", "world_nether", "world_the_end");
+
     private final boolean enabled;
     private final String world;
+    private final Set<String> survivalWorlds;
 
     private final Map<String, LobbyItem> items;
     private final Set<String> allowedCommands;
@@ -65,6 +70,7 @@ public final class LobbyConfiguration {
     private LobbyConfiguration(FileConfiguration config, Logger logger) {
         this.enabled = config.getBoolean("enabled", true);
         this.world = config.getString("world", "spawn");
+        this.survivalWorlds = parseSurvivalWorlds(config.getStringList("survival-worlds"));
 
         this.items = parseItems(config.getConfigurationSection("items"), logger);
         this.allowedCommands = lower(config.getStringList("allowed-commands"));
@@ -92,6 +98,18 @@ public final class LobbyConfiguration {
     /** True when the named world is the lobby. The single check every lobby feature gates on. */
     public boolean isLobby(String worldName) {
         return enabled && world.equalsIgnoreCase(worldName);
+    }
+
+    /**
+     * True only for the worlds that make up the player's Survival inventory: {@code world},
+     * {@code world_nether} and {@code world_the_end} by default.
+     *
+     * The single check every feature reading or capturing the Survival inventory gates on — Spawn,
+     * event arenas, admin worlds and anything else must never be mistaken for it, however many other
+     * worlds the server runs.
+     */
+    public boolean isSurvivalWorld(String worldName) {
+        return worldName != null && survivalWorlds.contains(worldName.toLowerCase(Locale.ROOT));
     }
 
     public Map<String, LobbyItem> items() {
@@ -245,5 +263,10 @@ public final class LobbyConfiguration {
 
     private static Set<String> lower(List<String> values) {
         return Set.copyOf(values.stream().map(value -> value.toLowerCase(Locale.ROOT).trim()).toList());
+    }
+
+    /** Falls back to the required defaults when unset, rather than leaving Survival undetectable. */
+    private static Set<String> parseSurvivalWorlds(List<String> configured) {
+        return configured.isEmpty() ? DEFAULT_SURVIVAL_WORLDS : lower(configured);
     }
 }

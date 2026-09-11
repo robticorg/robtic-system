@@ -4,7 +4,7 @@ import { Logger } from "@logger";
 import { analyzeSupportMessage } from "@core/ai";
 import { normalizeElongated } from "@utils";
 import { COMMUNITY_MESSAGES, SUPPORT_SCORING } from "@constants";
-import { grantXP, isXPChannel, hasAllowedRole } from "../../services/community/xp";
+import { grantXP, isExcludedChannel, hasAllowedRole } from "../../services/community/xp";
 import { isSupportChannel, createSession, recordResponse, autoClaimSession } from "../../services/community/support";
 import { SupportSessionRepository } from "@database/repositories/SupportSessionRepository";
 import { ActivityRepository } from "@database/repositories/ActivityRepository";
@@ -206,18 +206,21 @@ export default {
                 return;
             }
 
-            const isXPCh = await isXPChannel(guildId, channelId);
-            if (isXPCh) {
-                const hasRole = await hasAllowedRole(guildId, member);
-                Logger.debug(`[activity] XP channel: hasAllowedRole=${hasRole} for ${username}`, client.botName);
-                if (hasRole) {
-                    const result = await grantXP(member.id, guildId, username, message.guild, content);
-                    if (result) {
-                        Logger.debug(`[activity] Granted ${result.xp} XP to ${username} (levelUp=${result.leveledUp}, level=${result.newLevel})`, client.botName);
-                        await logToChannel(client, "xp_gain", xpGainEmbed(
-                            username, member.id, result.xp, result.leveledUp, result.newLevel,
-                        ));
-                    }
+            const isExcluded = await isExcludedChannel(guildId, channelId);
+            if (isExcluded) {
+                Logger.debug(`[activity] Excluded channel, skipping XP for ${username}`, client.botName);
+                return;
+            }
+
+            const hasRole = await hasAllowedRole(guildId, member);
+            Logger.debug(`[activity] hasAllowedRole=${hasRole} for ${username}`, client.botName);
+            if (hasRole) {
+                const result = await grantXP(member.id, guildId, username, message.guild, content);
+                if (result) {
+                    Logger.debug(`[activity] Granted ${result.xp} XP to ${username} (levelUp=${result.leveledUp}, level=${result.newLevel})`, client.botName);
+                    await logToChannel(client, "xp_gain", xpGainEmbed(
+                        username, member.id, result.xp, result.leveledUp, result.newLevel,
+                    ));
                 }
             }
         } catch (error) {

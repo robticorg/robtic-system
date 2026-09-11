@@ -1,10 +1,10 @@
-import type { Client, TextChannel } from "discord.js";
+import { MessageFlags, TextDisplayBuilder, type Client, type TextChannel } from "discord.js";
 import type { IQuest } from "@database/models";
 import { mentionRoleFor } from "@database/models";
 import { QuestRepository, QuestSettingsRepository } from "@database/repositories";
 import { COMMUNITY_CONFIG, type QuestTier } from "@constants";
 import { Logger } from "@logger";
-import { buildQuestEmbed, buildQuestButtons } from "../utils/quest-embed";
+import { buildQuestContainer } from "../utils/quest-embed";
 import { scheduleEdit } from "../utils/edit-throttle";
 
 const CTX = "quests";
@@ -32,9 +32,11 @@ export async function postQuest(client: Client, quest: IQuest): Promise<void> {
     const roleId = mentionRoleFor(settings, quest.tier as QuestTier);
 
     const message = await channel.send({
-        content: roleId ? `<@&${roleId}>` : undefined,
-        embeds: [buildQuestEmbed(quest)],
-        components: [buildQuestButtons(quest)],
+        components: [
+            ...(roleId ? [new TextDisplayBuilder().setContent(`<@&${roleId}>`)] : []),
+            buildQuestContainer(quest),
+        ],
+        flags: MessageFlags.IsComponentsV2,
         allowedMentions: roleId ? { roles: [roleId] } : { parse: [] },
     });
 
@@ -63,8 +65,8 @@ export function refreshQuestMessage(client: Client, questId: string): void {
 
             const message = await (channel as TextChannel).messages.fetch(fresh.messageId);
             await message.edit({
-                embeds: [buildQuestEmbed(fresh)],
-                components: [buildQuestButtons(fresh)],
+                components: [buildQuestContainer(fresh)],
+                flags: MessageFlags.IsComponentsV2,
             });
         });
     })();

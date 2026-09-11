@@ -62,7 +62,7 @@ export async function updateAdminConfig<S extends AdminConfigSection>(
         case "xp": {
             const v = values as AdminConfigUpdate["xp"];
             const cap = ADMIN_CONFIG_LIMITS.maxChannelsPerField;
-            await XPSettingsRepository.setChatChannels(guildId, cleanIds(v.chatChannels, cap));
+            await XPSettingsRepository.setExcludedChannels(guildId, cleanIds(v.excludedChannels, cap));
             await XPSettingsRepository.setSupportChannels(guildId, cleanIds(v.supportChannels, cap));
             await XPSettingsRepository.setStaffChannels(guildId, cleanIds(v.staffChannels, cap));
             await XPSettingsRepository.setAllowedRoles(guildId, cleanIds(v.allowedRoles, ADMIN_CONFIG_LIMITS.maxRolesPerField));

@@ -3,9 +3,9 @@ import type { QuestTier } from "../quests";
 /**
  * Every word the quest system says to a member.
  *
- * Kept here rather than beside the embed builders so the whole voice of the feature can be read —
- * and reworded — in one place. The builders keep the parts that are not text: colours, progress
- * bars, field layout, which timestamp style to use.
+ * Kept here rather than beside the container builders so the whole voice of the feature can be
+ * read — and reworded — in one place. The builders keep the parts that are not text: colours,
+ * progress bars, layout, which timestamp style to use.
  *
  * Anything that formats a value the caller already has (a bar, a duration) is taken as a parameter
  * rather than computed, because this package deliberately depends on nothing.
@@ -13,11 +13,6 @@ import type { QuestTier } from "../quests";
 
 /** Client-rendered relative time, so a countdown never costs a message edit. */
 const relative = (date: Date): string => `<t:${Math.floor(date.getTime() / 1000)}:R>`;
-
-const plural = (n: number) => (n === 1 ? "" : "s");
-
-/** "1 message", "25 messages" — a count and its noun, agreeing. */
-const counted = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
 
 /**
  * The objective wording, keyed by mission template.
@@ -27,17 +22,17 @@ const counted = (n: number, one: string, many = `${one}s`): string => `${n} ${n 
  * tracks and what the target is — it just no longer owns how the objective is phrased.
  */
 export const QUEST_MISSION_LABELS = {
-    "send-messages": (target: number) => `Send ${counted(target, "message")}`,
-    "earn-xp": (target: number) => `Earn ${target.toLocaleString()} XP`,
+    "send-messages": (target: number) => `أرسل ${target.toLocaleString()} رسالة`,
+    "earn-xp": (target: number) => `اجمع ${target.toLocaleString()} نقطة خبرة`,
     /** Tracked in seconds; the objective is read in minutes. */
-    "voice-minutes": (target: number) => `Spend ${counted(Math.round(target / 60), "minute")} active in voice`,
-    "voice-xp": (target: number) => `Earn ${target.toLocaleString()} XP in voice`,
-    "combo-score": (target: number) => `Reach a combo score of ${target}`,
-    "combo-heat": (target: number) => `Reach ${target} combo heat`,
-    "reach-streak": (target: number) => `Reach a ${counted(target, "day")} streak`,
-    "earn-points": (target: number) => `Earn ${counted(target, "point")}`,
-    "level-up": (target: number) => (target === 1 ? "Gain a level" : `Gain ${target} levels`),
-    "community-contribution": (target: number) => `Contribute ${target} to the community challenge`,
+    "voice-minutes": (target: number) => `اقضِ ${Math.round(target / 60).toLocaleString()} دقيقة نشط بالفويس`,
+    "voice-xp": (target: number) => `اجمع ${target.toLocaleString()} نقطة خبرة بالفويس`,
+    "combo-score": (target: number) => `وصّل الكومبو لـ ${target.toLocaleString()} نقطة`,
+    "combo-heat": (target: number) => `وصّل حرارة الكومبو لـ ${target.toLocaleString()}`,
+    "reach-streak": (target: number) => `وصّل التتابع لـ ${target.toLocaleString()} يوم`,
+    "earn-points": (target: number) => `اجمع ${target.toLocaleString()} نقطة`,
+    "level-up": (target: number) => (target === 1 ? "ارفع مستوى وحد" : `ارفع ${target.toLocaleString()} مستوى`),
+    "community-contribution": (target: number) => `ساهم بـ ${target.toLocaleString()} بتحدي الكوميونتي`,
 } as const;
 
 /** The emoji that stands for a difficulty everywhere it is named. */
@@ -52,17 +47,23 @@ export const QUEST_TIER_EMOJI: Record<QuestTier, string> = {
 
 /** How the tier is announced above the quest title. Rarity is the whole appeal of the top two. */
 export const QUEST_TIER_BADGE: Record<QuestTier, string> = {
-    easy: "DAILY QUEST",
-    normal: "DAILY QUEST",
-    hard: "RARE QUEST",
-    golden: "LEGENDARY QUEST",
-    vip: "VIP QUEST",
-    special: "SPECIAL EVENT",
+    easy: "مهمة يومية",
+    normal: "مهمة يومية",
+    hard: "مهمة نادرة",
+    golden: "مهمة أسطورية",
+    vip: "مهمة VIP",
+    special: "فعالية خاصة",
 };
 
-/** "Easy", "VIP" — the tier as a word. */
+/** "سهلة", "VIP" — the tier as a word. */
 const tierName = (tier: QuestTier): string =>
-    tier === "vip" ? "VIP" : tier.charAt(0).toUpperCase() + tier.slice(1);
+    tier === "vip" ? "VIP" : {
+        easy: "سهلة",
+        normal: "عادية",
+        hard: "صعبة",
+        golden: "ذهبية",
+        special: "خاصة",
+    }[tier as Exclude<QuestTier, "vip">];
 
 /** Member-facing quest text: the posted card, the commands, the buttons, the DMs. */
 export const QUEST_MESSAGES = {
@@ -70,45 +71,45 @@ export const QUEST_MESSAGES = {
     tierBadge: QUEST_TIER_BADGE,
     tierName,
 
-    /** "🟢 Easy" — the one place a tier turns into display text, so every surface spells it the same. */
+    /** "🟢 سهلة" — the one place a tier turns into display text, so every surface spells it the same. */
     tierTitle: (tier: QuestTier): string => `${QUEST_TIER_EMOJI[tier]} ${tierName(tier)}`,
 
     /** Routing gap: a leaf in the manifest with no handler behind it. */
-    notWired: "That subcommand is not wired up yet.",
+    notWired: "هالأمر الفرعي ما اشتغل لين الحين.",
 
     /** The posted quest card. */
     card: {
         author: (tier: QuestTier) => `${QUEST_TIER_EMOJI[tier]}  ${QUEST_TIER_BADGE[tier]}`,
-        title: (tier: QuestTier) => `${tierName(tier)} Quest`,
+        title: (tier: QuestTier) => `مهمة ${tierName(tier)}`,
         objective: (index: number, label: string) => `\`${index + 1}\`  ${label}`,
-        noObjectives: "No objectives.",
+        noObjectives: "لا توجد أهداف.",
 
-        rewardField: "Reward",
-        rewardValue: (reward: number) => `🎯 **${reward.toLocaleString()}** points`,
+        rewardField: "المكافأة",
+        rewardValue: (reward: number) => `🎯 **${reward.toLocaleString()}** نقطة`,
 
-        placesField: "Places",
-        placesUnlimited: "♾️ Unlimited",
-        placesFull: (total: number) => `🚫 **Full** — all ${total} taken`,
-        placesLeft: (left: number, total: number, bar: string) => `**${left}** of ${total} left\n\`${bar}\``,
+        placesField: "الأماكن",
+        placesUnlimited: "♾️ غير محدود",
+        placesFull: (total: number) => `🚫 **مكتملة** — تم أخذ كل الأماكن (${total})`,
+        placesLeft: (left: number, total: number, bar: string) => `باقي **${left}** من ${total}\n\`${bar}\``,
 
-        endsField: (closed: boolean) => (closed ? "Ended" : "Ends"),
+        endsField: (closed: boolean) => (closed ? "انتهت" : "تنتهي"),
         endsValue: relative,
 
-        objectiveCount: (count: number) => (count === 1 ? "One objective" : `${count} objectives`),
+        objectiveCount: (count: number) => (count === 1 ? "هدف وحد" : `${count} أهداف`),
         footer: (objectiveCount: string, tier: QuestTier) =>
             tier === "vip"
-                ? `${objectiveCount} · VIP members only · progress tracks itself once claimed`
+                ? `${objectiveCount} · لأعضاء VIP بس · التقدم يتحدث تلقائيًا بعد المطالبة`
                 : tier === "special"
-                    ? `${objectiveCount} · claimable even if you are already on a quest`
-                    : `${objectiveCount} · progress tracks itself once claimed · /quest to see yours`,
+                    ? `${objectiveCount} · تقدر تاخذها حتى لو عندك مهمة ثانية شغال عليها`
+                    : `${objectiveCount} · التقدم يتحدث تلقائيًا بعد المطالبة · استخدم /quest عشان تشوف مهامك`,
     },
 
     /** The claim button. The label carries the remaining count so the button answers "worth clicking". */
     button: {
-        full: "Full",
-        closed: "Closed",
-        claim: "Claim",
-        claimWithSlots: (left: number) => `Claim · ${left} left`,
+        full: "مكتملة",
+        closed: "مغلقة",
+        claim: "طالب",
+        claimWithSlots: (left: number) => `طالب · باقي ${left}`,
         openEmoji: "⚔️",
         closedEmoji: "🔒",
     },
@@ -120,168 +121,168 @@ export const QUEST_MESSAGES = {
 
     /** `/quest active` and a bare `?quest`. */
     active: {
-        title: "🗺️ Your quests",
+        title: "🗺️ مهامك",
         empty:
-            "Nothing claimed right now.\n" +
-            "Quests appear in the quest channel — hit **Claim** on one and progress tracks itself.",
-        footer: "Progress updates on its own · you are told by DM when one finishes or ends",
-        questField: (tierTitle: string, done: number, total: number) => `${tierTitle} — ${done}/${total} done`,
+            "ما عندك أي مهمة الحين.\n" +
+            "المهام تطلع في تشانل المهام — دوس **طالب** على وحدة منها وتقدمك يتحدث لحاله.",
+        footer: "التقدم يتحدث لحاله · بنرسل لك دي إم لما مهمة تخلص أو تنتهي",
+        questField: (tierTitle: string, done: number, total: number) => `${tierTitle} — خلصت ${done}/${total}`,
         questMeta: (reward: number, endsAt: Date) =>
-            `🎯 **${reward.toLocaleString()}** points · ends ${relative(endsAt)}`,
+            `🎯 **${reward.toLocaleString()}** نقطة · تنتهي ${relative(endsAt)}`,
         summary: (count: number, totalReward: number) =>
-            `**${count}** quest${plural(count)} in progress · **${totalReward.toLocaleString()}** points on the table`,
+            `شغال على **${count}** مهمة · **${totalReward.toLocaleString()}** نقطة بالانتظار`,
     },
 
     /** `/quest board`. */
     board: {
-        title: "Quest board",
+        title: "لوحة المهام",
         empty:
-            "Nothing is open at the moment.\n\n" +
-            "Quests appear at unannounced times inside the server's generation windows — " +
-            "check back later, or watch the quest channel.",
-        footer: "Claim from the quest's own message — progress then tracks itself.",
+            "ما فيه شي متاح الحين.\n\n" +
+            "المهام تطلع بأوقات غير معلنة حسب فترات السيرفر — " +
+            "رجّع بعدين، أو تابع تشانل المهام.",
+        footer: "طالب من رسالة المهمة نفسها — وبعدها تقدمك يتحدث لحاله.",
 
         status: {
-            claimed: "✅ Claimed",
-            vipOnly: "🔒 VIP members only",
-            full: "❌ Full",
-            slotBusy: "⏳ Finish your current quest of this kind first",
-            open: "🟩 Open to you",
+            claimed: "✅ مطالب فيها",
+            vipOnly: "🔒 لأعضاء VIP بس",
+            full: "❌ مكتملة",
+            slotBusy: "⏳ خلّص مهمتك الحالية من نفس النوع أول",
+            open: "🟩 متاحة لك",
         },
 
-        slotsUnlimited: "unlimited slots",
-        slotsLeft: (left: number, total: number) => `${left}/${total} slots left`,
+        slotsUnlimited: "أماكن غير محدودة",
+        slotsLeft: (left: number, total: number) => `باقي ${left}/${total}`,
         link: (guildId: string, channelId: string, messageId: string) =>
-            ` · [go to it](https://discord.com/channels/${guildId}/${channelId}/${messageId})`,
+            ` · [روح لها](https://discord.com/channels/${guildId}/${channelId}/${messageId})`,
 
-        questField: (tierTitle: string, reward: number) => `${tierTitle} — ${reward.toLocaleString()} points`,
+        questField: (tierTitle: string, reward: number) => `${tierTitle} — ${reward.toLocaleString()} نقطة`,
         objective: (label: string) => `• ${label}`,
         questMeta: (status: string, slots: string, endsAt: Date, link: string) =>
-            `${status} · ${slots} · ends ${relative(endsAt)}${link}`,
+            `${status} · ${slots} · تنتهي ${relative(endsAt)}${link}`,
     },
 
     /** `/quest top`. */
     top: {
-        title: "🏆 Quest leaderboard",
+        title: "🏆 متصدرين المهام",
         medals: ["🥇", "🥈", "🥉"] as readonly string[],
-        empty: "Nobody has completed a quest here yet. Be the first.",
+        empty: "محد خلص أي مهمة هنا لين الحين. كن أول واحد.",
         row: (medal: string, discordId: string, completed: number, pointsEarned: number) =>
-            `${medal} <@${discordId}> — **${completed.toLocaleString()}** completed · 🎯 ${pointsEarned.toLocaleString()}`,
+            `${medal} <@${discordId}> — خلّص **${completed.toLocaleString()}** · 🎯 ${pointsEarned.toLocaleString()}`,
         fallbackMedal: (index: number) => `\`#${index + 1}\``,
-        yourRank: (rank: number) => `You are #${rank}`,
-        unranked: "You are not ranked yet",
+        yourRank: (rank: number) => `ترتيبك #${rank}`,
+        unranked: "لسا ما لك ترتيب",
     },
 
     /** `/quest stats` and the `/profile` quest tab. */
     stats: {
-        title: (username: string) => `🗺️ Quest record — ${username}`,
-        emptySelf: "You have not claimed a quest yet. `/quest board` shows what is open.",
-        emptyOther: "This member has not claimed a quest yet.",
+        title: (username: string) => `🗺️ سجل المهام — ${username}`,
+        emptySelf: "ما طالبت بأي مهمة لين الحين. شوف `/quest board` عشان تعرف وش متاح.",
+        emptyOther: "هذا العضو ما طالب بأي مهمة لين الحين.",
 
-        overallField: "Overall",
+        overallField: "عام",
         overallValue: (claimed: number, completed: number, failed: number, rate: number, active: number) =>
-            `Claimed **${claimed.toLocaleString()}**\n` +
-            `Completed **${completed.toLocaleString()}**\n` +
-            `Failed **${failed.toLocaleString()}**\n` +
-            `Completion rate **${rate}%**` +
-            (active > 0 ? `\nOn **${active}** right now` : ""),
+            `طالب بـ **${claimed.toLocaleString()}**\n` +
+            `خلّص **${completed.toLocaleString()}**\n` +
+            `فشل بـ **${failed.toLocaleString()}**\n` +
+            `نسبة الإنجاز **${rate}%**` +
+            (active > 0 ? `\nشغال على **${active}** الحين` : ""),
 
-        difficultyField: "By difficulty",
+        difficultyField: "حسب الصعوبة",
         difficultyValue: (easy: number, normal: number, hard: number, golden: number, vip: number) =>
-            `🟢 Easy **${easy.toLocaleString()}**\n` +
-            `🔵 Normal **${normal.toLocaleString()}**\n` +
-            `🟣 Hard **${hard.toLocaleString()}**\n` +
-            `🌟 Golden **${golden.toLocaleString()}**\n` +
+            `🟢 سهلة **${easy.toLocaleString()}**\n` +
+            `🔵 عادية **${normal.toLocaleString()}**\n` +
+            `🟣 صعبة **${hard.toLocaleString()}**\n` +
+            `🌟 ذهبية **${golden.toLocaleString()}**\n` +
             `💎 VIP **${vip.toLocaleString()}**`,
 
-        timingField: "Timing",
+        timingField: "التوقيت",
         /** `fastest` and `average` arrive already formatted — durations belong to the caller. */
         timingValue: (fastest: string, average: string, firstPlaces: number) =>
-            `Fastest **${fastest}**\n` +
-            `Average **${average}**\n` +
-            `First to finish **${firstPlaces.toLocaleString()}×**`,
+            `الأسرع **${fastest}**\n` +
+            `المتوسط **${average}**\n` +
+            `أول وحد يخلص **${firstPlaces.toLocaleString()}×**`,
         noDuration: "—",
 
-        rewardsField: "Rewards",
-        rewardsValue: (points: number) => `🎯 **${points.toLocaleString()}** points`,
+        rewardsField: "المكافآت",
+        rewardsValue: (points: number) => `🎯 **${points.toLocaleString()}** نقطة`,
 
-        communityField: "Community",
+        communityField: "المجتمع",
         communityValue: (challenges: number, contributed: number) =>
-            `🌍 **${challenges.toLocaleString()}** challenges\n📈 **${contributed.toLocaleString()}** contributed`,
+            `🌍 شارك بـ **${challenges.toLocaleString()}** تحدي\n📈 ساهم بـ **${contributed.toLocaleString()}**`,
 
-        rankField: "Server rank",
+        rankField: "ترتيبه بالسيرفر",
         rankValue: (rank: number) => `#${rank}`,
-        unranked: "Unranked",
+        unranked: "بدون ترتيب",
 
-        lastCompletionFooter: "Last completion",
+        lastCompletionFooter: "آخر إنجاز",
     },
 
     /** Ephemeral replies to the claim button. */
     claim: {
-        guildOnly: "Quests only work in a server.",
+        guildOnly: "المهام تشتغل بس داخل سيرفر.",
         failure: {
-            "not-found": "That quest no longer exists.",
-            ended: "This quest has already ended.",
-            "already-holding": "You are already on a quest of this kind. Finish it, or wait for it to expire.",
-            "not-vip": "VIP quests are for members with a VIP role.",
-            error: "Something went wrong claiming that. Try again in a moment.",
+            "not-found": "هذي المهمة ما عادت موجودة.",
+            ended: "هذي المهمة انتهت خلاص.",
+            "already-holding": "عندك مهمة شغال عليها من نفس النوع. خلصها، أو انتظر لين تنتهي.",
+            "not-vip": "مهام VIP بس لأعضاء عندهم رول VIP.",
+            error: "صار خطأ وأنت تطالب فيها. حاول مرة ثانية بعد شوي.",
         } as Record<string, string>,
         full: (slotsTotal?: number | null) =>
-            `Every slot was taken${slotsTotal ? ` — all ${slotsTotal} of them` : ""}.`,
+            `كل الأماكن راحت${slotsTotal ? ` — كل الـ${slotsTotal}` : ""}.`,
         objective: (label: string) => `• ${label}`,
         claimed: (objectives: string, reward: number, endsAt: Date) =>
-            `**Claimed.** Progress tracks automatically — there is nothing else to run.\n\n${objectives}\n\n` +
-            `Reward: **${reward.toLocaleString()}** points · ends ${relative(endsAt)}`,
+            `**تم!** تقدمك يتحدث لحاله — مافيه شي ثاني تسويه.\n\n${objectives}\n\n` +
+            `المكافأة: **${reward.toLocaleString()}** نقطة · تنتهي ${relative(endsAt)}`,
     },
 
     /** `/quest post` — the admin-posted Special. */
     post: {
-        adminOnly: "Only a server administrator can post a Special quest.",
-        buildFailed: "Could not build a Special quest — no mission templates matched. Nothing was posted.",
-        title: "🎁 Special quest posted",
+        adminOnly: "بس أدمن السيرفر يقدر ينشر مهمة خاصة.",
+        buildFailed: "ما قدرنا ننشئ مهمة خاصة — ما فيه قوالب مهام تطابقت. ما تم نشر شي.",
+        title: "🎁 تم نشر مهمة خاصة",
         objective: (index: number, label: string) => `\`${index + 1}\` ${label}`,
-        rewardField: "Reward",
-        rewardValue: (reward: number) => `🎯 **${reward.toLocaleString()}** points`,
-        placesField: "Places",
-        placesValue: (slotsTotal: number | null) => `${slotsTotal ?? "unlimited"}`,
-        endsField: "Ends",
+        rewardField: "المكافأة",
+        rewardValue: (reward: number) => `🎯 **${reward.toLocaleString()}** نقطة`,
+        placesField: "الأماكن",
+        placesValue: (slotsTotal: number | null) => `${slotsTotal ?? "غير محدود"}`,
+        endsField: "تنتهي",
         endsValue: relative,
         footer: (
             reward: { min: number; max: number },
             slots: { min: number; max: number } | null,
         ) =>
-            `Rolled from ${reward.min}–${reward.max} points` +
-            (slots ? ` and ${slots.min}–${slots.max} places` : "") +
-            " · anyone may claim it, even mid-quest",
+            `بين ${reward.min}–${reward.max} نقطة` +
+            (slots ? ` و${slots.min}–${slots.max} مكان` : "") +
+            " · أي أحد يقدر يطالب فيها حتى لو عنده مهمة ثانية",
     },
 
     /** The DMs sent when a claim resolves — the only moment the bot has anything to say about it. */
     dm: {
-        unknownGuild: "the server",
-        rankSuffix: ["🥇 first to finish", "🥈 second", "🥉 third"] as readonly string[],
-        rankFallback: (rank: number) => `finished #${rank}`,
+        unknownGuild: "السيرفر",
+        rankSuffix: ["🥇 أول وحد يخلص", "🥈 ثاني وحد", "🥉 ثالث وحد"] as readonly string[],
+        rankFallback: (rank: number) => `خلص بالترتيب #${rank}`,
 
         completed: {
-            title: "✅ Quest complete",
+            title: "✅ خلصت المهمة",
             description: (tierTitle: string, guildName: string, missions: string) =>
-                `You finished your **${tierTitle}** quest in **${guildName}**.\n\n${missions}`,
+                `خلصت مهمتك **${tierTitle}** في **${guildName}**.\n\n${missions}`,
             missionLine: (label: string) => `✅ ${label}`,
-            rewardField: "Reward",
-            rewardValue: (reward: number) => `🎯 **${reward.toLocaleString()}** points — already paid`,
-            rankField: "Finished",
-            durationField: "Took",
-            footer: "That slot is free again — claim the next one whenever it appears.",
+            rewardField: "المكافأة",
+            rewardValue: (reward: number) => `🎯 **${reward.toLocaleString()}** نقطة — تم دفعها`,
+            rankField: "خلصت",
+            durationField: "استغرقت",
+            footer: "المكان صار فاضي — طالب بالمهمة الجاية أول ما تطلع.",
         },
 
         expired: {
-            title: "⌛ Quest ended",
+            title: "⌛ انتهت المهمة",
             description: (tierTitle: string, guildName: string, missions: string) =>
-                `Your **${tierTitle}** quest in **${guildName}** ran out of time.\n\n${missions}`,
+                `خلص وقت مهمتك **${tierTitle}** في **${guildName}**.\n\n${missions}`,
             missionLine: (label: string, bar: string, value: number, target: number, done: boolean) =>
                 `${done ? "✅" : "▫️"} ${label}\n\`${bar}\` ${value.toLocaleString()} / ${target.toLocaleString()}`,
-            progressField: "Where you got to",
-            progressValue: (completed: number, total: number) => `${completed} of ${total} objective(s) done`,
-            footer: "No penalty — your slot is free, so the next quest is yours to take.",
+            progressField: "وصلت لين وين",
+            progressValue: (completed: number, total: number) => `خلصت ${completed} من ${total} هدف`,
+            footer: "مافيه عقوبة — مكانك صار فاضي، خذ المهمة الجاية إذا حبيت.",
         },
     },
 } as const;
