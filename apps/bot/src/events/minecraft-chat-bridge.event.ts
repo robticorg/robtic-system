@@ -4,11 +4,6 @@ import { MinecraftConfigRepository } from "@database/repositories";
 import { MINECRAFT_BRIDGE } from "@constants";
 import { publishBridgeEvent } from "@core/minecraft";
 
-/**
- * Relays the bridged channel into Minecraft. Bot and webhook messages are dropped, which is what
- * stops the loop: everything this integration posts back into the channel comes from the bot
- * account, so it can never be re-queued for the game server.
- */
 export default {
     name: Events.MessageCreate,
 

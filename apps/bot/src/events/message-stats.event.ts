@@ -7,12 +7,6 @@ import { awardMessagePoint } from "@core/points";
 import { publishMetric } from "@core/metrics";
 import { isExcludedChannel } from "@bot/services/community/xp";
 
-/**
- * Counts every "real" message a user sends, guild-wide — unlike XP, this has no role restriction
- * and no per-user cooldown, only the shared spam/short-message quality gate and the same
- * no-calculate channel exclusion XP uses. Feeds ActivityXP.realMessageCount (/profile) and the
- * periodic Messages leaderboard (/top).
- */
 export default {
     name: Events.MessageCreate,
 

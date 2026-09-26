@@ -5,34 +5,13 @@ import { ServerConfigRepository, PunishConfigRepository } from "@database/reposi
 import { parsePrefixCommand, runPrefixShortcut } from "../utils/prefix";
 import { getUserLang, t } from "../utils/lang";
 
-/**
- * The single `!command` router.
- *
- * Every system used to ship its own copy of this listener. On one client that meant a message was
- * parsed six times and, for any command more than one of them claimed, actually executed more than
- * once. There is one listener now, and the per-system exceptions that justified the copies survive
- * as the branches below.
- */
-
-/**
- * Carry an extra proof-of-evidence flow, so prefix use is gated by PunishConfig.shortcutRoleIds
- * rather than the normal permission check. `jail` is the punishment-system command formerly called
- * `ban`; the `/ban` that took its name is a plain Discord ban with no proof flow, and is gated
- * normally.
- */
 const PUNISH_SHORTCUT_COMMANDS = new Set(["jail", "mute", "warn"]);
 
-/** True when the member holds one of the roles allowed to drive this command from chat. */
 async function passesShortcutRoleGate(guildId: string, member: GuildMember): Promise<boolean> {
     const config = await PunishConfigRepository.getCached(guildId);
     return config.shortcutRoleIds.some(id => member.roles.cache.has(id));
 }
 
-/**
- * Player-facing commands are confined to the configured commands channel; staff and operational
- * ones are not. Confining an admin fixing a broken config, or a moderator checking server status
- * mid-incident, only adds friction where it is least wanted. See UNRESTRICTED_COMMAND_CATEGORIES.
- */
 async function enforceCommandsChannel(message: Message, category: string | undefined): Promise<boolean> {
     if (!isChannelRestricted(category)) return true;
 

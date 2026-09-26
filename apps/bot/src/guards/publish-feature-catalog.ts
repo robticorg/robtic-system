@@ -4,12 +4,6 @@ import { Logger } from "@logger";
 
 const CTX = "features";
 
-/**
- * Publishes the loaded feature manifests so the API and admin panel can see them.
- *
- * They run in a different process and have no access to the loader's in-memory registry, so
- * without this the panel could read a guild's toggles but not know which features exist.
- */
 export async function publishFeatureCatalog(): Promise<void> {
     const manifests = listFeatureManifests();
 

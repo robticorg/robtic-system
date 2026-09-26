@@ -1,28 +1,16 @@
 import { BRANCH_CONFIG } from "@config";
 
 export interface TicketCategory {
-    /** Internal id — stored on the Ticket record and used as the panel select menu option value. */
     id: string;
-    /** Shown as the select menu option label. */
     label: string;
-    /** Shown as the select menu option description. */
     description: string;
     emoji?: string;
-    /** Discord channel category ticket channels for this category are created under. */
     parentId: string;
-    /** Role that gets channel access as soon as the ticket is created. */
     supportRoleId: string;
-    /** Role granted access only once the ticket is escalated via /escalate. */
     adminRoleId: string;
-    /** Points added to the closer's support-points stat (ActivityRepository.addSupportPoints) when this ticket is closed. */
     staffPoints: number;
 }
 
-/**
- * The single file to edit to add, remove, or reconfigure ticket categories.
- * No database, no per-guild config command — drop/edit an entry here and it
- * shows up in the panel's select menu (see /ticket-panel) immediately.
- */
 export const TICKET_CATEGORIES: TicketCategory[] = [
     {
         id: "public-support",
