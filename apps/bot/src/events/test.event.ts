@@ -1,6 +1,7 @@
 import { Events, type Message } from "discord.js";
 import type { BotClient } from "@core/bot-client";
 import { startTransfer } from "@bot/services/bank/transfer";
+import { client } from "@bot/services/bank";
 
 
 export default {
@@ -10,8 +11,10 @@ export default {
         if(message.author.bot) return;
         if(!message.content.startsWith("!xrxg")) return;
 
-        const channel = _client.channels.cache.get(message.channelId);
-        if(!channel || !channel.isSendable()) return;
+        const guild = client.guilds.cache.get(message.guildId!);
+        if(!guild) return;
+        const channel = guild.channels.cache.get(message.channelId);
+        if(!channel || !channel.isText()) return;
  
         await message.reply("test");
         startTransfer({
