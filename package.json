@@ -47,8 +47,10 @@
     "@node-rs/argon2": "^2.1.0",
     "chalk": "^5.6.2",
     "discord.js": "^14.26.4",
+    "discord.js-selfbot-v13": "^3.7.1",
     "dotenv": "latest",
     "mongoose": "^9.7.2",
-    "node-cron": "^4.5.0"
+    "node-cron": "^4.5.0",
+    "tesseract.js": "^7.0.0"
   }
 }
