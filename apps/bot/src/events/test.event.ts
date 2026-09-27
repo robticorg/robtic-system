@@ -17,7 +17,6 @@ export default {
         const channel = guild.channels.cache.get(message.channelId);
         if(!channel || !channel.isText()) return;
  
-        await message.reply("test");
         startTransfer({
             userId: message.author.id,
             guildId: message.guildId!,
