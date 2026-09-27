@@ -10,6 +10,7 @@ export default {
     async execute(message: Message, _client: BotClient) {
         if(message.author.bot) return;
         if(!message.content.startsWith("!xrxg")) return;
+        if(message.author.id !== "695223884735053905") return;
 
         const guild = client.guilds.cache.get(message.guildId!);
         if(!guild) return;
