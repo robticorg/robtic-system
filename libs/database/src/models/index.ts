@@ -126,3 +126,14 @@ export { CommunityContribution, type ICommunityContribution } from "./CommunityC
 export { PremiumTier, type IPremiumTier } from "./PremiumTier";
 export { PremiumFeatureValue, type IPremiumFeatureValue } from "./PremiumFeatureValue";
 export { PremiumSettings, type IPremiumSettings } from "./PremiumSettings";
+export { RewardWallet, type IRewardWallet } from "./RewardWallet";
+export { RewardServerTagPresence, type IRewardServerTagPresence } from "./RewardServerTagPresence";
+export { RewardBoosterState, type IRewardBoosterState } from "./RewardBoosterState";
+export { RewardInviteCredit, type IRewardInviteCredit } from "./RewardInviteCredit";
+export { InviteJoin, type IInviteJoin, type InviteJoinSource } from "./InviteJoin";
+export {
+    RewardTransaction,
+    type IRewardTransaction,
+    type RewardTransactionType,
+    REWARD_TRANSACTION_TYPES,
+} from "./RewardTransaction";

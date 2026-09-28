@@ -44,8 +44,10 @@ loader reports a collision rather than letting one silently overwrite the other.
 - [minecraft-setup.md](./minecraft-setup.md) — Operator guide: API keys, chat wiring, logging channels, full command reference
 - [modal.md](./modal.md) — modal patterns
 - [placeholders.md](./placeholders.md) — every `%robtic_…%` PlaceholderAPI variable the Minecraft plugin exposes
+- [invites.md](./invites.md) — invite tracking, join announcements, `/invites` and `/info`
 - [premium.md](./premium.md) — the Premium Engine: global tiers, per-server role mappings, and every perk
 - [quests.md](./quests.md) — quest generation, claiming, automatic progress and the weekly community challenge
+- [rewards.md](./rewards.md) — the Activity & Reward System core: Credits, the reward formula, and every bonus source
 - [shortcuts.md](./shortcuts.md) — `/shortcut` triggers and their cleanup modes
 - [streak.md](./streak.md) — daily streak system
 - [voice.md](./voice.md) — voice activity XP, AFK detection and time tracking

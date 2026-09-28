@@ -30,6 +30,7 @@ export const PremiumFeature = {
 
     POINT_BONUS: "POINT_BONUS",
     POINT_TO_RC_DISCOUNT: "POINT_TO_RC_DISCOUNT",
+    REWARD_BONUS: "REWARD_BONUS",
     SHOP_DISCOUNT: "SHOP_DISCOUNT",
     MARKETPLACE_DISCOUNT: "MARKETPLACE_DISCOUNT",
     TRANSFER_FEE_DISCOUNT: "TRANSFER_FEE_DISCOUNT",
@@ -189,6 +190,15 @@ registerPremiumFeature({
     stacking: "highest",
     module: "economy",
     description: "Points-to-RC conversion costs less",
+});
+
+registerPremiumFeature({
+    key: PremiumFeature.REWARD_BONUS,
+    type: "percent",
+    baseline: 0,
+    stacking: "highest",
+    module: "rewards",
+    description: "Extra Credits on every reward claim",
 });
 
 registerPremiumFeature({

@@ -129,6 +129,20 @@ export class ServerConfigRepository {
         return config?.commandsChannelId ?? null;
     }
 
+    /** `null` clears it — joins are then recorded but not announced. */
+    static async setInviteLogChannel(guildId: string, channelId: string | null): Promise<void> {
+        await ServerConfig.updateOne(
+            { guildId },
+            channelId ? { $set: { inviteLogChannelId: channelId } } : { $unset: { inviteLogChannelId: 1 } },
+            { upsert: true }
+        );
+    }
+
+    static async getInviteLogChannel(guildId: string): Promise<string | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.inviteLogChannelId ?? null;
+    }
+
     static async addLineChannel(guildId: string, channelId: string): Promise<IServerConfig> {
         return ServerConfig.findOneAndUpdate(
             { guildId },

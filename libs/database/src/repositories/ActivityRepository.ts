@@ -1,6 +1,10 @@
 import { ActivityXP, type IActivityXP } from "@database/models/ActivityXP";
 
 export class ActivityRepository {
+    static async find(discordId: string, guildId: string): Promise<IActivityXP | null> {
+        return ActivityXP.findOne({ discordId, guildId });
+    }
+
     static async findOrCreate(discordId: string, guildId: string, username: string): Promise<IActivityXP> {
         let record = await ActivityXP.findOne({ discordId, guildId });
         if (!record) {

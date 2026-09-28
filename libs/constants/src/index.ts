@@ -25,6 +25,8 @@ export * from "./presence";
 export * from "./punishments";
 export * from "./regex";
 export * from "./rejoin-roles";
+export * from "./invites";
+export * from "./rewards";
 export * from "./server-log-channels";
 export * from "./staff-tiers";
 export * from "./streak";
