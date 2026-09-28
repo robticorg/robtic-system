@@ -15,13 +15,10 @@ import { calculateLevel, xpForLevel } from "@bot/services/community/xp";
 import { getStaffActivity, getSupportStats } from "@bot/utils/staff-activity";
 import { getStreakSummary } from "@core/streak";
 import { getUserHighestCombo } from "@core/combo";
-import { getCoinSummary } from "@core/coins";
 import { getPointSummary } from "@core/points";
 import { VoiceRepository, PeriodicStatRepository } from "@database/repositories";
 import { formatVoiceDuration } from "@bot/features/voice/utils/format-duration";
 import { getProfileBadges } from "@core/profile";
-import { getQuestSummary } from "@core/quests";
-import { isFeatureEnabled } from "@core/features";
 import { getUserLang, t } from "@bot/utils/lang";
 import { BRANCH_EMOJIS as emoji } from "@config";
 
@@ -91,16 +88,12 @@ export default {
 
         const displayName = await UserRepository.getDisplayName(target.id) ?? target.username;
         const customization = await UserRepository.getCustomization(target.id);
-        const coinSummary = await getCoinSummary(target.id);
 
         const [pointSummary, voiceStat, voiceWeek] = await Promise.all([
             getPointSummary(guildId, target.id),
             VoiceRepository.getStat(guildId, target.id),
             PeriodicStatRepository.getValue(guildId, "weekly", "voiceTime", target.id),
         ]);
-
-        const questsEnabled = await isFeatureEnabled(guildId, "quests");
-        const questSummary = questsEnabled ? await getQuestSummary(guildId, target.id) : null;
 
         const profileColor = customization.profileColor && /^#[0-9a-f]{6}$/i.test(customization.profileColor)
             ? Number.parseInt(customization.profileColor.slice(1), 16)
@@ -129,7 +122,6 @@ export default {
                 { name: t("profile.field_streak", lang), value: t("profile.streak_value", lang, { current: `${streak.record.currentStreak}`, best: `${streak.record.bestStreak}` }), inline: true },
                 { name: t("profile.field_combo", lang), value: comboValue, inline: true },
                 { name: "🎯 Points", value: `${pointSummary.points}${pointSummary.rank > 0 ? ` (#${pointSummary.rank})` : ""}${pointSummary.rc > 0 ? ` · ${pointSummary.rc} RC` : ""}`, inline: true },
-                { name: "🪙 Coins", value: `${coinSummary.coins}${coinSummary.rank > 0 ? ` (#${coinSummary.rank})` : ""}`, inline: true },
                 {
                     name: "🎙️ Voice",
                     value: voiceStat
@@ -137,15 +129,6 @@ export default {
                         : "No voice activity yet",
                     inline: true,
                 },
-                ...(questSummary ? [{
-                    name: "🗺️ Quests",
-                    value: questSummary.claimed > 0
-                        ? `${questSummary.completed} completed${questSummary.rank > 0 ? ` (#${questSummary.rank})` : ""}` +
-                          ` · ${questSummary.completionRate}% rate · 🎯 ${questSummary.pointsEarned}` +
-                          (questSummary.activeClaims > 0 ? `\nOn ${questSummary.activeClaims} right now` : "")
-                        : "No quests claimed yet",
-                    inline: true,
-                }] : []),
                 ...(!isPrivate ? [{ name: t("profile.field_roles", lang), value: roles }] : []),
             );
 
@@ -188,7 +171,6 @@ export default {
             { label: t("profile.menu_activity", lang), description: t("profile.menu_activity_desc", lang), value: "activity", emoji: emoji.status },
             { label: t("profile.menu_streak", lang), description: t("profile.menu_streak_desc", lang), value: "streak", emoji: "🔥" },
             { label: t("profile.menu_combo", lang), description: t("profile.menu_combo_desc", lang), value: "combo", emoji: "💬" },
-            ...(questsEnabled ? [{ label: "Quests", description: "Quest record, difficulties and community share", value: "quests", emoji: "🗺️" }] : []),
             ...(memberIsStaff ? [{ label: t("profile.menu_staff_activity", lang), description: t("profile.menu_staff_activity_desc", lang), value: "staff_activity", emoji: emoji.trophy }] : []),
             { label: t("profile.menu_notes", lang), description: t("profile.menu_notes_desc", lang), value: "notes", emoji: emoji.info },
             { label: t("profile.menu_history", lang), description: t("profile.menu_history_desc", lang), value: "history", emoji: emoji.note },

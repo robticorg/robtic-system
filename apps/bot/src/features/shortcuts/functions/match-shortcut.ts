@@ -22,7 +22,7 @@ export interface ShortcutHit {
  * message or the message up to a space, never mid-word: `redirect` must not trigger `red`.
  *
  * The trigger is matched bare (`c`) and, via `prefixStripped`, with the guild prefix in front
- * (`?c`). People who learned the bot through `?coins balance` type the prefix out of habit, and a
+ * (`?c`). People who learned the bot through `?points balance` type the prefix out of habit, and a
  * shortcut that answers one form but silently ignores the other reads as broken.
  *
  * Restrictions are applied here rather than after running, so a member who cannot use a trigger

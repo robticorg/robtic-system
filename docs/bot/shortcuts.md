@@ -3,23 +3,23 @@
 A shortcut maps a plain chat message to a command, so staff can type `red @user spam` instead of
 `!warn @user spam`. Manage them with `/shortcut add | remove | list`.
 
-A target is a **whole command path**, not just a command name — `coins balance`, `warn add`,
+A target is a **whole command path**, not just a command name — `points balance`, `warn add`,
 `streak-config channel add`. Autocomplete on `/shortcut add` lists every runnable path, and a bare
 name that needs a subcommand is rejected rather than stored to fail later.
 
 ```
-/shortcut add command:"coins balance" trigger:c
-!shortcut add "coins balance" c
+/shortcut add command:"points balance" trigger:c
+!shortcut add "points balance" c
 ```
 
 The quotes matter in the prefix form: positional arguments are split on spaces, so a target made of
 two words has to be quoted or `balance` would be read as the trigger. Single, double and smart
 quotes all work.
 
-Typing `c` now runs `?coins balance`. So does `?c` — a trigger is matched bare and with the guild
-prefix in front, because people who learned the bot through `?coins balance` type the prefix out of
-habit. A prefixed message whose first word *is* a real command is left alone, so `?coins balance`
-runs the command once and never also fires a `coins` trigger.
+Typing `c` now runs `?points balance`. So does `?c` — a trigger is matched bare and with the guild
+prefix in front, because people who learned the bot through `?points balance` type the prefix out of
+habit. A prefixed message whose first word *is* a real command is left alone, so `?points balance`
+runs the command once and never also fires a `points` trigger.
 
 Two things can sit behind a trigger:
 

@@ -8,11 +8,8 @@ const SOURCE_LABEL: Record<string, string> = {
     combo: "🔁 combo",
     streak: "🔥 streak",
     voice: "🎙️ voice",
-    quest: "🗺️ quest",
-    community: "🎉 community",
     admin: "🛠️ admin",
     conversion: "✨ converted to RC",
-    "coin-migration": "🪙 coin migration",
 };
 
 export const history: FeatureSubcommandHandler = async (interaction, _client) => {

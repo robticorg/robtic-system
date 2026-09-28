@@ -4,11 +4,9 @@ import { AuthModule } from "./auth";
 import { SessionGuard } from "./auth/guards";
 import { AllExceptionsFilter } from "./common";
 import { ConfigurationModule } from "./config";
-import { EconomyModule } from "./economy";
 import { GuildsModule } from "./guilds";
 import { HealthModule } from "./health";
 import { ModerationModule } from "./moderation";
-import { QuestsModule } from "./quests";
 import { SettingsModule } from "./settings";
 
 /**
@@ -21,7 +19,7 @@ import { SettingsModule } from "./settings";
  *
  * Import order is the dependency order: configuration must resolve before anything reads it, and
  * AuthModule must be constructed before the feature modules whose controllers reference its guards.
- * Both are `@Global()`, which is what lets the six feature modules below declare no imports at all.
+ * Both are `@Global()`, which is what lets the feature modules below declare no imports at all.
  */
 @Module({
     imports: [
@@ -32,8 +30,6 @@ import { SettingsModule } from "./settings";
         GuildsModule,
         SettingsModule,
         ModerationModule,
-        QuestsModule,
-        EconomyModule,
     ],
     providers: [
         { provide: APP_GUARD, useClass: SessionGuard },

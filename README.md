@@ -21,27 +21,25 @@ Minecraft plugin are all clients of the same MongoDB-backed domain.
 
 ## Core Components
 
-* **Admin** – system controller, configuration manager, advertisement system, and partner server management
-* **Moderation** – moderation tools, punishment logging, and the ticket system
+* **Admin** – system controller, configuration manager, and advertisement system
+* **Moderation** – moderation tools and punishment logging
 * **HR** – staff management, recruitment, and promotions
 * **ModMail** – private communication between users and staff
 * **Community** – XP, activity tracking, and progression roles
-* **Quests** – rotating quest board, tiers and a weekly community challenge
-* **Economy** – one coin balance per person, shared across Discord and Minecraft
+* **Economy** – activity Points and RC on Discord; robs in Minecraft
 * **Dev** – project sharing and review
 
 ## Key Features
 
 * Modular architecture — one client, one login, one command tree
-* Web dashboard for guild configuration, moderation history, quests and the leaderboard
+* Web dashboard for guild configuration and moderation history
 * Database-managed server whitelist (`!addserver <serverid>`)
-* Ticket and modmail systems
+* Modmail system
 * Staff management automation
 * Activity and role progression system
 * Advertisement ordering and management
-* Partner server tracking with automatic role re-grant on rejoin
 * Structured moderation logging
-* Minecraft integration — account linking, one shared coin balance, in-game ore exchange, chat bridge, server status, and Discord role → LuckPerms sync
+* Minecraft integration — account linking, the robs wallet, in-game ore exchange, chat bridge, server status, and Discord role → LuckPerms sync
 
 ## Technology
 

@@ -9,12 +9,12 @@ whether the command is confined to the configured commands channel.
 |---|---|---|
 | `General` (or no category) | ✅ Yes | `!help` |
 | `Profile` | ✅ Yes | `/profile` |
-| `Economy` | ✅ Yes | `/points`, `/coins` |
+| `Economy` | ✅ Yes | `/points`, `/balance` |
 | `Leaderboard` | ✅ Yes | `/top` |
 | `Streak` | ✅ Yes | `/streak`, `/streak-top` |
 | `Activity` | ✅ Yes | `/check` |
-| `Partnership` | ✅ Yes | `/partner` |
 | `Utility` | ❌ Anywhere | `/line`, `/send` |
+| `Partnership` | ❌ No | `/partner` |
 | `Minecraft` | ❌ Anywhere | `/minecraft`, `!ip`, `!status`, `!version` |
 | `Configuration` | ❌ Anywhere | `/set-prefix`, `/setup-log` |
 | `Admin` | ❌ Anywhere | `/system`, `/whitelist` |

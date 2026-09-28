@@ -56,7 +56,7 @@ export default {
         .setName("help")
         .setDescription("List every command, its usage and category")
         .addStringOption(opt =>
-            opt.setName("query").setDescription("A category (e.g. moderation) or a command name (e.g. coins)").setRequired(false)
+            opt.setName("query").setDescription("A category (e.g. moderation) or a command name (e.g. streak)").setRequired(false)
         ),
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {

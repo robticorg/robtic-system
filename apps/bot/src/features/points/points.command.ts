@@ -9,7 +9,6 @@ import { rates } from "./commands/rates";
 import { history } from "./commands/history";
 import { convert } from "./commands/convert";
 import { add, remove } from "./commands/adjust";
-import { migrateCoins } from "./commands/migrate-coins";
 
 const handlers: Record<string, FeatureSubcommandHandler> = {
     balance,
@@ -18,7 +17,6 @@ const handlers: Record<string, FeatureSubcommandHandler> = {
     convert,
     add,
     remove,
-    "migrate-coins": migrateCoins,
 };
 
 export default buildFeatureCommands(pointsFeature, {

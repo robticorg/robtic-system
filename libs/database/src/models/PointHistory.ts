@@ -4,19 +4,16 @@ import { Schema, model, type Document } from "mongoose";
  * Where a Point movement came from.
  *
  * Kept open-ended deliberately — a new earning system adds a source here and nothing else in the
- * ledger changes. `coin-migration` records the one-time move of legacy Coin balances.
+ * ledger changes. Rows written under a source that has since been retired keep their original
+ * value — the ledger is append-only — and simply display it as-is.
  */
 export const POINT_SOURCES = [
     "message",
     "combo",
     "streak",
     "voice",
-    "quest",
-    "community",
-    "premium",
     "admin",
     "conversion",
-    "coin-migration",
 ] as const;
 
 export type PointSource = typeof POINT_SOURCES[number];

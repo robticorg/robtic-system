@@ -7,8 +7,6 @@ const SECTIONS = [
     { href: "", label: "Overview" },
     { href: "/settings", label: "Settings" },
     { href: "/moderation", label: "Moderation" },
-    { href: "/quests", label: "Quests" },
-    { href: "/economy", label: "Economy" },
 ] as const;
 
 /**

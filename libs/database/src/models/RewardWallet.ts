@@ -5,7 +5,7 @@ import { Schema, model, type Document } from "mongoose";
  *
  * Separate from `Point` on purpose. Points are the existing per-guild activity currency with its
  * own rates and its own conversion into RC; Credits are a distinct reward economy paid out by
- * threshold-based claims (daily messages, daily voice time, and future drops/events/quests) with a
+ * threshold-based claims (daily messages, daily voice time, and future drops/events) with a
  * staff multiplier and additive progression bonuses applied at claim time. The two never convert
  * into one another.
  *

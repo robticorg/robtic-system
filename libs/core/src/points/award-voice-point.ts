@@ -1,6 +1,5 @@
 import { PointsRepository } from "@database/repositories";
 import { getPointRates } from "./get-point-rates";
-import { awardPremiumPointBonus } from "./award-premium-bonus";
 
 /**
  * Adds active voice minutes toward the guild's voice rate. Returns Points just earned.
@@ -12,5 +11,5 @@ export async function awardVoicePoint(guildId: string, discordId: string, userna
     const rates = await getPointRates(guildId);
     const earned = await PointsRepository.addProgress(guildId, discordId, username, "voice", activeMinutes, rates.voiceMinutesPerPoint);
 
-    return earned + await awardPremiumPointBonus(guildId, discordId, username, earned, "voice");
+    return earned;
 }

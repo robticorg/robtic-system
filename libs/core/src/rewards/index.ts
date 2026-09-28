@@ -2,7 +2,7 @@
  * The Activity & Reward System's core — the "Credits" economy.
  *
  * A pure calculator (`calculateReward`), a resolver that reuses the existing staff/level/streak/
- * premium systems (`resolveRewardBonuses`), a centralized wallet service, and one orchestrating
+ * systems (`resolveRewardBonuses`), a centralized wallet service, and one orchestrating
  * entry point (`claimReward`) future reward sources call. No discord.js anywhere in this folder.
  */
 
@@ -17,7 +17,6 @@ export {
     serverTagBonusBp,
     inviteBonusBp,
     referralBonusBp,
-    premiumBonusBp,
     type RewardCalculation,
 } from "./reward-calculator";
 

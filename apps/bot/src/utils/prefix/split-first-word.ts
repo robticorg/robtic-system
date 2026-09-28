@@ -9,7 +9,7 @@ const QUOTE_PAIRS = new Map([
 /**
  * Takes the next positional token off an argument string.
  *
- * A quoted run counts as one token: `!shortcut add "coins balance" c` gives `coins balance` and
+ * A quoted run counts as one token: `!shortcut add "points balance" c` gives `points balance` and
  * `c`. Without that, any option whose value contains a space is unusable unless it happens to be
  * the last string option — which is what made `shortcut add` impossible to drive from chat, since
  * its first option is a command path like `warn add`.

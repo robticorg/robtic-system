@@ -1,7 +1,6 @@
 import type { GuildMember } from "discord.js";
 import { StreakRepository, StreakRecoveryRepository, StreakSettingsRepository } from "@database/repositories";
 import { resolveStreakWindows } from "@core/streak";
-import { getFeatureValue, PremiumFeature } from "@core/premium";
 import { Logger } from "@logger";
 import { applyStreakRole } from "../utils/streak-role";
 
@@ -25,10 +24,8 @@ export async function breakStreak(member: GuildMember, reason: string): Promise<
 
     const { returnWindowHours } = resolveStreakWindows(await StreakSettingsRepository.get(guildId));
 
-    const extraHours = await getFeatureValue(guildId, member.id, PremiumFeature.STREAK_RECOVERY_WINDOW);
-
     await StreakRecoveryRepository.create(member.id, guildId, record.currentStreak, record.bestStreak);
-    await StreakRepository.expire(member.id, guildId, returnWindowHours + Math.max(0, extraHours));
+    await StreakRepository.expire(member.id, guildId, returnWindowHours);
     await applyStreakRole(member, 0).catch(() => null);
 
     Logger.debug(`Broke streak for ${member.id} in ${guildId} (${reason}, lost ${record.currentStreak})`, CTX);

@@ -137,10 +137,10 @@ check("no required option sits after an optional one", badOrder.length === 0, ba
 
 // 5. Quoted tokens, so an option whose value contains a space can be typed at all.
 const quoteCases: [string, string, string][] = [
-    ['"coins balance" c', "coins balance", "c"],
+    ['"points balance" c', "points balance", "c"],
     ["'warn add' red", "warn add", "red"],
-    ["“coins balance” c", "coins balance", "c"],
-    ["coins balance", "coins", "balance"],
+    ["“points balance” c", "points balance", "c"],
+    ["points balance", "points", "balance"],
     ["it's fine here", "it's", "fine here"],
     ['"unterminated c', '"unterminated', "c"],
     ["", "", ""],
@@ -167,15 +167,15 @@ for (const { config, json } of moderation.sort((a, b) => a.json.name.localeCompa
     console.log(`  ${json.name.padEnd(16)} ${note.padEnd(34)} ${paths.join(" · ")}`);
 }
 
-// 7. The shortcut target the request named: `?coins balance` behind a one-letter trigger.
-const coins = loaded.find(entry => entry.json.name === "coins");
-check("coins command is loaded", Boolean(coins));
-if (coins) {
-    const paths = commandPaths(coins.json);
-    check("`coins balance` is a valid shortcut target", paths.includes("coins balance"), paths.join(" · "));
+// 7. The shortcut target the request named: `?points balance` behind a one-letter trigger.
+const points = loaded.find(entry => entry.json.name === "points");
+check("points command is loaded", Boolean(points));
+if (points) {
+    const paths = commandPaths(points.json);
+    check("`points balance` is a valid shortcut target", paths.includes("points balance"), paths.join(" · "));
 
-    const { name, subPath } = splitCommandPath("coins balance");
-    check("shortcut splits into command + subcommand", name === "coins" && subPath === "balance", `${name} / ${subPath}`);
+    const { name, subPath } = splitCommandPath("points balance");
+    check("shortcut splits into command + subcommand", name === "points" && subPath === "balance", `${name} / ${subPath}`);
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

@@ -10,11 +10,10 @@ import {
     VoiceSettingsRepository,
     FeatureCatalogRepository,
     GuildFeatureRepository,
-    RejoinRolesConfigRepository,
 } from "@database/repositories";
 import {
     LOG_REGISTRY, ADMIN_CONFIG_LIMITS, SERVER_ROLE_SLOTS, POINT_RATE_LIMITS, RC_RATE_LIMITS,
-    POINT_STREAK_REWARDS_MAX, VOICE_LIMITS, STREAK_LIMITS, REJOIN_ROLES_LIMITS, type LogKey,
+    POINT_STREAK_REWARDS_MAX, VOICE_LIMITS, STREAK_LIMITS, type LogKey,
 } from "@constants";
 
 const clampInt = (value: number, { min, max }: { min: number; max: number }): number =>
@@ -30,9 +29,6 @@ const cleanIds = (ids: unknown, cap: number): string[] => {
 };
 
 const idOrEmpty = (value: unknown): string => (typeof value === "string" && /^\d{15,25}$/.test(value) ? value : "");
-
-/** REJOIN_ROLES_LIMITS in the shape clampInt expects. */
-const REJOIN_HOUR_BOUNDS = { min: REJOIN_ROLES_LIMITS.minHours, max: REJOIN_ROLES_LIMITS.maxHours };
 
 /**
  * Applies one validated config section for a guild. Every value is re-validated here (never trusted
@@ -167,28 +163,6 @@ export async function updateAdminConfig<S extends AdminConfigSection>(
             for (const [key, enabled] of Object.entries(v.states ?? {})) {
                 if (!known.has(key)) continue;
                 await GuildFeatureRepository.set(guildId, key, Boolean(enabled), actorId);
-            }
-            return;
-        }
-
-        case "rejoinRoles": {
-            const v = values as AdminConfigUpdate["rejoinRoles"];
-            const cap = ADMIN_CONFIG_LIMITS.maxRolesPerField;
-
-            const current = await RejoinRolesConfigRepository.getCached(guildId);
-            const memberHours = clampInt(v.retentionHours, REJOIN_HOUR_BOUNDS);
-            const staffHours = clampInt(v.staffRetentionHours, REJOIN_HOUR_BOUNDS);
-
-            await RejoinRolesConfigRepository.replaceRoles(
-                guildId,
-                cleanIds(v.excludedRoleIds, cap),
-                cleanIds(v.staffRoleIds, cap),
-            );
-
-            if (staffHours < memberHours) {
-                await RejoinRolesConfigRepository.setWindows(guildId, memberHours, staffHours);
-            } else {
-                await RejoinRolesConfigRepository.setWindows(guildId, current.retentionHours, current.staffRetentionHours);
             }
             return;
         }

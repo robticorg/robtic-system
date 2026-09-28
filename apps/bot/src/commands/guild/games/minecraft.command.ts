@@ -173,7 +173,7 @@ export default {
                     .setTitle("✅ Minecraft account linked")
                     .setDescription(
                         `Linked to \`${result.minecraftUsername}\` on **${result.serverKey}**.\n\n` +
-                        "Your Discord coins and your in-game **robs** stay separate — `/coins` here, `/bal` in-game."
+                        "Your in-game balance is **robs** — check it with `/balance` here or `/bal` in-game."
                     )
                     .setColor(COLORS.success)
                     .setTimestamp()],

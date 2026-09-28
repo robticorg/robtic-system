@@ -6,7 +6,7 @@ export default function LandingPage() {
             <div>
                 <h1 className="page-title">Robtic Dashboard</h1>
                 <p className="page-lede">
-                    Configure the bot for the servers you manage — settings, moderation history, quests and economy.
+                    Configure the bot for the servers you manage — settings and moderation history.
                 </p>
                 {
                   }

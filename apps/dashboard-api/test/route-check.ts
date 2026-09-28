@@ -61,8 +61,8 @@ check("the OAuth handshake is served", paths.has("/auth/login") && paths.has("/a
 check("the guild picker is served", paths.has("/guilds"));
 check("settings are readable", paths.has("/guilds/:guildId/settings"));
 check("moderation is readable", paths.has("/guilds/:guildId/moderation/cases"));
-check("quests are readable", paths.has("/guilds/:guildId/quests/settings"));
-check("the leaderboard is served", paths.has("/guilds/:guildId/economy/leaderboard"));
+check("quests are no longer served", ![...paths].some(path => path.includes("/quests")));
+check("the coin leaderboard is no longer served", ![...paths].some(path => path.includes("/economy")));
 
 const moderationWrites = routes.filter(route => route.path.includes("/moderation") && route.method !== "GET");
 check(
@@ -76,8 +76,6 @@ const { GuildAccessGuard } = await import("../src/auth/guards");
 const guildScoped = [
     ["SettingsController", (await import("../src/settings/controllers")).SettingsController],
     ["ModerationController", (await import("../src/moderation/controllers")).ModerationController],
-    ["QuestsController", (await import("../src/quests/controllers")).QuestsController],
-    ["EconomyController", (await import("../src/economy/controllers")).EconomyController],
 ] as const;
 
 for (const [name, controller] of guildScoped) {
@@ -93,7 +91,7 @@ check(
     (Reflect.getMetadata("__guards__", GuildsController) ?? []).length === 0,
 );
 
-const CHECKED_PREFIXES = ["/guilds/:guildId/settings", "/guilds/:guildId/moderation", "/guilds/:guildId/quests", "/guilds/:guildId/economy", "/guilds/:guildId/directory"];
+const CHECKED_PREFIXES = ["/guilds/:guildId/settings", "/guilds/:guildId/moderation", "/guilds/:guildId/directory"];
 const unchecked = [...paths].filter(
     path => path.startsWith("/guilds/:guildId") && !CHECKED_PREFIXES.some(prefix => path.startsWith(prefix)),
 );

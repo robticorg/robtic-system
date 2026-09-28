@@ -1,5 +1,4 @@
 export { User, type IUser } from "./User";
-export { Ticket, type ITicket } from "./Ticket";
 export { Punishment, type IPunishment } from "./Punishment";
 export { ActivityXP, type IActivityXP } from "./ActivityXP";
 export { Membership, type IMembership } from "./Membership";
@@ -7,7 +6,6 @@ export { ServiceTier, type IServiceTier } from "./ServiceTier";
 export { BotConfig, type IBotConfig } from "./BotConfig";
 export { Send, type ISend } from "./send";
 export { Note, type INote } from "./Note";
-export { Reply, toReplyEntries, newReplyId, type IReply, type IReplyEntry } from "./Reply";
 export { Reason, type IReason } from "./Reason";
 export { LevelReward, type ILevelReward } from "./LevelReward";
 export { XPSettings, type IXPSettings } from "./XPSettings";
@@ -16,13 +14,9 @@ export { ActivityLog, type IActivityLog, type ActivityLogType } from "./Activity
 export { AuditLog, type IAuditLog } from "./AuditLog";
 export { ServerConfig, type IServerConfig, type ISentPanel } from "./ServerConfig";
 export { Shortcut, type IShortcutDoc } from "./Shortcut";
-export { Partner, type IPartner } from "./Partner";
-export { SavedRoles, type ISavedRoles } from "./SavedRoles";
 export { Streak, type IStreak } from "./Streak";
 export { StreakSettings, type IStreakSettings } from "./StreakSettings";
 export { StreakRecovery, type IStreakRecovery } from "./StreakRecovery";
-export { Coin, type ICoin } from "./Coin";
-export { LegacyCoin, type ILegacyCoin } from "./LegacyCoin";
 export { Point, type IPoint } from "./Point";
 export { PointSettings, type IPointSettings, type IPointStreakReward } from "./PointSettings";
 export { PointHistory, type IPointHistory, type PointSource, POINT_SOURCES } from "./PointHistory";
@@ -40,7 +34,6 @@ export { VoiceSettings, type IVoiceSettings } from "./VoiceSettings";
 export { StaffTier, type IStaffTier } from "./StaffTier";
 export { PunishConfig, type IPunishConfig } from "./PunishConfig";
 export { CommandAccess, type ICommandAccess } from "./CommandAccess";
-export { RejoinRolesConfig, type IRejoinRolesConfig } from "./RejoinRolesConfig";
 export { GuildFeature, type IGuildFeature } from "./GuildFeature";
 export { FeatureCatalog, type IFeatureCatalog } from "./FeatureCatalog";
 export { StreakReward, type IStreakReward } from "./StreakReward";
@@ -116,21 +109,12 @@ export {
     MINECRAFT_BRIDGE_EVENT_TYPES,
 } from "./MinecraftBridgeEvent";
 export { AllowedGuild, type IAllowedGuild } from "./AllowedGuild";
-export { Quest, type IQuest, type IQuestMission, type QuestStatus } from "./Quest";
-export { QuestClaim, type IQuestClaim, type IQuestClaimMission, type QuestClaimStatus, type QuestOutcome } from "./QuestClaim";
-export { QuestGenerationHistory, type IQuestGenerationHistory, type QuestGenerationStatus } from "./QuestGenerationHistory";
-export { QuestSettings, type IQuestSettings, type IQuestWindow, mentionRoleFor, tierEnabled } from "./QuestSettings";
-export { QuestStats, type IQuestStats } from "./QuestStats";
-export { CommunityChallenge, type ICommunityChallenge, type IChallengeMission, type ChallengeStatus } from "./CommunityChallenge";
-export { CommunityContribution, type ICommunityContribution } from "./CommunityContribution";
-export { PremiumTier, type IPremiumTier } from "./PremiumTier";
-export { PremiumFeatureValue, type IPremiumFeatureValue } from "./PremiumFeatureValue";
-export { PremiumSettings, type IPremiumSettings } from "./PremiumSettings";
 export { RewardWallet, type IRewardWallet } from "./RewardWallet";
 export { RewardServerTagPresence, type IRewardServerTagPresence } from "./RewardServerTagPresence";
 export { RewardBoosterState, type IRewardBoosterState } from "./RewardBoosterState";
 export { RewardInviteCredit, type IRewardInviteCredit } from "./RewardInviteCredit";
 export { InviteJoin, type IInviteJoin, type InviteJoinSource } from "./InviteJoin";
+export { PartnerServer, type IPartnerServer } from "./PartnerServer";
 export {
     RewardTransaction,
     type IRewardTransaction,

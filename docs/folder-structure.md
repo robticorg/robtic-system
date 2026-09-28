@@ -9,8 +9,8 @@ apps/
             features/            One folder per big system — see the layout below
             commands/            Commands too small to be a feature, in the scope tree:
                                    global/          data shared across all servers
-                                   guild/admin/     staff-restricted (moderation/ and tickets/
-                                                    nested inside)
+                                   guild/admin/     staff-restricted (moderation/ nested
+                                                    inside)
                                    guild/general/   any member
                                    guild/games/     any member, game-related
                                    admin/           super users only, admin-guild only
@@ -20,17 +20,16 @@ apps/
             utils/               Helpers, plus the shared pipeline: access/, interaction/,
                                  prefix/, help/, lang/, server-log/, staff-activity/
             guards/              Server whitelist enforcement
-            config/              Static ticket configuration
 
-        A feature folder, using coins as the example. Omit any file the feature
-        does not need — no events means no coins.event.ts.
+        A feature folder, using points as the example. Omit any file the feature
+        does not need — no events means no points.event.ts.
 
-            features/coins/
-                coins.ts             Manifest: key, description, activation, commands, subcommands
-                coins.command.ts     Builds the builder from the manifest, dispatches to commands/
-                coins.message.ts     Prefix form — a bare `!coins` prints its subcommand list
-                coins.event.ts       This feature's gateway listeners, schedulers included
-                coins.component.ts   FeatureComponentIndex re-exporting components/
+            features/points/
+                points.ts            Manifest: key, description, activation, commands, subcommands
+                points.command.ts    Builds the builder from the manifest, dispatches to commands/
+                points.message.ts    Prefix form — a bare `!points` prints its subcommand list
+                points.event.ts      This feature's gateway listeners, schedulers included
+                points.component.ts  FeatureComponentIndex re-exporting components/
                 commands/            One file per leaf subcommand
                 components/          One file per button, select menu or modal
                 functions/           Domain orchestration and event bodies
@@ -45,7 +44,7 @@ apps/
             common/              Shared by two or more features: constants/, decorators/, dto/,
                                  filters/, interfaces/, utils/
             auth/                Sessions, OAuth, and both guards
-            guilds/  settings/  moderation/  quests/  economy/  health/
+            guilds/  settings/  moderation/  health/
 
         Every feature folder has the same internal shape — omit what the feature
         does not need:
@@ -85,9 +84,9 @@ libs/
             ai/                  Rule-based message/activity classifiers (no external AI provider)
             loader/              Module scan and registration (commands, events, components, manifests)
             features/            Feature manifest registry and the enable/disable gate
-            metrics/             The metric bus activity systems publish to and quests consume
-            <domain>/            One folder per domain, discord.js-free: activity, coins, combo,
-                                 leaderboard, minecraft, points, profile, quests, streak, xp, ...
+            metrics/             The metric bus activity systems publish to
+            <domain>/            One folder per domain, discord.js-free: activity, combo,
+                                 leaderboard, minecraft, points, profile, rewards, streak, xp, ...
             config/              BOT_DEFINITION, BRANCH_CONFIG, constants (extraction pending)
             handlers/            Error handling
             libs/                Logger, health, permissions (extraction pending)

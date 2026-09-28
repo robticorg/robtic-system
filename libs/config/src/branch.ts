@@ -15,8 +15,6 @@ export const BRANCH_CONFIG = {
         members: "1362501805941985492",
         bots: "1362501806604943410",
 
-        ticketSupport: "1479440690063736892",
-        ticketAdmin: "1479427432405536829",
 
         memberPunishments: {
             warn: "1479443342390591528",
@@ -37,14 +35,11 @@ export const BRANCH_CONFIG = {
 
     channels: {
         generalChat: ["1479233532592390315", "1515971805481799770"],
-        ticketCategory: "1486500136585789453",
-        ticketSupportReport: "1479467031546826833",
         devProjectReview: "1479465948422602982",
         devProjectLog: "1480925517317275761",
     },
 
     emojis: {
-        ticketManager: "<:4manager:1479437342983983185>",
         membersPanelButton: "1480426683570983014",
     },
 
@@ -62,7 +57,4 @@ export const BRANCH_CONFIG = {
         "Code review and sharing 🧪",
     ],
 
-    partnership: {
-        roleName: "partner",
-    },
 };

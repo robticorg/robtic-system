@@ -1,4 +1,3 @@
-import { getBenefits, PremiumFeature } from "@core/premium";
 import type { ProfileBadge } from "@typings/profile";
 import { BADGE_FIRE_RANGES } from "@constants";
 import { getTopEntries } from "../leaderboard/get-top-entries";
@@ -29,11 +28,6 @@ export async function getProfileBadges(
     }
     if (topStreak[0]?.discordId === targetId) {
         badges.push({ id: "top-streak", label: "Top streak on the server" });
-    }
-
-    const benefits = await getBenefits(guildId, targetId);
-    if (benefits.tier && benefits.values[PremiumFeature.PROFILE_BADGE] === true) {
-        badges.push({ id: `premium-${benefits.tier.key}`, label: `${benefits.tier.emoji} ${benefits.tier.name}` });
     }
 
     return badges;

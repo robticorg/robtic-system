@@ -1,21 +1,52 @@
-import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import {
+    FileUploadBuilder,
+    LabelBuilder,
+    MessageFlags,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+} from "discord.js";
 import type { FeatureSubcommandHandler } from "@typings/feature";
+import { PARTNER_CONFIG } from "@constants";
+import { resolvePartnerChannel } from "../utils/partner-channel";
 
-const field = (id: string, label: string, style: TextInputStyle, required: boolean, maxLength: number) =>
-    new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder().setCustomId(id).setLabel(label).setStyle(style).setRequired(required).setMaxLength(maxLength)
+export const PARTNER_ADD_MODAL_ID = "partner:add";
+
+export const PARTNER_FIELDS = {
+    invite: "partner-invite",
+    name: "partner-name",
+    representative: "partner-representative",
+    description: "partner-description",
+    image: "partner-image",
+} as const;
+
+const text = (id: string, label: string, style: TextInputStyle, maxLength: number, placeholder: string) =>
+    new LabelBuilder().setLabel(label).setTextInputComponent(
+        new TextInputBuilder().setCustomId(id).setStyle(style).setRequired(true).setMaxLength(maxLength).setPlaceholder(placeholder),
     );
 
+/** `/partner add` — the partner channel must work before anyone fills in a form for it. */
 export const add: FeatureSubcommandHandler = async (interaction, _client) => {
-    const modal = new ModalBuilder().setCustomId("partner_add_modal").setTitle("Add Partner");
+    const resolved = await resolvePartnerChannel(interaction.guild!);
+    if ("problem" in resolved) {
+        await interaction.reply({ content: resolved.problem, flags: MessageFlags.Ephemeral });
+        return;
+    }
 
-    modal.addComponents(
-        field("partner_server_id", "Partner Server ID", TextInputStyle.Short, true, 32),
-        field("partner_server_name", "Partner Server Name", TextInputStyle.Short, true, 100),
-        field("partner_rep_id", "Representative User ID", TextInputStyle.Short, true, 32),
-        field("partner_description", "Description", TextInputStyle.Paragraph, true, 500),
-        field("partner_invite", "Invite Link (optional)", TextInputStyle.Short, false, 200),
-    );
+    const { limits } = PARTNER_CONFIG;
+    const modal = new ModalBuilder()
+        .setCustomId(PARTNER_ADD_MODAL_ID)
+        .setTitle("Add Partner")
+        .addLabelComponents(
+            text(PARTNER_FIELDS.invite, "Server invite URL", TextInputStyle.Short, limits.inviteUrl, "https://discord.gg/..."),
+            text(PARTNER_FIELDS.name, "Server name", TextInputStyle.Short, limits.name, "Their server's name"),
+            text(PARTNER_FIELDS.representative, "Representative user ID", TextInputStyle.Short, 25, "The partner's representative"),
+            text(PARTNER_FIELDS.description, "Partner message", TextInputStyle.Paragraph, limits.description, "Describe their server"),
+            new LabelBuilder()
+                .setLabel("Partner image")
+                .setDescription("Their server logo — shown on the banner beside ours")
+                .setFileUploadComponent(new FileUploadBuilder().setCustomId(PARTNER_FIELDS.image).setRequired(true).setMinValues(1).setMaxValues(1)),
+        );
 
     await interaction.showModal(modal);
 };

@@ -10,14 +10,13 @@ import {
     VoiceSettingsRepository,
     FeatureCatalogRepository,
     GuildFeatureRepository,
-    RejoinRolesConfigRepository,
 } from "@database/repositories";
 import { LOG_REGISTRY, STREAK_CONFIG, STREAK_DEFAULTS } from "@constants";
 import { resolveStreakWindows } from "@core/streak";
 
 /** Reads every editable config section for a guild into one snapshot for the admin panel. */
 export async function getAdminConfig(guildId: string): Promise<AdminConfigSnapshot> {
-    const [server, xp, streak, combo, punish, logConfigs, points, voice, catalog, overrides, rejoin] = await Promise.all([
+    const [server, xp, streak, combo, punish, logConfigs, points, voice, catalog, overrides] = await Promise.all([
         ServerConfigRepository.find(guildId),
         XPSettingsRepository.get(guildId),
         StreakSettingsRepository.get(guildId),
@@ -28,7 +27,6 @@ export async function getAdminConfig(guildId: string): Promise<AdminConfigSnapsh
         VoiceSettingsRepository.getCached(guildId),
         FeatureCatalogRepository.list(),
         GuildFeatureRepository.getOverrides(guildId),
-        RejoinRolesConfigRepository.getCached(guildId),
     ]);
 
     const logChannels: Record<string, string | null> = {};
@@ -108,12 +106,6 @@ export async function getAdminConfig(guildId: string): Promise<AdminConfigSnapsh
                 enabled: overrides.get(entry.key) ?? entry.activation === "default-on",
                 overridden: overrides.has(entry.key),
             })),
-        },
-        rejoinRoles: {
-            excludedRoleIds: rejoin.excludedRoleIds,
-            staffRoleIds: rejoin.staffRoleIds,
-            retentionHours: rejoin.retentionHours,
-            staffRetentionHours: rejoin.staffRetentionHours,
         },
     };
 }

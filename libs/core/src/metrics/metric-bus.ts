@@ -73,7 +73,7 @@ export function publishMetric(event: MetricEvent): void {
  * Subscribes to every metric. Returns the unsubscribe function.
  *
  * The direction of this dependency is the point: producers know nothing about who is listening, so
- * a consumer — the quest engine today, achievements tomorrow — can be deleted outright and the
+ * a consumer — achievements, say — can be deleted outright and the
  * producers keep publishing into an empty set.
  */
 export function onMetric(listener: MetricListener): () => void {

@@ -38,9 +38,3 @@ export const CHANNEL_TYPE_LABELS: Record<number, string> = {
     15: "Directory Channel",
 };
 
-/** Ticket guard replies. */
-export const TICKET_GUARD_MESSAGES = {
-    notATicket: "This command can only be used inside an open ticket channel.",
-    categoryMissing: "This ticket's category is no longer configured — ask an admin to check `config/ticket.ts`.",
-    staffOnly: "Only support staff for this ticket's category can use this command.",
-} as const;

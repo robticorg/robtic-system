@@ -17,3 +17,13 @@ export const STREAK_MESSAGES = {
 export const LEVEL_UP_MESSAGES = {
     reached: (userId: string, level: number) => `📈 <@${userId}> وصل إلى **المستوى ${level}**! تهانينا 🎉`,
 } as const;
+
+/** Auto-managed `Streak N` role naming. */
+export const STREAK_ROLE = {
+    name: (level: number) => `Streak ${level}`,
+    namePattern: /^Streak (\d+)$/i,
+    creationReason: "Auto-created streak role",
+    /** `fire<min>-<max>.png` icon files under images/streak. */
+    iconFilenamePattern: /^fire(\d+)-(\d+)\.png$/i,
+    iconsDirectory: ["images", "streak"] as const,
+} as const;

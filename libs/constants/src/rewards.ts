@@ -85,16 +85,12 @@ export const REWARD_REFERRAL_BONUS = {
     maxBp: 1_500,
 } as const;
 
-/** The premium ladder's reward-specific perk, resolved through the Premium Engine (`PremiumFeature.REWARD_BONUS`). */
-export const REWARD_PREMIUM_BONUS = {
-    maxBp: 500,
-} as const;
 
 /**
  * Base reward table, in internal wallet units, read by the message/voice reward sources
  * (`libs/core/src/rewards/sources/`). Each entry is its own independently claimable daily
  * milestone — reaching 600 daily messages claims both the 300 and the 600 reward, the same way a
- * streak reward table or a quest ladder pays every threshold crossed, not only the highest.
+ * streak reward table pays every threshold crossed, not only the highest.
  *
  * Voice is measured in seconds because that is the unit `PeriodicStat`'s `voiceTime` metric is
  * already tracked in (`run-voice-tick.ts`) — comparing directly avoids a minutes/seconds rounding

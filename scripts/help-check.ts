@@ -168,9 +168,9 @@ check("a single-page category gets no buttons",
     categories.every(c => pageCount(groups.get(c) ?? []) > 1 || buildPagerRow(client, context, c, 1) === null));
 
 // 7. Lookup — commands, channel utilities and the guild's own triggers all resolve.
-check("a bare command name resolves", findHelpTarget(client, context, "coins")?.kind === "command");
+check("a bare command name resolves", findHelpTarget(client, context, "points")?.kind === "command");
 check("a slash or prefix is tolerated",
-    findHelpTarget(client, context, "/coins") !== null && findHelpTarget(client, context, "!coins") !== null);
+    findHelpTarget(client, context, "/points") !== null && findHelpTarget(client, context, "!points") !== null);
 check("nonsense resolves to nothing", findHelpTarget(client, context, "definitely-not-a-command") === null);
 check("a channel utility resolves", findHelpTarget(client, context, "clear")?.kind === "chatUtil");
 check("a shortcut trigger resolves to what it runs", findHelpTarget(client, context, "c")?.kind === "chatUtil");

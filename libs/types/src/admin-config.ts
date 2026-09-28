@@ -116,14 +116,6 @@ export interface AdminFeaturesUpdate {
     states: Record<string, boolean>;
 }
 
-export interface AdminRejoinRolesConfig {
-    excludedRoleIds: string[];
-    staffRoleIds: string[];
-    retentionHours: number;
-    /** Always less than retentionHours — rejected otherwise. */
-    staffRetentionHours: number;
-}
-
 /** The full editable config surface for one guild. */
 export interface AdminConfigSnapshot {
     server: AdminServerConfig;
@@ -135,7 +127,6 @@ export interface AdminConfigSnapshot {
     points: AdminPointsConfig;
     voice: AdminVoiceConfig;
     features: AdminFeaturesConfig;
-    rejoinRoles: AdminRejoinRolesConfig;
 }
 
 /** Per-section payload shapes for a config write. */
@@ -149,5 +140,4 @@ export interface AdminConfigUpdate {
     points: AdminPointsConfig;
     voice: AdminVoiceConfig;
     features: AdminFeaturesUpdate;
-    rejoinRoles: AdminRejoinRolesConfig;
 }

@@ -20,7 +20,6 @@ const ALIASES: Record<string, TopCategory> = {
     messagexp: "messages-xp",
     voicexp: "voice-xp",
     "voice-time": "voice",
-    quest: "quests",
     point: "points",
     total: "xp",
     "total-xp": "xp",

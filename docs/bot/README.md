@@ -11,7 +11,6 @@ become a feature.
 | System | Location | Purpose |
 |---|---|---|
 | points | `features/points/` | Activity points + RC premium currency — on by default |
-| coins | `features/coins/` | Minecraft wallet — global, one balance per person, on by default |
 | combo | `features/combo/` | Two-user conversation scoring — on by default |
 | top | `features/top/` | Cross-category leaderboard panel — on by default |
 | logging | `features/logging/` | Log channel routing — on by default |
@@ -19,17 +18,13 @@ become a feature.
 | shortcuts | `features/shortcuts/` | Custom message triggers — on by default |
 | voice | `features/voice/` | Voice XP and time tracking — opt-in per guild |
 | streak | `features/streak/` | Daily message streaks — opt-in per guild |
-| premium | `features/premium/` | Global premium tiers and every perk they grant — on by default |
-| quests | `features/quests/` | Generated quests and the weekly community challenge — opt-in per guild |
-| reply | `features/reply/` | Auto-replies to trigger phrases — opt-in per guild |
-| rejoin-roles | `features/rejoin-roles/` | Restore roles when a member returns — opt-in per guild |
-| partner | `features/partner/` | Partner server directory — opt-in per guild |
+| invites | `features/invites/` | Invite tracking, join announcements, `/invites` and `/info` — on by default |
+| partner | `features/partner/` | Partner servers and their banner posts — on by default |
 | moderation | `commands/guild/admin/moderation/` | Punishments, audit logging, security rules |
-| tickets | `commands/guild/admin/tickets/` | Ticket lifecycle |
 | configuration | `commands/guild/admin/` | Prefix, roles, channels, panels, XP, shortcuts |
 | minecraft | `commands/guild/games/` | Linking, shared economy, chat bridge, LuckPerms sync |
 | member-facing | `commands/guild/general/` | Profile, level, help, notes |
-| cross-server | `commands/global/` | Partners, project sharing, version |
+| cross-server | `commands/global/` | Version |
 | bot operator | `commands/admin/` | Server allowlist, super users, reload, admin guild |
 
 Command names are unique across the whole tree — two systems cannot both register `/mod`, and the
@@ -38,15 +33,14 @@ loader reports a collision rather than letting one silently overwrite the other.
 ## Feature Docs
 
 - [combo.md](./combo.md) — two-user conversation scoring
-- [economy.md](./economy.md) — points, RC, coins, and every way activity pays out
+- [economy.md](./economy.md) — points, RC, and every way activity pays out
 - [command-categories.md](./command-categories.md) — command categories and which are confined to the commands channel
 - [minecraft.md](./minecraft.md) — Minecraft architecture: linking, shared economy, chat bridge, LuckPerms sync
 - [minecraft-setup.md](./minecraft-setup.md) — Operator guide: API keys, chat wiring, logging channels, full command reference
 - [modal.md](./modal.md) — modal patterns
 - [placeholders.md](./placeholders.md) — every `%robtic_…%` PlaceholderAPI variable the Minecraft plugin exposes
+- [partner.md](./partner.md) — partner servers, the banner and `/partner`
 - [invites.md](./invites.md) — invite tracking, join announcements, `/invites` and `/info`
-- [premium.md](./premium.md) — the Premium Engine: global tiers, per-server role mappings, and every perk
-- [quests.md](./quests.md) — quest generation, claiming, automatic progress and the weekly community challenge
 - [rewards.md](./rewards.md) — the Activity & Reward System core: Credits, the reward formula, and every bonus source
 - [shortcuts.md](./shortcuts.md) — `/shortcut` triggers and their cleanup modes
 - [streak.md](./streak.md) — daily streak system

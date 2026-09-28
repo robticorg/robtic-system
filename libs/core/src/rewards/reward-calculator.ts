@@ -7,7 +7,6 @@ import {
     REWARD_SERVER_TAG_BONUS,
     REWARD_INVITE_BONUS,
     REWARD_REFERRAL_BONUS,
-    REWARD_PREMIUM_BONUS,
 } from "@constants";
 import type { RewardBonusBreakdown, RewardBonusInputs } from "./reward-bonus-types";
 
@@ -120,12 +119,6 @@ export function referralBonusBp(qualifiedReferrals: number): number {
     return clampBp(qualifiedReferrals * REWARD_REFERRAL_BONUS.perReferralBp, REWARD_REFERRAL_BONUS.maxBp);
 }
 
-/** `premiumBonusPercent` is a plain percent (5 = +5%), as the Premium Engine already resolves it. */
-export function premiumBonusBp(premiumBonusPercent: number): number {
-    if (!Number.isFinite(premiumBonusPercent) || premiumBonusPercent <= 0) return 0;
-    return clampBp(premiumBonusPercent * 100, REWARD_PREMIUM_BONUS.maxBp);
-}
-
 /** Resolves every bonus field to its clamped basis-point value. Pure — no database, no gateway. */
 export function calculateBonusBreakdown(inputs: RewardBonusInputs): RewardBonusBreakdown {
     return {
@@ -136,7 +129,6 @@ export function calculateBonusBreakdown(inputs: RewardBonusInputs): RewardBonusB
         serverTagBp: serverTagBonusBp(Boolean(inputs.hasServerTag)),
         inviteBp: inviteBonusBp(inputs.activeInviteSlots ?? 0),
         referralBp: referralBonusBp(inputs.qualifiedReferrals ?? 0),
-        premiumBp: premiumBonusBp(inputs.premiumBonusPercent ?? 0),
     };
 }
 

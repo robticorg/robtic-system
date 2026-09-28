@@ -9,7 +9,7 @@ export interface ActivityRewardTier {
  * Every tier whose threshold the member's daily progress has reached, ascending.
  *
  * Each tier is independent — reaching a higher one does not exclude a lower one, the same way a
- * streak reward table or a quest ladder pays every milestone crossed. Empty when none has been
+ * streak reward table pays every milestone crossed. Empty when none has been
  * reached, which is what makes a reward "only claimable once the requirement is reached".
  */
 export function reachedActivityRewardTiers(

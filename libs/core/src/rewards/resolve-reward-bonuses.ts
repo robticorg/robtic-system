@@ -1,5 +1,4 @@
 import { StaffTierRepository, StreakRepository, ActivityRepository, LevelRewardRepository } from "@database/repositories";
-import { getFeatureValue, PremiumFeature } from "@core/premium";
 import { calculateBonusBreakdown } from "./reward-calculator";
 import { resolveServerTagEligibility } from "./server-tag-presence";
 import { getBoosterProgress } from "./booster-state";
@@ -47,8 +46,8 @@ function bestStaffScore(tiers: { score: number; roleIds: string[] }[], roleIds: 
 /**
  * Resolves a member's current reward bonuses by reusing the systems that already own each number:
  * `StaffTier` for staff, `ActivityXP` for level, `Streak` for streak days, the existing
- * `LevelReward` roles (`/level-rewards`) for the level bonus's configured points, the Premium
- * Engine for `REWARD_BONUS`, `resolveServerTagEligibility` for Server Tag (live Discord state plus
+ * `LevelReward` roles (`/level-rewards`) for the level bonus's configured points,
+ * `resolveServerTagEligibility` for Server Tag (live Discord state plus
  * the 6-hour continuous-wear requirement), `getBoosterProgress` for Booster (current boost count
  * plus how long it has run, continuously), and `getActiveInviteCount` for Invite (unexpired credits
  * only). Nothing here is discord.js-aware — `roleIds` and `unwired.primaryGuild` are all it needs
@@ -73,12 +72,11 @@ export async function resolveRewardBonuses(
     unwired: UnwiredRewardBonusInputs = {},
     now: Date = new Date(),
 ): Promise<RewardBonusBreakdown> {
-    const [tiers, streak, activity, levelRewards, premiumBonusPercent, hasServerTag, booster, activeInviteSlots] = await Promise.all([
+    const [tiers, streak, activity, levelRewards, hasServerTag, booster, activeInviteSlots] = await Promise.all([
         StaffTierRepository.getCached(guildId),
         StreakRepository.find(discordId, guildId),
         ActivityRepository.find(discordId, guildId),
         LevelRewardRepository.getAll(guildId),
-        getFeatureValue(guildId, discordId, PremiumFeature.REWARD_BONUS),
         resolveServerTagEligibility(guildId, discordId, unwired.primaryGuild ?? null, now),
         getBoosterProgress(guildId, discordId, now, unwired.premiumSince),
         getActiveInviteCount(guildId, discordId, now),
@@ -94,7 +92,6 @@ export async function resolveRewardBonuses(
         hasServerTag,
         activeInviteSlots,
         qualifiedReferrals: unwired.qualifiedReferrals ?? 0,
-        premiumBonusPercent,
     };
 
     return calculateBonusBreakdown(inputs);

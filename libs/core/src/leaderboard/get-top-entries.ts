@@ -1,4 +1,4 @@
-import { CoinsRepository, ComboLeaderboardRepository, PeriodicStatRepository, PointsRepository, QuestStatsRepository } from "@database/repositories";
+import { ComboLeaderboardRepository, PeriodicStatRepository, PointsRepository } from "@database/repositories";
 import { TOP_DISPLAY_LIMIT, type ComboLeaderboardPeriod, type TopCategory } from "@constants";
 import { periodKeyFor } from "@utils";
 import type { TopEntry } from "@typings/top";
@@ -36,14 +36,6 @@ export async function getTopEntries(
     if (category === "points") {
         const rows = await PointsRepository.getTop(guildId, limit);
         return rows.map(r => ({ discordId: r.discordId, value: r.points }));
-    }
-    if (category === "quests") {
-        const rows = await QuestStatsRepository.getTop(guildId, limit);
-        return rows.map(r => ({ discordId: r.discordId, value: r.completed }));
-    }
-    if (category === "coins") {
-        const rows = await CoinsRepository.getTop(limit);
-        return rows.map(r => ({ discordId: r.discordId, value: r.coins }));
     }
     return getStreakTopEntries(guildId, period, limit);
 }

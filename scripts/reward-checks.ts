@@ -140,7 +140,6 @@ const LEVEL_POINTS = [50, 99] as const;
         hasServerTag: true,
         activeInviteSlots: 999,
         qualifiedReferrals: 999,
-        premiumBonusPercent: 999,
     });
     check("bonuses clamp to their configured maximums under extreme input", [b.levelBp, b.streakBp, b.boosterBp].every(v => v > 0));
     check("level bonus never exceeds its max", b.levelBp === REWARD_LEVEL_BONUS.maxBp, `${b.levelBp}`);
@@ -372,7 +371,6 @@ const LEVEL_POINTS = [50, 99] as const;
         serverTagBp: serverTagBonusBp(true),
         inviteBp: 0,
         referralBp: 0,
-        premiumBp: 0,
     };
     check("integration: level 4 of a 4/10 configuration is exactly +20%", breakdown.levelBp === 2_000, `${breakdown.levelBp}`);
     check(
@@ -725,7 +723,6 @@ const voiceTiers: ActivityRewardTier[] = REWARD_BASE_VALUES.voice.map(t => ({ th
         serverTagBp: serverTagBonusBp(true),
         inviteBp: inviteBonusBp(4),
         referralBp: 0,
-        premiumBp: 0,
     };
     const worked = calculateReward(50, breakdown);
     check("integration: level + streak + server tag + booster + invites total +46.5%", worked.totalBonusBp === 4_650, `${worked.totalBonusBp}`);

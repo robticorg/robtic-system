@@ -4,11 +4,9 @@ export type TopCategory =
     | "streak"
     | "combo"
     | "points"
-    | "quests"
     | "messages"
     | "voice"
-    | "xp"
-    | "coins";
+    | "xp";
 
 export const TOP_CATEGORIES: TopCategory[] = [
     "messages-xp",
@@ -16,11 +14,9 @@ export const TOP_CATEGORIES: TopCategory[] = [
     "streak",
     "combo",
     "points",
-    "quests",
     "messages",
     "voice",
     "xp",
-    "coins",
 ];
 
 /**
@@ -31,13 +27,13 @@ export const TOP_CATEGORIES: TopCategory[] = [
  * people actually open this for, and the raw counters trail because they answer the same question
  * less well.
  *
- * `xp` (chat and voice combined) and `coins` are reachable by name but not on a page: the split
- * boards say more, and coins is a global wallet that has nothing to do with this server.
+ * `xp` (chat and voice combined) is reachable by name but not on a page: the split boards say
+ * more.
  */
 export const TOP_PAGES: readonly (readonly TopCategory[])[] = [
     ["messages-xp", "voice-xp"],
     ["streak", "combo", "points"],
-    ["quests", "messages", "voice"],
+    ["messages", "voice"],
 ];
 
 /** Emoji shown in each leaderboard's title. */
@@ -47,11 +43,9 @@ export const TOP_CATEGORY_EMOJI: Record<TopCategory, string> = {
     streak: "🔥",
     combo: "💬",
     points: "🎯",
-    quests: "🗺️",
     messages: "📨",
     voice: "🎙️",
     xp: "📈",
-    coins: "🪙",
 };
 
 /** Ranks shown per category on a `/top` page. */

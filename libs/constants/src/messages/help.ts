@@ -60,7 +60,6 @@ export const HELP_CATEGORY_EMOJI: Record<string, string> = {
     Leaderboard: "🏆",
     Leveling: "📈",
     Moderation: "🛡️",
-    Tickets: "🎫",
     Partnership: "🤝",
     Projects: "🚀",
     Minecraft: "⛏️",
@@ -123,20 +122,6 @@ export const MODERATION_HELP = {
                 "`/reason create <type>` — Create a new punishment reason (Manager+)",
                 "`/reason remove <key>` — Remove a punishment reason (Manager+)",
                 "`/reason list` — List all punishment reasons",
-            ].join("\n"),
-        },
-        {
-            name: "Tickets",
-            value: [
-                "`/ticket-panel <channel>` — Send the ticket-opening panel (Manager+)",
-                "`/claim` — Claim the current ticket (staff only, in-ticket)",
-                "`/rename <name>` — Rename the current ticket (staff only, in-ticket)",
-                "`/add @user` — Add a user to the current ticket (staff only, in-ticket)",
-                "`/remove @user` — Remove a user from the current ticket (staff only, in-ticket)",
-                "`/escalate` — Grant the category's admin role access (staff only, in-ticket)",
-                "`/close [reason]` — Close the current ticket and award category points (staff only, in-ticket)",
-                "",
-                "Categories, roles, and staff points are configured in `apps/bot/src/config/moderation/ticket.ts`.",
             ].join("\n"),
         },
         {

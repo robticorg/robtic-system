@@ -62,39 +62,6 @@ export interface ProfilePoints {
     rank: number;
 }
 
-/**
- * Quest record for one member of one guild.
- *
- * Always present, even where the feature is off — a guild that has never enabled quests reports
- * zeroes, which every surface renders the same way as a member who has simply never claimed one.
- */
-export interface ProfileQuests {
-    claimed: number;
-    completed: number;
-    failed: number;
-    /** Percentage of resolved claims that were completed, 0-100. */
-    completionRate: number;
-    rank: number;
-    /** Points earned from quest and community rewards alone. */
-    pointsEarned: number;
-    easyCompleted: number;
-    normalCompleted: number;
-    hardCompleted: number;
-    goldenCompleted: number;
-    vipCompleted: number;
-    communityCompleted: number;
-    /** Everything contributed to weekly challenges, across every week. */
-    communityContribution: number;
-    /** Times this member finished a quest first. */
-    firstPlaceFinishes: number;
-    fastestCompletionMs: number | null;
-    averageCompletionMs: number | null;
-    /** Unix ms, or null with no completions. */
-    lastCompletedAt: number | null;
-    /** Quests they are on right now — at most one per slot. */
-    activeClaims: number;
-}
-
 /** A small achievement badge rendered next to the profile name. */
 export interface ProfileBadge {
     /** "fire<min>-<max>" streak tiers, or "top-combo" / "top-streak" for server #1s. */
@@ -124,15 +91,12 @@ export interface ProfileSnapshot {
     isPrivate: boolean;
     isSelf: boolean;
     customization: ProfileCustomization;
-    /** The Discord coin balance. The Minecraft wallet is robs and is not represented here. */
-    coins: number;
     badges: ProfileBadge[];
     xp: ProfileXp;
     streak: ProfileStreak;
     combo: ProfileCombo;
     voice: ProfileVoice;
     points: ProfilePoints;
-    quests: ProfileQuests;
 }
 
 /** One row of the Activity's user-search autocomplete. */

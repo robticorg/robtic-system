@@ -1,10 +1,8 @@
 import type { FeatureComponentIndex } from "@typings/feature";
-import partnerAddModal from "./components/add-modal";
-import partnerRemoveModal from "./components/remove-modal";
-import partnerAnnounceModal from "./components/announce-modal";
-import { partnerExploreSelect, partnerExploreBack } from "./components/explore";
+import { partnerAddModalHandler } from "./components/add-modal";
+import { partnerInfoHandler } from "./components/info-button";
 
 export default {
     feature: "partner",
-    handlers: [partnerAddModal, partnerRemoveModal, partnerAnnounceModal, partnerExploreSelect, partnerExploreBack],
+    handlers: [partnerAddModalHandler, partnerInfoHandler],
 } satisfies FeatureComponentIndex;

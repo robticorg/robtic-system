@@ -3,9 +3,8 @@
 Links Minecraft accounts to Discord, sells ores for **robs** through an in-game menu, bridges chat,
 mirrors the server's status into Discord, and mirrors LuckPerms groups onto Discord roles.
 
-**Two separate currencies.** Discord has **coins**; Minecraft has **robs**. Robs are keyed by
-Minecraft UUID, so a player who has never linked Discord still has a wallet, and the two balances
-never convert into one another. The game server cannot read or move a coin balance.
+**The currency is robs.** Robs are keyed by Minecraft UUID, so a player who has never linked
+Discord still has a wallet.
 
 **LuckPerms decides who is staff.** A rank *is* a LuckPerms group. The game server resolves rank
 locally and reports the Discord roles it wants applied; Discord never writes a group back. Granting
@@ -25,8 +24,8 @@ somebody a Discord role does not make them staff.
 | Constants | `libs/constants/src/minecraft.ts` |
 | Paper plugin | `apps/minecraft-plugin/` |
 
-It runs inside the **main** bot, which already owns the Discord coin economy (`/coins`) and already
-has the `MessageContent` and `GuildMembers` intents the chat bridge needs. No new bot process.
+It runs inside the **main** bot, which already has the `MessageContent` and `GuildMembers` intents
+the chat bridge needs. No new bot process.
 
 ## Collections
 
@@ -39,12 +38,8 @@ has the `MessageContent` and `GuildMembers` intents the chat bridge needs. No ne
 | `minecraftservers` | plugin | Per-server status and heartbeat |
 | `minecraftconfigs` | bot | Channels, toggles, role → group mappings |
 | `minecraftbridgeevents` | both | The bridge queue, expired by a TTL index |
-| `coins` | bot | Discord-only balance. **Never** touched by the game server |
 | `robs` | minecraft-api | The Minecraft currency, keyed by `minecraftUuid` |
 | `robtransactions` | minecraft-api | Ore-exchange sales, paid in robs, keyed by uuid |
-
-The coin balance deliberately stays in the existing `Coin` collection. The link resolves a UUID to
-a `discordId`, and everything downstream uses the same balance Discord already awards.
 
 ## The bridge
 

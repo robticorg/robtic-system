@@ -15,8 +15,7 @@ export const SERVER_ROLE_SLOTS = ["members", "bots", "en", "ar"] as const;
  * Every writable config section, in one place.
  *
  * The API validates an incoming section against this and `AdminConfigSection` is derived from it,
- * so the two cannot drift. They already had: the route kept its own hand-written list, which was
- * missing "coins" and quietly rejected every save from that panel.
+ * so the two cannot drift.
  */
 export const ADMIN_CONFIG_SECTIONS = [
     "server",
@@ -28,5 +27,4 @@ export const ADMIN_CONFIG_SECTIONS = [
     "points",
     "voice",
     "features",
-    "rejoinRoles",
 ] as const;

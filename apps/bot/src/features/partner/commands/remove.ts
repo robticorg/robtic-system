@@ -1,19 +1,39 @@
-import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { MessageFlags, type AutocompleteInteraction } from "discord.js";
 import type { FeatureSubcommandHandler } from "@typings/feature";
+import { PartnerServerRepository } from "@database/repositories";
+import { revokePartnerRole } from "../utils/partner-role";
 
+/** `/partner remove` — deletes the partner, takes its banner post down, and the partner role back. */
 export const remove: FeatureSubcommandHandler = async (interaction, _client) => {
-    const modal = new ModalBuilder().setCustomId("partner_remove_modal").setTitle("Remove Partner");
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    modal.addComponents(
-        new ActionRowBuilder<TextInputBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId("partner_server_id")
-                .setLabel("Partner Server ID")
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true)
-                .setMaxLength(32)
-        )
-    );
+    const partner = await PartnerServerRepository.delete(interaction.guildId!, interaction.options.getString("partner", true));
+    if (!partner) {
+        await interaction.editReply({ content: "No such partner — pick one from the list." });
+        return;
+    }
 
-    await interaction.showModal(modal);
+    let postNote = "";
+    if (partner.channelId && partner.messageId) {
+        const channel = await interaction.guild!.channels.fetch(partner.channelId).catch(() => null);
+        const deleted = channel?.isTextBased()
+            ? await channel.messages.delete(partner.messageId).then(() => true, () => false)
+            : false;
+        if (!deleted) postNote = " Its post couldn't be deleted — remove it by hand if it's still there.";
+    }
+
+    const roleResult = await revokePartnerRole(interaction.guild!, partner.representativeId);
+    const roleNote =
+        roleResult === "removed" ? ` <@${partner.representativeId}> lost the partner role.`
+        : roleResult === "kept" ? ` <@${partner.representativeId}> keeps the partner role — they still represent another partner.`
+        : roleResult === "failed" ? ` ⚠️ I couldn't take the partner role from <@${partner.representativeId}>.`
+        : "";
+
+    await interaction.editReply({ content: `**${partner.name}** is no longer a partner.${postNote}${roleNote}`, allowedMentions: { parse: [] } });
 };
+
+/** Suggests this guild's partners by name; the value sent back is the partner's id. */
+export async function removeAutocomplete(interaction: AutocompleteInteraction): Promise<void> {
+    const matches = await PartnerServerRepository.search(interaction.guildId!, interaction.options.getFocused(), 25);
+    await interaction.respond(matches.map(m => ({ name: m.name.slice(0, 100), value: m.id })));
+}

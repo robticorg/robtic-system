@@ -1,7 +1,7 @@
 /**
  * Raw inputs a reward bonus calculation needs, already read from wherever each fact lives.
  *
- * Sources with their own database records (level, streak days, staff score, the premium percent)
+ * Sources with their own database records (level, streak days, staff score)
  * are resolved for real in `resolve-reward-bonuses.ts`. Server tag has no database record by
  * design — it is live Discord state, resolved for real via `isServerTagActive` from whatever the
  * caller reads off `member.user.primaryGuild` — see `resolve-reward-bonuses.ts`'s
@@ -33,8 +33,6 @@ export interface RewardBonusInputs {
     activeInviteSlots?: number;
     /** Qualified referrals, for members eligible to hold a referral code. */
     qualifiedReferrals?: number;
-    /** The `REWARD_BONUS` premium feature's resolved percent (e.g. 5 for +5%). */
-    premiumBonusPercent?: number;
 }
 
 /**
@@ -51,5 +49,4 @@ export interface RewardBonusBreakdown {
     serverTagBp: number;
     inviteBp: number;
     referralBp: number;
-    premiumBp: number;
 }

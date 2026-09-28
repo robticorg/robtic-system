@@ -1,7 +1,6 @@
 import type { ProfileSnapshot } from "@typings/profile";
 import {
     ActivityRepository,
-    CoinsRepository,
     StreakRepository,
     StreakSettingsRepository,
     ComboRepository,
@@ -16,7 +15,6 @@ import { favoritePartnerWeight } from "@core/combo/favorite-partner-weight";
 import { nextClaimAt } from "@core/streak/next-claim-at";
 import { resolveStreakWindows } from "@core/streak/resolve-streak-windows";
 import { streakExpiresAt } from "@core/streak/streak-expires-at";
-import { getQuestSummary } from "@core/quests";
 import { getProfileBadges } from "./get-profile-badges";
 
 interface SnapshotInput {
@@ -40,7 +38,6 @@ export async function getProfileSnapshot(input: SnapshotInput): Promise<ProfileS
     const isPrivate = !isSelf && await UserRepository.getPrivateProfile(targetId);
     const displayName = await UserRepository.getDisplayName(targetId) ?? username;
     const customization = await UserRepository.getCustomization(targetId);
-    const coinRecord = await CoinsRepository.get(targetId);
 
     const xpRecord = await ActivityRepository.findOrCreate(targetId, guildId, username);
     const level = calculateLevel(xpRecord.totalXP);
@@ -68,8 +65,6 @@ export async function getProfileSnapshot(input: SnapshotInput): Promise<ProfileS
     const pointRecord = await PointsRepository.get(guildId, targetId);
     const pointRank = pointRecord ? await PointsRepository.getRank(guildId, targetId) : 0;
 
-    const quests = await getQuestSummary(guildId, targetId);
-
     const comboStats = await ComboUserStatsRepository.get(guildId, targetId);
     const favorite = comboStats?.partners?.length
         ? [...comboStats.partners].sort((a, b) => favoritePartnerWeight(b) - favoritePartnerWeight(a))[0]
@@ -89,7 +84,6 @@ export async function getProfileSnapshot(input: SnapshotInput): Promise<ProfileS
             bio: customization.bio,
             template: customization.profileTemplate,
         },
-        coins: coinRecord?.coins ?? 0,
         badges: await getProfileBadges(guildId, targetId, streakRecord.currentStreak),
         xp: {
             totalXP: xpRecord.totalXP,
@@ -138,6 +132,5 @@ export async function getProfileSnapshot(input: SnapshotInput): Promise<ProfileS
             rc: pointRecord?.rc ?? 0,
             rank: pointRank,
         },
-        quests,
     };
 }

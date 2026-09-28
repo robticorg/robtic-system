@@ -23,7 +23,6 @@ export type ActivitySource =
     | "reaction"
     | "combo"
     | "streak"
-    | "quest"
     | "voice-state"
     | "other";
 

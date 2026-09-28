@@ -16,7 +16,7 @@ export const add: FeatureSubcommandHandler = async (interaction, client) => {
             embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(
                 "❌ That came through without " + (!command ? "`command`" : "`trigger`") + ".\n" +
                 "Discord is showing an outdated copy of `/shortcut` — dismiss it and pick the entry again, " +
-                "or use the prefix form: `shortcut add \"coins balance\" c`."
+                "or use the prefix form: `shortcut add \"points balance\" c`."
             )],
         });
         return;

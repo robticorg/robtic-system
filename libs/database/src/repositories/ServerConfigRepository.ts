@@ -143,6 +143,24 @@ export class ServerConfigRepository {
         return config?.inviteLogChannelId ?? null;
     }
 
+    static async setPartnerChannel(guildId: string, channelId: string): Promise<void> {
+        await ServerConfig.updateOne({ guildId }, { $set: { partnerChannelId: channelId } }, { upsert: true });
+    }
+
+    static async getPartnerChannel(guildId: string): Promise<string | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.partnerChannelId ?? null;
+    }
+
+    static async setPartnerRole(guildId: string, roleId: string): Promise<void> {
+        await ServerConfig.updateOne({ guildId }, { $set: { partnerRoleId: roleId } }, { upsert: true });
+    }
+
+    static async getPartnerRole(guildId: string): Promise<string | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.partnerRoleId ?? null;
+    }
+
     static async addLineChannel(guildId: string, channelId: string): Promise<IServerConfig> {
         return ServerConfig.findOneAndUpdate(
             { guildId },

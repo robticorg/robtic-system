@@ -1,7 +1,7 @@
 {
   "name": "@robtic/dashboard-api",
   "private": true,
-  "description": "NestJS API behind the web dashboard: Discord OAuth sessions, per-guild authorization, and read/write access to guild configuration, moderation history, quests and economy.",
+  "description": "NestJS API behind the web dashboard: Discord OAuth sessions, per-guild authorization, and read/write access to guild configuration and moderation history.",
   "scripts": {
     "dev": "bun --preload ../../libs/shared/src/preload.ts --watch src/main.ts",
     "start": "NODE_ENV=production bun --preload ../../libs/shared/src/preload.ts src/main.ts",

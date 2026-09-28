@@ -6,7 +6,7 @@ import { creditReward } from "./reward-wallet-service";
 /** Transaction types a reward source may claim through. Purchases, withdrawals and admin corrections go through the wallet service directly instead. */
 export type RewardClaimType = Extract<
     RewardTransactionType,
-    "MESSAGE_REWARD" | "VOICE_REWARD" | "DROP_REWARD" | "EVENT_REWARD" | "QUEST_REWARD"
+    "MESSAGE_REWARD" | "VOICE_REWARD" | "DROP_REWARD" | "EVENT_REWARD"
 >;
 
 export interface ClaimRewardInput {
@@ -30,7 +30,7 @@ export interface ClaimRewardResult {
 }
 
 /**
- * The one entry point every reward source — messages, voice, and eventually drops, events, quests
+ * The one entry point every reward source — messages, voice, and eventually drops, events
  * and Minecraft rewards — is meant to call. Resolves the member's current bonuses, applies the
  * reward formula, and credits the wallet through the single service allowed to move a balance.
  *

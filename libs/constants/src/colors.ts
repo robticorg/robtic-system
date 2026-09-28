@@ -6,7 +6,6 @@ export const COLORS = {
     info: 0x3498DB,
     warning: 0xFFC107,
     moderation: 0xE74C3C,
-    ticket: 0x9B59B6,
     hr: 0xF39C12,
     activity: 0x2ECC71,
 } as const;

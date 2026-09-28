@@ -3,9 +3,8 @@ import { defineFeature } from "@typings/feature";
 /**
  * The activity economy: Points earned by participating, and RC converted from them.
  *
- * Separate from `coins`, which is the Minecraft in-game wallet spoken over the plugin API. Points
- * are the Discord-side currency every activity system pays into — messages, combo, streak, voice,
- * and whatever is added next.
+ * Points are the Discord-side currency every activity system pays into — messages, combo, streak,
+ * voice, and whatever is added next.
  *
  * `default-on`: members accrue Points from activity that is already happening, and nothing is
  * spent or announced without someone asking for it.
@@ -51,11 +50,6 @@ export const pointsFeature = defineFeature({
                         { name: "amount", description: "How many points", type: "integer", required: true, minValue: 1 },
                         { name: "reason", description: "Why", type: "string" },
                     ],
-                },
-                {
-                    name: "migrate-coins",
-                    description: "One-time: claim this server's pre-global coin balances as points (admins only)",
-                    options: [{ name: "confirm", description: "False previews it, true runs it", type: "boolean", required: true }],
                 },
             ],
         },

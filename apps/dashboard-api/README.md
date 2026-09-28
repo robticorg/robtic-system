@@ -1,7 +1,7 @@
 # @robtic/dashboard-api
 
 NestJS API behind the web dashboard: Discord OAuth sessions, per-guild authorization, and read/write
-access to guild configuration, moderation history, quests and economy.
+access to guild configuration and moderation history.
 
 ```bash
 bun --filter @robtic/dashboard-api dev          # watch mode
@@ -35,8 +35,6 @@ src/
 ├── guilds/                  the guild picker and the role/channel directory
 ├── settings/                guild configuration
 ├── moderation/              cases, member records, audit trail — read-only
-├── quests/                  quest settings, board, community challenge
-├── economy/                 the coin leaderboard
 └── health/                  the container probe
     └── each: controllers/ services/ repositories/ dto/ <feature>.module.ts
 
@@ -54,7 +52,7 @@ Enforced, not just described:
 
 - **Controllers hold no business logic.** They read parameters, call one service method, and return.
   Nothing in `src/*/controllers/` builds a query, maps a document, or reaches for `@database/*`.
-- **Services never touch mongoose.** `settings/`, `moderation/`, `quests/` and `economy/` each own a
+- **Services never touch mongoose.** `settings/` and `moderation/` each own a
   repository that wraps the static `@database/repositories` classes. Those statics are shared with
   the bot and cannot be injected; wrapping them puts a seam back where a service can be given a fake.
 - **`common/` depends on nothing.** Features depend on `common/` and on `auth/`; never the reverse.

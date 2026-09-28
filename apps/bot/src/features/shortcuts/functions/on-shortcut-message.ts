@@ -12,8 +12,8 @@ import { CHAT_UTIL_COMMANDS, runChatUtilShortcut } from "./run-chat-util";
  * The message with the guild prefix removed, when a shortcut is allowed to claim that form.
  *
  * Returns null unless the message is prefixed **and** its first word is not a real command, which
- * is the whole safety condition: `?coins balance` must stay the coins command and must not also
- * fire a `coins` trigger, or a member would see the balance twice. `?c`, naming nothing, is free
+ * is the whole safety condition: `?points balance` must stay the points command and must not also
+ * fire a `points` trigger, or a member would see the balance twice. `?c`, naming nothing, is free
  * for a shortcut to answer — and the prefix router has already declined it by then.
  */
 async function strippedPrefixForm(message: Message, client: BotClient): Promise<string | null> {

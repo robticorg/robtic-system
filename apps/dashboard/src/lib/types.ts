@@ -75,36 +75,3 @@ export interface AuditEntry {
     metadata: Record<string, unknown> | null;
     createdAt: string;
 }
-
-export interface QuestSettings {
-    questChannelId: string | null;
-    communityChannelId: string | null;
-    mentionRoles: Record<string, string | null>;
-    vipRoleIds: string[];
-    enabledTiers: Record<string, boolean>;
-    windows: Array<{ key: string; startHour: number; endHour: number; enabled: boolean }>;
-    utcOffsetMinutes: number;
-    community: { enabled: boolean; rewardBase: number; minContribution: number };
-}
-
-export interface QuestBoardEntry {
-    id: string;
-    tier: string;
-    status: string;
-    reward: number;
-    missions: Array<{ label: string; metric: string; target: number }>;
-    slotsTotal: number | null;
-    slotsTaken: number;
-    slotsRemaining: number;
-    completionCount: number;
-    endsAt: string;
-    channelId: string | null;
-    messageId: string | null;
-}
-
-export interface LeaderboardEntry {
-    rank: number;
-    userId: string;
-    username: string;
-    coins: number;
-}

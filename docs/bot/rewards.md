@@ -7,11 +7,11 @@ anything. Message and voice rewards are wired all the way from existing activity
 `claimReward()`, but nothing in the bot calls them yet — that is the next step, once a claim
 surface (a command, a scheduled auto-claim, or both) is decided.
 
-A fourth currency, deliberately separate from the three in [economy.md](./economy.md). Points, RC
-and Coins already have their own rates, conversions and surfaces — Credits is a distinct reward
-economy meant for large, threshold-based payouts (daily message/voice thresholds today; drops,
-events, quests and Minecraft rewards later), each claim scaled by a staff multiplier and a set of
-additive progression bonuses. The two never convert into one another.
+A separate currency from the two in [economy.md](./economy.md). Points and RC already have their
+own rates, conversions and surfaces — Credits is a distinct reward economy meant for large,
+threshold-based payouts (daily message/voice thresholds today; drops, events and Minecraft rewards
+later), each claim scaled by a staff multiplier and a set of additive progression bonuses. They
+never convert into one another.
 
 ## Why not extend Point
 
@@ -41,7 +41,6 @@ repeated floating-point percent math would.
 | Server tag | additive, flat +10% | `REWARD_SERVER_TAG_BONUS` |
 | Invite | additive, +1%/active invite, 10 slots max | `REWARD_INVITE_BONUS` |
 | Referral | additive, +2%/qualified referral, +15% max | `REWARD_REFERRAL_BONUS` |
-| Premium | additive, up to +5% via `PremiumFeature.REWARD_BONUS` | `REWARD_PREMIUM_BONUS` |
 
 All in `libs/constants/src/rewards.ts` — no magic numbers in the calculator or anywhere else.
 
@@ -53,7 +52,6 @@ All in `libs/constants/src/rewards.ts` — no magic numbers in the calculator or
 | Streak | **Live** — reads `Streak.currentStreak` via `StreakRepository.find`, evaluated fresh every call |
 | Server tag | **Live, dynamic** — see "Server tag bonus" below |
 | Staff | **Live** — best-scoring `StaffTier` among the member's held roles |
-| Premium | **Live** — `PremiumFeature.REWARD_BONUS`, resolved through the existing Premium Engine |
 | Booster | **Live, dynamic** — see "Booster bonus" below |
 | Invite | **Live, dynamic** — see "Invite bonus" below |
 | Referral | **Not tracked yet.** The calculator and the resolver accept it (`UnwiredRewardBonusInputs`); it resolves to zero until a producer exists. |
@@ -233,7 +231,7 @@ libs/database/src/repositories/
 libs/core/src/rewards/
     reward-bonus-types.ts            RewardBonusInputs, RewardBonusBreakdown
     reward-calculator.ts             Pure: calculateBonusBreakdown, calculateReward, levelBonusBp
-    resolve-reward-bonuses.ts        I/O: reuses StaffTier/Streak/ActivityXP/LevelReward/Premium/ServerTag
+    resolve-reward-bonuses.ts        I/O: reuses StaffTier/Streak/ActivityXP/LevelReward/ServerTag
     reward-wallet-service.ts         creditReward / debitReward / withdrawReward
     format-credits.ts                Internal unit ⇄ "Credits" display, isolated
     claim-reward.ts                  claimReward() — the one entry point a source calls
@@ -306,7 +304,7 @@ No command or scheduler calls `claimMessageRewards`/`claimVoiceRewards` yet — 
 
 Internally an integer unit. Never shown to a member as-is: `formatCredits(units)` scales it
 (`CREDITS_DISPLAY.displayScale`, 1 unit → 1,000,000 Credits) and labels it "Credits" — a member
-never sees "RC", "coins", or the internal number. `5` units → `"5M Credits"`, matching the base
+never sees "RC" or the internal number. `5` units → `"5M Credits"`, matching the base
 reward table (300 daily messages → 5 units → 5M Credits; 600 → 50 units → 50M Credits).
 
 ## What is deliberately not built yet
@@ -353,8 +351,7 @@ covered; the repository calls around it are simple reads/writes with no branchin
 
 ## Related
 
-- [economy.md](./economy.md) — Points, RC and Coins, and how they differ from Credits
-- [premium.md](./premium.md) — the engine `REWARD_BONUS` is registered against
+- [economy.md](./economy.md) — Points and RC, and how they differ from Credits
 - [streak.md](./streak.md) — the system the streak bonus reads from
 - `apps/bot/src/commands/guild/admin/level-rewards.command.ts` — the single source of truth for
   configured level-reward levels; `libs/database/src/repositories/LevelRewardRepository.ts` is the

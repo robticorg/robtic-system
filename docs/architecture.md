@@ -80,7 +80,7 @@ Files are imported at most once and in a deterministic order: manifests first, s
 registry is complete before anything else registers, then everything else alphabetically. Two
 commands sharing a name is therefore a rule rather than a race — the first registration wins and
 the collision is logged naming both files. That is what makes migrating a feature safe: add
-`features/coins/`, verify it beats the old `commands/coins.ts`, then delete the old file.
+`features/<key>/`, verify it beats the old `commands/<key>.ts`, then delete the old file.
 
 ### Features
 
@@ -187,5 +187,4 @@ genuinely multi-server:
 |---|---|---|
 | Punishments | `roles.memberPunishments`, `roles.staffPunishments` | Punishment-level roles per tier |
 | Languages | `roles.lang.{en,ar}` | A per-guild equivalent already exists in `ServerConfig.roles` |
-| Tickets | `roles.ticketSupport`, `roles.ticketAdmin`, `channels.ticketCategory`, `channels.ticketSupportReport` | Needs a `TicketConfig` model |
 | Rules panel | `roles.members` | Also available on `ServerConfig.roles` |

@@ -41,6 +41,10 @@ export interface IServerConfig extends Document {
     commandsChannelId?: string;
     /** Where the invites feature announces each join and who invited them (`/invites-config channel`). */
     inviteLogChannelId?: string;
+    /** Where `/partner add` posts partner banners (`/partner channel`). */
+    partnerChannelId?: string;
+    /** Given to every partner representative (`/partner role`). */
+    partnerRoleId?: string;
     /** Roles allowed into the Activity's guild admin panel (besides owner/Administrator). */
     adminPanelRoles: string[];
     /**
@@ -92,6 +96,8 @@ const serverConfigSchema = new Schema<IServerConfig>(
         prefix: { type: String },
         commandsChannelId: { type: String },
         inviteLogChannelId: { type: String },
+        partnerChannelId: { type: String },
+        partnerRoleId: { type: String },
         adminPanelRoles: { type: [String], default: [] },
         botAdminRoles: { type: [String], default: [] },
     },
