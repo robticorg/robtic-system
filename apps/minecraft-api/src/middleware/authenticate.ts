@@ -50,8 +50,3 @@ export async function authenticate(request: Request): Promise<ApiKeyIdentity> {
     keyCache.set(keyHash, identity);
     return identity;
 }
-
-/** Drops a key from the cache so a revocation takes effect immediately rather than in 30 seconds. */
-export function forgetCachedKey(keyHash: string): void {
-    keyCache.invalidate(keyHash);
-}

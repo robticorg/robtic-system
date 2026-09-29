@@ -9,5 +9,3 @@ export const COLORS = {
     hr: 0xF39C12,
     activity: 0x2ECC71,
 } as const;
-
-export type ColorKey = keyof typeof COLORS;

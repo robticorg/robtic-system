@@ -46,17 +46,6 @@ export class PunishConfigRepository {
         return config;
     }
 
-    /** Replaces the whole shortcut-role list at once — used by the admin config panel. */
-    static async setShortcutRoles(guildId: string, roleIds: string[]): Promise<IPunishConfig> {
-        const config = await PunishConfig.findOneAndUpdate(
-            { guildId },
-            { $set: { shortcutRoleIds: roleIds } },
-            { upsert: true, returnDocument: "after" }
-        ) as IPunishConfig;
-        this.invalidate(guildId);
-        return config;
-    }
-
     static async setPointsPerAction(guildId: string, points: number): Promise<IPunishConfig> {
         const config = await PunishConfig.findOneAndUpdate(
             { guildId },

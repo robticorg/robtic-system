@@ -7,7 +7,6 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/bot-client";
 import { COLORS } from "@constants";
 import { PunishmentRepository, NoteRepository, ActivityRepository, ComboUserStatsRepository, UserRepository } from "@database/repositories";
 import { getMemberLevel, isStaff } from "@bot/utils/access";
@@ -33,7 +32,7 @@ export default {
             opt.setName("user").setDescription("The user to view (defaults to yourself)").setRequired(false)
         ),
 
-    async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+    async run(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const target = interaction.options.getUser("user") ?? interaction.user;

@@ -7,8 +7,6 @@ export const COMBO_LEVELS = [
     { name: "Legendary", minScore: 260 },
 ] as const;
 
-export type ComboLevelName = typeof COMBO_LEVELS[number]["name"];
-
 export const COMBO_CONFIG = {
     /** A combo expires after this long without a qualifying interaction between the pair. */
     expireMs: 2 * 60 * 1000,

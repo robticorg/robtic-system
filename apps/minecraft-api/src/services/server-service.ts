@@ -214,8 +214,4 @@ export class ServerService {
             };
         });
     }
-
-    static invalidateBundle(guildId: string, serverId: string): void {
-        bundleCache.invalidate(`${guildId}:${serverId}`);
-    }
 }

@@ -34,10 +34,6 @@ export class VoiceSettingsRepository {
         return this.update(guildId, action === "add" ? { $addToSet: { [field]: channelId } } : { $pull: { [field]: channelId } });
     }
 
-    static async editRole(guildId: string, roleId: string, action: "add" | "remove"): Promise<IVoiceSettings> {
-        return this.update(guildId, action === "add" ? { $addToSet: { allowedRoleIds: roleId } } : { $pull: { allowedRoleIds: roleId } });
-    }
-
     static invalidate(guildId: string): void {
         cache.delete(guildId);
     }

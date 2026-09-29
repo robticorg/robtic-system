@@ -63,7 +63,7 @@ export {
     type InviteCreditStore,
 } from "./invite-credit";
 
-export { creditReward, debitReward, withdrawReward, type RewardWalletMovement } from "./reward-wallet-service";
+export { creditReward, type RewardWalletMovement } from "./reward-wallet-service";
 
 export { unitsToCredits, formatCredits } from "./format-credits";
 
@@ -74,13 +74,3 @@ export {
     dailyActivityRewardIdempotencyKey,
     type ActivityRewardTier,
 } from "./sources/activity-reward-tiers";
-
-export {
-    createActivityRewardSource,
-    type ActivityRewardSourceConfig,
-    type ClaimActivityRewardsInput,
-    type ActivityRewardClaim,
-} from "./sources/activity-reward-source";
-
-export { claimMessageRewards } from "./sources/message-reward-source";
-export { claimVoiceRewards } from "./sources/voice-reward-source";

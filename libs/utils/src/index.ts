@@ -5,7 +5,6 @@ export * from "./format-duration";
 export * from "./is-acceptable-message";
 export * from "./is-emoji-only";
 export * from "./looks-like-command";
-export * from "./member-lang-detected";
 export * from "./normalize-elongated";
 export * from "./period-key-for";
 export * from "./utc-date-key";

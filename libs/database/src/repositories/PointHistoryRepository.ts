@@ -1,5 +1,4 @@
 import { PointHistory, type IPointHistory, type PointSource } from "@database/models/PointHistory";
-import { RcConversion, type IRcConversion } from "@database/models/RcConversion";
 
 export interface PointTotals {
     earned: number;
@@ -36,9 +35,5 @@ export class PointHistoryRepository {
         }
 
         return totals;
-    }
-
-    static async recentConversions(guildId: string, discordId: string, limit = 10): Promise<IRcConversion[]> {
-        return RcConversion.find({ guildId, discordId }).sort({ createdAt: -1 }).limit(limit);
     }
 }

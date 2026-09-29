@@ -61,7 +61,6 @@ export default {
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         const context = await buildHelpContext(
-            client,
             interaction.guildId,
             interaction.user.id,
             (interaction.member as GuildMember | null) ?? null,
@@ -105,7 +104,7 @@ export default {
         };
 
         if (target) {
-            await interaction.reply({ content: buildCommandHelpText(client, context, target) });
+            await interaction.reply({ content: buildCommandHelpText(context, target) });
             return;
         }
 

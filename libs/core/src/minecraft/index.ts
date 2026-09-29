@@ -12,8 +12,6 @@ export { redeemLinkCode, type RedeemLinkResult, type LinkFailureReason } from ".
 export { unlinkAccount, type UnlinkResult } from "./unlink-account";
 export { getItemPrices, invalidatePriceCache, type MinecraftPriceEntry } from "./get-item-prices";
 export { setItemPrice, type PriceUpdateResult } from "./set-item-price";
-export { removeItemPrice } from "./remove-item-price";
-export { setItemEnabled } from "./set-item-enabled";
 export { getMinecraftProfile, type MinecraftProfile } from "./get-minecraft-profile";
 export { resolvePremiumTier, freeTierSummary, type PremiumTierSummary } from "./resolve-premium-tier";
 export { publishBridgeEvent, type BridgeEventInput } from "./publish-bridge-event";

@@ -54,14 +54,6 @@ export class AllowedGuildRepository {
         return cache.has(guildId);
     }
 
-    /**
-     * Synchronous variant for callers that can't await. Reads only the already-warmed cache;
-     * `preload()` runs at boot. Fails closed — an unwarmed cache reports "not allowed".
-     */
-    static isAllowedCached(guildId: string): boolean {
-        return this.cache?.has(guildId) ?? false;
-    }
-
     /** Returns false when the guild was already on the list. */
     static async add(guildId: string, addedBy: string, name?: string): Promise<boolean> {
         const existing = await AllowedGuild.findOne({ guildId });

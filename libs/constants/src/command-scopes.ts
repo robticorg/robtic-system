@@ -23,12 +23,3 @@ export type CommandScope = typeof COMMAND_SCOPES[number];
 export const GUILD_ACCESS_LEVELS = ["admin", "general", "games"] as const;
 
 export type GuildAccessLevel = typeof GUILD_ACCESS_LEVELS[number];
-
-/** Applied when a command omits them, chosen so an untagged command behaves as it did before scopes existed. */
-export const DEFAULT_COMMAND_SCOPE: CommandScope = "guild";
-export const DEFAULT_GUILD_ACCESS: GuildAccessLevel = "general";
-
-/** True when the command may only be published to the admin guild. */
-export function isAdminScoped(scope: CommandScope | undefined): boolean {
-    return scope === "admin";
-}

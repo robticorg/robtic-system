@@ -29,7 +29,6 @@ const EMBED_LIMIT = 6000;
 const TEXT_LIMIT = 2000;
 const DESCRIPTION_LIMIT = 4096;
 const FIELD_LIMIT = 25;
-const FIELD_VALUE_LIMIT = 1024;
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -151,7 +150,7 @@ const biggest = [...commands.values()].sort(
 
 const oversized: string[] = [];
 for (const command of commands.values()) {
-    const text = buildCommandHelpText(client, context, { kind: "command", command, path: commandName(command) });
+    const text = buildCommandHelpText(context, { kind: "command", command, path: commandName(command) });
     if (text.length > TEXT_LIMIT) oversized.push(`${commandName(command)} (${text.length} chars)`);
 }
 check("every command detail view fits a message", oversized.length === 0, oversized.join(", ") || `largest: ${commandName(biggest)}`);
@@ -180,7 +179,7 @@ check("a trigger for a subcommand resolves to its command",
     warnTrigger?.kind === "command" && commandName(warnTrigger.command) === "warn");
 
 // 8. The `help <command>` text view: shape, and that gated commands stay hidden from members.
-const clearText = buildCommandHelpText(client, context, findHelpTarget(client, context, "clear")!);
+const clearText = buildCommandHelpText(context, findHelpTarget(client, context, "clear")!);
 check("the text view names the command", clearText.includes("**Command:**"), clearText.split(/\n/)[0]);
 check("the text view lists shortcuts", clearText.includes("`c`"));
 check("the text view lists concrete usage", clearText.includes("- `c 10 #channel`"));

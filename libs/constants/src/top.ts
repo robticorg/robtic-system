@@ -70,9 +70,3 @@ export const TOP_RANK_GAP_SEPARATOR = "…";
 
 /** Lookback windows for period-scoped streak leaderboards. */
 export const TOP_PERIOD_TO_DAYS: Record<"weekly" | "monthly", number> = { weekly: 7, monthly: 30 };
-
-/** Maximum autocomplete suggestions returned by the Activity's profile search. */
-export const PROFILE_SEARCH_LIMIT = 8;
-
-/** Rows returned per page by the Activity's leaderboard view. */
-export const ACTIVITY_LEADERBOARD_LIMIT = 10;

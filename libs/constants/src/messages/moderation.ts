@@ -40,15 +40,3 @@ export const PUNISH_APPROVAL_MESSAGES = {
     denyLabel: "Deny",
     denyEmoji: "❌",
 } as const;
-
-/** Field titles for the cross-server audit embeds. */
-export const AUDIT_EMBED_MESSAGES = {
-    memberJoinTitle: "📥 Member Joined",
-    memberLeaveTitle: "📤 Member Left",
-    memberKickTitle: "👢 Member Kicked",
-    memberBanTitle: "🔨 Member Banned",
-    messageDeleteTitle: "🗑️ Message Deleted",
-    channelCreateTitle: "📁 Channel Created",
-    channelDeleteTitle: "🗂️ Channel Deleted",
-    roleUpdateTitle: "🎭 Role Updated",
-} as const;

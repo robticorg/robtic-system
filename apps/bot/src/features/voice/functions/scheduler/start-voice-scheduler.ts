@@ -8,7 +8,6 @@ import { persistDirtySessions, sessionCount } from "../session-store";
 const CTX = "voice";
 
 let tickTimer: ReturnType<typeof setInterval> | null = null;
-let persistTimer: ReturnType<typeof setInterval> | null = null;
 
 /**
  * Two timers, deliberately at different rates.
@@ -27,7 +26,7 @@ export function startVoiceScheduler(client: Client): void {
         runVoiceTick(client).catch(err => Logger.error(`Voice tick failed: ${err}`, CTX));
     }, VOICE_CONFIG.tickIntervalMs);
 
-    persistTimer = setInterval(() => {
+    setInterval(() => {
         persistDirtySessions()
             .then(count => {
                 if (count) Logger.debug(`Persisted ${count} of ${sessionCount()} open voice session(s)`, CTX);
@@ -36,11 +35,4 @@ export function startVoiceScheduler(client: Client): void {
     }, VOICE_CONFIG.persistIntervalMs);
 
     Logger.info("Voice scheduler started", CTX);
-}
-
-export function stopVoiceScheduler(): void {
-    if (tickTimer) clearInterval(tickTimer);
-    if (persistTimer) clearInterval(persistTimer);
-    tickTimer = null;
-    persistTimer = null;
 }

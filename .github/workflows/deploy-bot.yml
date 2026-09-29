@@ -61,6 +61,26 @@ jobs:
     secrets:
       DISCORD_WEBHOOK_DEPLOY: ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
 
+  # Runs on every push, including when the bot image was unchanged and the deploy was skipped. The
+  # bot also publishes on startup, but that only happens when its container is recreated and a
+  # failure there is only logged — this makes a failed registration a red job instead.
+  register:
+    name: Register slash commands
+    needs: [changes, deploy]
+    if: ${{ always() && needs.changes.result == 'success' && needs.deploy.result != 'failure' && needs.deploy.result != 'cancelled' }}
+    runs-on: [self-hosted, robtic-deploy]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Publish commands from the running container
+        run: |
+          docker compose -f infra/docker/compose/docker-compose.yml -p robtic-system \
+            --env-file /home/robtic/robtic-system/.env \
+            exec -T robtic-system \
+            bun --preload ./libs/shared/src/preload.ts apps/bot/src/register-commands.ts
+
   seal:
     name: Record what was deployed
     needs: [changes, deploy]

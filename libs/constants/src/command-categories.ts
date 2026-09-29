@@ -28,8 +28,6 @@ export const COMMAND_CATEGORIES = [
     "Moderation",
 ] as const;
 
-export type CommandCategory = typeof COMMAND_CATEGORIES[number];
-
 /**
  * Categories exempt from the commands-channel restriction.
  *

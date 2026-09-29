@@ -6,7 +6,6 @@ import {
     TextInputStyle,
     ActionRowBuilder,
 } from "discord.js";
-import type { BotClient } from "@core/bot-client";
 
 export default {
     scope: "guild",
@@ -21,7 +20,7 @@ export default {
 
     modalOnly: true,
 
-    async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+    async run(interaction: ChatInputCommandInteraction) {
         const targetUser = interaction.options.getUser("user", true);
 
         const modal = new ModalBuilder()

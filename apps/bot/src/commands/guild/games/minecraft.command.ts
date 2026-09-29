@@ -2,47 +2,24 @@ import {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
     EmbedBuilder,
-    ChannelType,
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/bot-client";
-import {
-    COLORS,
-    MINECRAFT_HISTORY_DEFAULT_LIMIT,
-    MINECRAFT_PRICE_LIMITS,
-    MINECRAFT_ROLE_MAPPINGS_MAX,
-    MINECRAFT_SELLABLE_ITEMS,
-} from "@constants";
-import { STAFF_ACTIONS } from "@sdk";
+import { COLORS, MINECRAFT_HISTORY_DEFAULT_LIMIT } from "@constants";
 import { handleApiKeySubcommand } from "@bot/utils/minecraft/api-key-admin";
+import { getMinecraftProfile, redeemLinkCode, unlinkAccount } from "@core/minecraft";
 import {
-    getItemPrices,
-    getMinecraftProfile,
-    redeemLinkCode,
-    removeItemPrice,
-    setItemEnabled,
-    setItemPrice,
-    unlinkAccount,
-} from "@core/minecraft";
-import {
-    MinecraftConfigRepository,
     MinecraftLinkRepository,
     MinecraftServerRepository,
     RobTransactionRepository,
     UserRepository,
 } from "@database/repositories";
-import { refreshStatusPanel } from "@bot/services/minecraft";
 import {
-    buildConfigEmbed,
     buildHistoryEmbed,
-    buildPriceEmbed,
     buildProfileEmbed,
     buildServerStatusEmbed,
     isMinecraftAdmin,
 } from "@bot/utils/minecraft";
-
-const ITEM_CHOICES = MINECRAFT_SELLABLE_ITEMS.map(item => ({ name: item.label, value: item.key }));
 
 /**
  * Gates the admin-only branches. `/minecraft link` and `/minecraft profile` stay open to everyone,
@@ -131,7 +108,7 @@ export default {
                 )
         ),
 
-    async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+    async run(interaction: ChatInputCommandInteraction) {
         if (!interaction.guildId || !interaction.guild) {
             await interaction.reply({ content: "This command can only be used in a server.", flags: MessageFlags.Ephemeral });
             return;
@@ -165,8 +142,6 @@ export default {
                 });
                 return;
             }
-
-            const member = interaction.member as GuildMember | null;
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()

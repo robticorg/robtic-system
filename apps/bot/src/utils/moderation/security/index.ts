@@ -9,4 +9,3 @@ export { detectAuditEntry, type AuditEntryMatch } from "./detect-audit-entry";
 export { detectKickAuditEntry } from "./detect-kick-audit-entry";
 export { detectBanAuditEntry } from "./detect-ban-audit-entry";
 export { detectRoleAuditEntry } from "./detect-role-audit-entry";
-export { ensureManagerSecurityAccess } from "./ensure-manager-security-access";

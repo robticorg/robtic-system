@@ -39,7 +39,7 @@ const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(r
 /**
  * Transport for the Robtic API: auth headers, envelope unwrapping, and retry of transient
  * failures. Every consumer goes through this, which is what stops request logic being reinvented
- * in the bot, the dashboard and any future client.
+ * in the bot and any future client.
  */
 export class HttpClient {
     private readonly baseUrl: string;

@@ -51,14 +51,6 @@ export class MinecraftServerRepository {
         ) as Promise<IMinecraftServer>;
     }
 
-    static async setStatus(guildId: string, serverKey: string, status: MinecraftServerState): Promise<IMinecraftServer | null> {
-        return MinecraftServer.findOneAndUpdate(
-            { guildId, serverKey },
-            { $set: { status, lastHeartbeatAt: new Date() } },
-            { returnDocument: "after" }
-        );
-    }
-
     /**
      * Flips servers whose heartbeat went stale to CRASHED — a clean shutdown writes OFFLINE itself,
      * so silence while still marked ONLINE means the process died. Returns the affected servers.

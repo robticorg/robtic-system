@@ -54,7 +54,7 @@ const dockerfiles = readdirSync(join(ROOT, DOCKER_DIR))
     .map(name => `${DOCKER_DIR}/${name}`)
     .sort();
 
-check("infra/docker/dockerfiles holds a Dockerfile per Bun service", dockerfiles.length === 4, dockerfiles.join(", "));
+check("infra/docker/dockerfiles holds a Dockerfile per Bun service", dockerfiles.length === 2, dockerfiles.join(", "));
 
 for (const path of dockerfiles) {
     const body = read(path);
@@ -69,11 +69,9 @@ for (const path of dockerfiles) {
 
 // 4. A workspace with dependencies of its own must have its node_modules copied into the image.
 //
-//    Bun does not hoist a workspace's dependencies to the root: `@nestjs/*`, `next` and everything
-//    else declared in an app's own package.json lives in that app's node_modules, along with the
+//    Bun does not hoist a workspace's dependencies to the root: everything declared in an app's own package.json lives in that app's node_modules, along with the
 //    `.bin` entries that make `bun run <script>` work. An image that copies only /app/node_modules
-//    builds cleanly and then fails — `next: command not found` during the build, or a missing
-//    module at container start. Neither names the cause.
+//    builds cleanly and then fails with a missing module at container start. Neither names the cause.
 //
 //    Only checked for the app a Dockerfile actually copies source for; the root package.json's own
 //    dependencies are hoisted and need nothing.

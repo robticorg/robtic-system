@@ -62,14 +62,6 @@ export class ActivityRepository {
         return above + 1;
     }
 
-    static async updateRole(discordId: string, guildId: string, role: string): Promise<IActivityXP | null> {
-        return ActivityXP.findOneAndUpdate(
-            { discordId, guildId },
-            { currentRole: role },
-            { returnDocument: "after" }
-        );
-    }
-
     static async incrementRealMessageCount(discordId: string, guildId: string, username: string): Promise<IActivityXP | null> {
         await ActivityRepository.findOrCreate(discordId, guildId, username);
         return ActivityXP.findOneAndUpdate(
@@ -77,18 +69,6 @@ export class ActivityRepository {
             { $inc: { realMessageCount: 1 } },
             { returnDocument: "after" }
         );
-    }
-
-    static async incrementSpamCount(discordId: string, guildId: string): Promise<IActivityXP | null> {
-        return ActivityXP.findOneAndUpdate(
-            { discordId, guildId },
-            { $inc: { spamCount: 1 } },
-            { returnDocument: "after" }
-        );
-    }
-
-    static async resetSpamCount(discordId: string, guildId: string): Promise<void> {
-        await ActivityXP.updateOne({ discordId, guildId }, { spamCount: 0 });
     }
 
     static async addSupportPoints(discordId: string, guildId: string, amount: number): Promise<IActivityXP | null> {
@@ -112,14 +92,6 @@ export class ActivityRepository {
                 "decay.lastActiveAt": new Date(),
                 "decay.inactiveDays": 0,
             },
-            { returnDocument: "after" }
-        );
-    }
-
-    static async addStaffPenalty(discordId: string, guildId: string, amount: number): Promise<IActivityXP | null> {
-        return ActivityXP.findOneAndUpdate(
-            { discordId, guildId },
-            { $inc: { "staff.penalties": amount } },
             { returnDocument: "after" }
         );
     }
@@ -195,35 +167,5 @@ export class ActivityRepository {
             { $limit: limit },
             { $project: { _id: 0, discordId: 1, staff: 1, totalStaffPoints: 1 } },
         ]);
-    }
-
-    static async getStaffLeaderboard(guildId: string, limit = 10): Promise<IActivityXP[]> {
-        return ActivityXP.find({ guildId })
-            .sort({
-                "staff.supportPoints": -1,
-                "staff.publicChatPoints": -1,
-                "staff.staffChatPoints": -1,
-            })
-            .limit(limit);
-    }
-
-    /** Single-element result (or empty) so id lookups and name searches share one call shape. */
-    static async findByDiscordId(guildId: string, discordId: string): Promise<IActivityXP[]> {
-        const record = await ActivityXP.findOne({ guildId, discordId });
-        return record ? [record] : [];
-    }
-
-    /** Case-insensitive username substring match, most-active first. Backs the Activity's profile search. */
-    static async searchByUsername(guildId: string, query: string, limit = 8): Promise<IActivityXP[]> {
-        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        return ActivityXP.find({ guildId, username: { $regex: escaped, $options: "i" } })
-            .sort({ totalXP: -1 })
-            .limit(limit);
-    }
-
-    /** Bulk username lookup used to label leaderboard rows without an N+1 query per rank. */
-    static async findManyByDiscordIds(guildId: string, discordIds: string[]): Promise<IActivityXP[]> {
-        if (discordIds.length === 0) return [];
-        return ActivityXP.find({ guildId, discordId: { $in: discordIds } });
     }
 }

@@ -90,17 +90,6 @@ export async function flushActivity(): Promise<number> {
     }
 }
 
-/** Drops cached entries for a guild — used when the bot leaves one. */
-export function forgetGuildActivity(guildId: string): void {
-    const prefix = `${guildId}:`;
-    for (const key of lastActivity.keys()) {
-        if (key.startsWith(prefix)) {
-            lastActivity.delete(key);
-            dirty.delete(key);
-        }
-    }
-}
-
 /** Number of members currently tracked, for diagnostics. */
 export function trackedActivityCount(): number {
     return lastActivity.size;

@@ -6,7 +6,6 @@ import { logToChannel, supportPointsEmbed, supportSessionEmbed } from "./activit
 export async function handleSessionResolution(
     session: { userMessageId: string; userId: string; claimedBy: string | null; responseTimeMs: number | null },
     guildId: string,
-    endedBy: string,
     reason: string,
     client: BotClient,
 ): Promise<void> {

@@ -144,7 +144,7 @@ export default {
                     );
 
                     await logToChannel(client, "ai", aiDecisionEmbed(
-                        username, member.id,
+                        member.id,
                         analysis.classification.classification,
                         analysis.classification.confidence,
                         analysis.classification.fallback,
@@ -156,7 +156,7 @@ export default {
                             if (session.claimedBy === member.id) {
                                 await handleSessionResolution(
                                     session, guildId,
-                                    member.id, COMMUNITY_MESSAGES.resolutionReasons.aiConversationEndStaff, client,
+                                    COMMUNITY_MESSAGES.resolutionReasons.aiConversationEndStaff, client,
                                 );
                                 resetClaimIntrusion(member.id, channelId);
                             }
@@ -177,7 +177,7 @@ export default {
                     const analysis = await analyzeSupportMessage(normalizedContent, hasRef);
 
                     await logToChannel(client, "ai", aiDecisionEmbed(
-                        username, member.id,
+                        member.id,
                         analysis.classification.classification,
                         analysis.classification.confidence,
                         analysis.classification.fallback,
@@ -190,7 +190,7 @@ export default {
                             if (session.userId === member.id) {
                                 await handleSessionResolution(
                                     session, guildId,
-                                    member.id, COMMUNITY_MESSAGES.resolutionReasons.memberEnded, client,
+                                    COMMUNITY_MESSAGES.resolutionReasons.memberEnded, client,
                                 );
                             }
                         }

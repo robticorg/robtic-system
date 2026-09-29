@@ -6,6 +6,7 @@ import { handleError, BotError } from "@core/handlers";
 import { awardMessagePoint } from "@core/points";
 import { publishMetric } from "@core/metrics";
 import { isExcludedChannel } from "@bot/services/community/xp";
+import { awardMessageMilestone } from "@bot/services/staff-points";
 
 export default {
     name: Events.MessageCreate,
@@ -19,7 +20,8 @@ export default {
         if (await isExcludedChannel(message.guild.id, message.channel.id)) return;
 
         try {
-            await ActivityRepository.incrementRealMessageCount(message.author.id, message.guild.id, message.author.username);
+            const activity = await ActivityRepository.incrementRealMessageCount(message.author.id, message.guild.id, message.author.username);
+            if (activity) void awardMessageMilestone(message.guild.id, message.author.id, activity.realMessageCount);
             await PeriodicStatRepository.incrementAllPeriods(message.guild.id, "messages", message.author.id, 1);
 
             publishMetric({

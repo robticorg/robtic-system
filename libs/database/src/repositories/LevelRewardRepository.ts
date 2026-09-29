@@ -14,10 +14,6 @@ export class LevelRewardRepository {
         return result.deletedCount > 0;
     }
 
-    static async getForLevel(guildId: string, level: number): Promise<ILevelReward | null> {
-        return LevelReward.findOne({ guildId, level });
-    }
-
     static async getAll(guildId: string): Promise<ILevelReward[]> {
         return LevelReward.find({ guildId }).sort({ level: 1 });
     }

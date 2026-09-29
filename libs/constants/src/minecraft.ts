@@ -18,8 +18,6 @@ export const MINECRAFT_SELLABLE_ITEMS = [
     { key: "NETHERITE_SCRAP", label: "Netherite Scrap", emoji: "🔥", defaultPrice: 800 },
 ] as const;
 
-export type MinecraftItemKey = typeof MINECRAFT_SELLABLE_ITEMS[number]["key"];
-
 /** Item keys the exchange knows about, for validation and autocomplete. */
 export const MINECRAFT_ITEM_KEYS: string[] = MINECRAFT_SELLABLE_ITEMS.map(item => item.key);
 
@@ -131,9 +129,6 @@ export const MINECRAFT_STATUS = {
 
 /** In-process TTL for the price table on both sides of the bridge. */
 export const MINECRAFT_PRICE_CACHE_TTL_MS = 60 * 1000;
-
-/** Most Discord-role → LuckPerms-group mappings one guild can configure. */
-export const MINECRAFT_ROLE_MAPPINGS_MAX = 25;
 
 /** Transaction rows returned by `/minecraft history` when no limit is given. */
 export const MINECRAFT_HISTORY_DEFAULT_LIMIT = 10;

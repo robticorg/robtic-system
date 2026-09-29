@@ -11,7 +11,6 @@ import {
     MessageFlags,
     type GuildMember,
 } from "discord.js";
-import type { BotClient } from "@core/bot-client";
 import { needsProof } from "@bot/utils/moderation/punish-flow";
 
 export default {
@@ -23,7 +22,7 @@ export default {
 
     requiredPermission: 20,
 
-    async run(interaction: UserContextMenuCommandInteraction, client: BotClient) {
+    async run(interaction: UserContextMenuCommandInteraction) {
         if (interaction.user.id === interaction.targetId) {
             await interaction.reply({ content: "You cannot mute yourself.", flags: MessageFlags.Ephemeral });
             return;

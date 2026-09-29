@@ -5,7 +5,7 @@
 # content was built and deployed before, so the service is skipped.
 #
 #   scripts/deploy-signature.sh bot
-#   EXTRA_SIGNATURE_INPUT="$SOME_BUILD_ARG" scripts/deploy-signature.sh dashboard
+#   EXTRA_SIGNATURE_INPUT="$SOME_BUILD_ARG" scripts/deploy-signature.sh minecraft-api
 #
 # Content, not history: two different commits with identical file contents produce the same
 # signature, so a revert or a rebase re-uses what was already deployed instead of rebuilding it.
@@ -13,7 +13,7 @@ set -euo pipefail
 
 service="${1:-}"
 if [ -z "$service" ]; then
-    echo "usage: scripts/deploy-signature.sh <bot|minecraft-api|dashboard-api|dashboard>" >&2
+    echo "usage: scripts/deploy-signature.sh <bot|minecraft-api>" >&2
     exit 2
 fi
 
@@ -50,14 +50,6 @@ case "$service" in
         ;;
     minecraft-api)
         paths=("${common[@]}" infra/docker/dockerfiles/minecraft-api.Dockerfile apps/minecraft-api libs)
-        ;;
-    dashboard-api)
-        paths=("${common[@]}" infra/docker/dockerfiles/dashboard-api.Dockerfile apps/dashboard-api libs)
-        ;;
-    # No `libs`: the dashboard imports nothing from them — it is a client of dashboard-api and
-    # nothing else. Including them would rebuild the web image on every repository change.
-    dashboard)
-        paths=("${common[@]}" infra/docker/dockerfiles/dashboard.Dockerfile apps/dashboard)
         ;;
     *)
         echo "unknown service: $service" >&2

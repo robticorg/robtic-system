@@ -46,14 +46,6 @@ export class SupportSessionRepository {
         return SupportSession.findOne({ channelId, userId, resolved: false }).sort({ createdAt: -1 });
     }
 
-    static async claimByChannel(channelId: string, staffId: string): Promise<ISupportSession | null> {
-        return SupportSession.findOneAndUpdate(
-            { channelId, claimedBy: null, resolved: false },
-            { claimedBy: staffId, claimedAt: new Date() },
-            { returnDocument: "after", sort: { createdAt: -1 } }
-        );
-    }
-
     static async reassign(userMessageId: string, newStaffId: string): Promise<ISupportSession | null> {
         return SupportSession.findOneAndUpdate(
             { userMessageId, resolved: false },
@@ -70,12 +62,6 @@ export class SupportSessionRepository {
         });
     }
 
-    static async findByStaff(staffId: string, limit = 50): Promise<ISupportSession[]> {
-        return SupportSession.find({ claimedBy: staffId })
-            .sort({ createdAt: -1 })
-            .limit(limit);
-    }
-
     static async findByMessage(userMessageId: string): Promise<ISupportSession | null> {
         return SupportSession.findOne({ userMessageId });
     }
@@ -89,14 +75,6 @@ export class SupportSessionRepository {
             { userMessageId },
             { $push: { staffMessages: content.slice(0, 200) } },
         );
-    }
-
-    static async getAverageResponseTime(staffId: string): Promise<number> {
-        const result = await SupportSession.aggregate([
-            { $match: { claimedBy: staffId, responseTimeMs: { $ne: null } } },
-            { $group: { _id: null, avg: { $avg: "$responseTimeMs" } } },
-        ]);
-        return result[0]?.avg ?? 0;
     }
 
     static async getStaffStats(staffId: string): Promise<{

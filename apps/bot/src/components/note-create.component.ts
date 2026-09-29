@@ -3,14 +3,13 @@ import {
     MessageFlags,
 } from "discord.js";
 
-import type { BotClient } from "@core/bot-client";
 import type { ComponentHandler } from "@typings/command";
 import { NoteRepository } from "@database/repositories/NoteRepository";
 
 const noteCreate: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^note_create_\d+$/,
 
-    async run(interaction: ModalSubmitInteraction, client: BotClient) {
+    async run(interaction: ModalSubmitInteraction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const userId = interaction.customId.replace("note_create_", "");

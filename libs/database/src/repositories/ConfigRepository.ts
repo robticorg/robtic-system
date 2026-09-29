@@ -15,23 +15,6 @@ export class ConfigRepository {
         return BotConfig.create({ key, botName, value, updatedBy, enabled: true });
     }
 
-    static async isEnabled(key: string, botName: string): Promise<boolean> {
-        const config = await BotConfig.findOne({ key, botName });
-        return config?.enabled ?? false;
-    }
-
-    static async toggle(key: string, botName: string, enabled: boolean, updatedBy: string): Promise<IBotConfig | null> {
-        return BotConfig.findOneAndUpdate(
-            { key, botName },
-            { enabled, updatedBy },
-            { returnDocument: "after" }
-        );
-    }
-
-    static async getAllForBot(botName: string): Promise<IBotConfig[]> {
-        return BotConfig.find({ botName });
-    }
-
     static async delete(key: string, botName: string): Promise<void> {
         await BotConfig.deleteOne({ key, botName });
     }

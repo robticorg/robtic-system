@@ -18,12 +18,3 @@ export const CHANNEL_MENTION_REGEX = /^<#(\d+)>$/;
 
 /** Splits text on runs of whitespace, for word counting. */
 export const WHITESPACE_SPLIT_REGEX = /\s+/;
-
-/** Permissive http(s) URL check used to sanitize user-submitted project links. */
-export const GENERIC_URL_REGEX = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w- ./?%&=]*)?$/;
-
-/** A youtube.com or youtu.be video link. */
-export const YOUTUBE_URL_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
-
-/** A github.com repository or user link. */
-export const GITHUB_URL_REGEX = /^(https?:\/\/)?(www\.)?github\.com\/[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\/?$/;

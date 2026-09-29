@@ -70,10 +70,6 @@ export class MinecraftJailRepository {
         return MinecraftJail.find({ guildId, released: false }).sort({ jailedAt: -1 });
     }
 
-    static async markDiscordRoleApplied(jailId: string, applied: boolean): Promise<void> {
-        await MinecraftJail.updateOne({ _id: jailId }, { $set: { discordRoleApplied: applied } });
-    }
-
     /** Recent sentences across the guild, for the staff dashboard's punishment feed. */
     static async recent(guildId: string, limit: number): Promise<IMinecraftJail[]> {
         return MinecraftJail.find({ guildId }).sort({ jailedAt: -1 }).limit(limit);

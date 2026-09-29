@@ -8,8 +8,6 @@ infra/
     ├── dockerfiles/
     │   ├── bot.Dockerfile               → ghcr.io/robticorg/robtic-system
     │   ├── minecraft-api.Dockerfile      → ghcr.io/robticorg/robtic-minecraft-api
-    │   ├── dashboard-api.Dockerfile     → ghcr.io/robticorg/robtic-dashboard-api
-    │   ├── dashboard.Dockerfile         → ghcr.io/robticorg/robtic-dashboard
     │   └── minecraft-plugin.Dockerfile  → local only (Paper test server)
     ├── compose/
     │   ├── docker-compose.yml           production topology, deployed to core.robtic.org
@@ -30,11 +28,10 @@ here requires you to `cd` anywhere.
 
 ```bash
 bun run docker:local -- up --build            # developer stack
-bun run docker:local -- --profile dashboard up -d
 bun run docker:local -- --profile tools up -d # mongo-express
 bun run docker:local -- down
 
-bun run docker:build dashboard-api            # one image
+bun run docker:build minecraft-api            # one image
 bun run docker:build minecraft-plugin --target jar --output type=local,dest=./target
 
 bun run docker:prod -- config                 # lint the production topology
@@ -61,11 +58,11 @@ Two path rules trip people up here, and the Compose files depend on both:
 
 Docker reads `.dockerignore` from the **context root**, not from beside the Dockerfile. Moving these
 into `infra/docker/` would silently stop them applying, and the first symptom would be a slow build
-shipping `node_modules` and `.next` into an image.
+shipping `node_modules` into an image.
 
 | File | Applies to |
 |---|---|
-| `.dockerignore` (repository root) | bot, minecraft-api, dashboard-api, dashboard |
+| `.dockerignore` (repository root) | bot, minecraft-api |
 | `apps/minecraft-plugin/.dockerignore` | minecraft-plugin |
 
 `apps/minecraft-api/.dockerignore` was **deleted** rather than moved. It never applied to anything: that

@@ -1,7 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { COLORS, COMMUNITY_MESSAGES } from "@constants";
 
-export function decayEmbed(userId: string, username: string, xpLost: number, levelDown: boolean, oldLevel: number, newLevel: number): EmbedBuilder {
+export function decayEmbed(userId: string, xpLost: number, levelDown: boolean, oldLevel: number, newLevel: number): EmbedBuilder {
     return new EmbedBuilder()
         .setColor(levelDown ? COLORS.error : COLORS.warning)
         .setTitle(levelDown ? COMMUNITY_MESSAGES.levelDownDecayTitle : COMMUNITY_MESSAGES.xpDecayTitle)

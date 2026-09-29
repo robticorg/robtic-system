@@ -1,6 +1,5 @@
 import { ButtonInteraction } from "discord.js";
 import type { BotClient } from "@core/bot-client";
-import type { ComponentHandler } from "@typings/command";
 import { parseShortcutButtonCustomId, buildProofModal } from "../../utils/moderation/punish-flow";
 
 export default {

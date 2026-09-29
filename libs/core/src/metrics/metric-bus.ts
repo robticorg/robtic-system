@@ -20,17 +20,6 @@ export type QuestMetric =
     | "levelUp"
     | "communityContribution";
 
-/**
- * How a metric combines.
- *
- * `sum` metrics are counters — messages, xp, seconds. `max` metrics are *levels* a member reaches:
- * combo score, combo heat, streak. Treating a level as a counter makes "reach combo 500" satisfiable
- * with a hundred small gains, which looks entirely plausible in the data and cannot be corrected
- * after the fact. Every producer of a level metric must publish the **new absolute value**, not the
- * delta.
- */
-export type MetricAccumulation = "sum" | "max";
-
 export interface MetricEvent {
     guildId: string;
     discordId: string;
@@ -69,24 +58,7 @@ export function publishMetric(event: MetricEvent): void {
     }
 }
 
-/**
- * Subscribes to every metric. Returns the unsubscribe function.
- *
- * The direction of this dependency is the point: producers know nothing about who is listening, so
- * a consumer — achievements, say — can be deleted outright and the
- * producers keep publishing into an empty set.
- */
-export function onMetric(listener: MetricListener): () => void {
-    listeners.add(listener);
-    return () => listeners.delete(listener);
-}
-
 /** Drops every listener. Used by the module loader's reload path, so handlers aren't bound twice. */
 export function clearMetricListeners(): void {
     listeners.clear();
-}
-
-/** How many consumers are attached, for diagnostics. */
-export function metricListenerCount(): number {
-    return listeners.size;
 }

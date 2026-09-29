@@ -9,7 +9,6 @@ import {
     EmbedBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/bot-client";
 import { COLORS } from "@constants";
 import { ReasonRepository } from "@database/repositories";
 import { errorText } from "@utils";
@@ -53,7 +52,7 @@ export default {
 
     modalOnlySubcommands: ["create"],
 
-    async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+    async run(interaction: ChatInputCommandInteraction) {
         const sub = interaction.options.getSubcommand();
 
         if (sub === "create") {
@@ -149,7 +148,7 @@ export default {
         }
     },
 
-    async autocomplete(interaction: AutocompleteInteraction, client: BotClient) {
+    async autocomplete(interaction: AutocompleteInteraction) {
         const focused = interaction.options.getFocused().toLowerCase();
         const keys = await ReasonRepository.getAllKeys();
         const filtered = keys

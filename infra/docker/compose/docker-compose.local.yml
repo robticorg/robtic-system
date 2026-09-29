@@ -59,43 +59,6 @@ services:
       retries: 3
       start_period: 20s
 
-  # Opt-in: bun run docker:local -- --profile dashboard up -d
-  dashboard-api:
-    profiles: [dashboard]
-    build:
-      context: ../../..
-      dockerfile: infra/docker/dockerfiles/dashboard-api.Dockerfile
-    restart: unless-stopped
-    env_file:
-      - ../../../.env
-    environment:
-      MONGODB_URI: mongodb://mongo:27017/robtic
-      DASHBOARD_API_PORT: 3003
-      DASHBOARD_API_URL: http://localhost:3003
-      DASHBOARD_URL: http://localhost:3000
-      # http locally, so a Secure cookie would never be stored.
-      DASHBOARD_SECURE_COOKIES: "false"
-      NODE_ENV: development
-    ports:
-      - "127.0.0.1:3003:3003"
-    depends_on:
-      mongo:
-        condition: service_healthy
-
-  dashboard:
-    profiles: [dashboard]
-    build:
-      context: ../../..
-      dockerfile: infra/docker/dockerfiles/dashboard.Dockerfile
-    restart: unless-stopped
-    environment:
-      DASHBOARD_API_INTERNAL_URL: http://dashboard-api:3003
-      DASHBOARD_PUBLIC_API_URL: http://localhost:3003
-    ports:
-      - "127.0.0.1:3000:3000"
-    depends_on:
-      - dashboard-api
-
   minecraft:
     build:
       # dockerfile is relative to context, which is why the two climb by different amounts.

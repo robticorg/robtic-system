@@ -6,7 +6,7 @@ One bot runs every system, with each system kept as a separate module in the cod
 ## Overview
 
 The system manages community operations, staff workflows, moderation, and service access in a
-structured and automated way. It is no longer only a bot: a web dashboard, two HTTP APIs and a
+structured and automated way. It is no longer only a bot: an HTTP API and a
 Minecraft plugin are all clients of the same MongoDB-backed domain.
 
 ## Services
@@ -15,8 +15,6 @@ Minecraft plugin are all clients of the same MongoDB-backed domain.
 |---|---|---|
 | **Bot** | The Discord client. One login, one command tree, every module. | `robtic-system` |
 | **Minecraft API** | Owns MongoDB. The bot and every Minecraft server are its clients. | `robtic-minecraft-api` |
-| **Dashboard API** | NestJS. Discord OAuth sessions and per-guild authorization for the web app. | `robtic-dashboard-api` |
-| **Dashboard** | Next.js. Configure a guild from a browser instead of a dozen slash commands. | `robtic-dashboard` |
 | **Minecraft Plugin** | Paper plugin (Java/Maven). Makes a Minecraft server another client of the same economy. | — |
 
 ## Core Components
@@ -32,7 +30,6 @@ Minecraft plugin are all clients of the same MongoDB-backed domain.
 ## Key Features
 
 * Modular architecture — one client, one login, one command tree
-* Web dashboard for guild configuration and moderation history
 * Database-managed server whitelist (`!addserver <serverid>`)
 * Modmail system
 * Staff management automation
@@ -45,7 +42,6 @@ Minecraft plugin are all clients of the same MongoDB-backed domain.
 
 * Bun (workspaces monorepo), TypeScript
 * Discord.js v14
-* NestJS (dashboard API), Next.js (dashboard)
 * MongoDB via Mongoose
 * Java 21 + Maven + Paper (Minecraft plugin)
 * Docker Compose, GitHub Actions
@@ -56,8 +52,6 @@ Minecraft plugin are all clients of the same MongoDB-backed domain.
 apps/
     bot/                Discord client — every module
     minecraft-api/         Minecraft API; owns MongoDB
-    dashboard-api/      NestJS API behind the dashboard
-    dashboard/          Next.js web dashboard
     minecraft-plugin/   Paper plugin (Java/Maven)
 
 libs/                   Shared libraries: core, database, config, constants,
@@ -85,7 +79,6 @@ The whole stack, in containers:
 
 ```bash
 bun run docker:local -- up --build
-bun run docker:local -- --profile dashboard up -d   # dashboard + its API
 ```
 
 See [docs/development.md](docs/development.md).
@@ -98,7 +91,7 @@ Two layers, and the split is deliberate:
   every variable and which service reads it. In production the file lives at
   `/home/robtic/robtic-system/.env` and is edited by hand on the server; CI never writes it.
 * **Everything operational** — prefixes, log channels, the server whitelist, feature toggles, XP,
-  streak and quest settings — is stored in MongoDB and configured from Discord or the dashboard.
+  streak and quest settings — is stored in MongoDB and configured from Discord.
 
 ## Deployment
 

@@ -25,7 +25,6 @@ export async function executeMute(
     moderatorId: string,
     member: GuildMember | null | undefined,
     durationMs: number,
-    guild: ChatInputCommandInteraction["guild"],
 ) {
     const expiresAt = new Date(Date.now() + durationMs);
     const caseId = await PunishmentRepository.getNextCaseId(guildId);
@@ -188,7 +187,7 @@ export default {
             const reason = reasonDoc?.label ?? reasonKey;
             const reasonAr = reasonDoc?.labelAr ?? reason;
 
-            const result = await executeMute(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, durationMs, interaction.guild);
+            const result = await executeMute(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, durationMs);
             await interaction.editReply({ embeds: [result.embed] });
             return;
         }

@@ -2,7 +2,6 @@ import {
     Client,
     Collection,
     REST,
-    Routes,
     type ClientEvents,
     type GatewayIntentBits,
     type Partials,
@@ -12,9 +11,7 @@ import type { CommandConfig, ComponentHandler } from "@typings/command";
 import type { MessageCommandConfig } from "@typings/message-command";
 import { Logger } from "@logger";
 import { sendStatus } from "./status/status";
-import { buildCommandPayload } from "./registration/build-command-payload";
-import { putCommandRoute } from "./registration/put-command-route";
-import { getAdminGuildId } from "./bot-admin/admin-guild";
+import { publishCommands } from "./registration/publish-commands";
 
 /** Comfortably above the listeners the loader attaches, low enough that a real leak still warns. */
 const MAX_LISTENERS_PER_EVENT = 40;
@@ -64,98 +61,13 @@ export class BotClient extends Client {
         return new REST({ version: "10" }).setToken(this.token_);
     }
 
-    /**
-     * Publishes commands to up to two routes: the ordinary one, and — for `scope: "admin"` commands
-     * — the guild set with `!admin-guild`.
-     *
-     * With no admin guild configured the admin payload is not published anywhere. That is
-     * deliberate rather than a fallback to COMMAND_GUILD_ID: admin commands stay fully usable by
-     * prefix, because the prefix router resolves against the loaded command collection and never
-     * against Discord's registry, so skipping costs nothing and never leaks `/whitelist` into every
-     * server the bot joins.
-     */
-    async registerSlashCommands(): Promise<void> {
-        if (this.commands.size === 0) return;
-
+    /** Publishes the loaded commands to Discord — see publishCommands. False when any route failed. */
+    async registerSlashCommands(): Promise<boolean> {
         if (!this.user) {
             Logger.warn("Client not ready, deferring command registration", this.botName);
-            return;
+            return false;
         }
 
-        const { main, admin } = buildCommandPayload(this.commands, this.botName);
-        const rest = this.rest_();
-
-        const commandGuildId = process.env.COMMAND_GUILD_ID?.trim();
-        const adminGuildId = await getAdminGuildId();
-
-        if (adminGuildId && adminGuildId === commandGuildId) {
-            await putCommandRoute(
-                rest,
-                Routes.applicationGuildCommands(this.user.id, adminGuildId),
-                [...main, ...admin],
-                `guild ${adminGuildId}`,
-                this.botName,
-            );
-            await this.pruneGlobalCommands(rest, commandGuildId);
-            return;
-        }
-
-        const mainRoute = commandGuildId
-            ? Routes.applicationGuildCommands(this.user.id, commandGuildId)
-            : Routes.applicationCommands(this.user.id);
-        const mainLabel = commandGuildId ? `guild ${commandGuildId} (instant)` : "global (up to 1h to appear)";
-
-        await putCommandRoute(rest, mainRoute, main, mainLabel, this.botName);
-        await this.pruneGlobalCommands(rest, commandGuildId);
-
-        if (!admin.length) return;
-
-        if (!adminGuildId) {
-            Logger.warn(
-                `${admin.length} admin-scope command(s) not registered — no admin guild is set. ` +
-                `Run \`!admin-guild set <id>\` in the server that should host them. They remain usable by prefix.`,
-                this.botName,
-            );
-            return;
-        }
-
-        await putCommandRoute(
-            rest,
-            Routes.applicationGuildCommands(this.user.id, adminGuildId),
-            admin,
-            `admin guild ${adminGuildId}`,
-            this.botName,
-        );
-    }
-
-    /**
-     * Clears globally-registered commands while a command guild is configured.
-     *
-     * Guild and global commands are separate registries and Discord shows **both** in the picker.
-     * A bot that once ran without COMMAND_GUILD_ID leaves its global copies behind forever, so the
-     * test server ends up with two identical `/shortcut` entries: one current, one frozen at
-     * whatever the options looked like the day it was published. Picking the stale one sends the
-     * bot an interaction missing options its handler requires — `Required option "trigger" not
-     * found`, from a command that is demonstrably correct in source.
-     *
-     * Nothing is pruned when no command guild is set: that is the production shape, where the
-     * global registry is the real one.
-     */
-    private async pruneGlobalCommands(rest: REST, commandGuildId: string | undefined): Promise<void> {
-        if (!commandGuildId || !this.user) return;
-
-        const existing = await rest
-            .get(Routes.applicationCommands(this.user.id))
-            .catch(() => null) as unknown[] | null;
-
-        if (!existing?.length) return;
-
-        Logger.warn(
-            `Removing ${existing.length} stale global command(s) — COMMAND_GUILD_ID is set, so guild ` +
-            "registrations are authoritative and the global copies only shadow them in the picker.",
-            this.botName,
-        );
-
-        await putCommandRoute(rest, Routes.applicationCommands(this.user.id), [], "global (pruned)", this.botName);
+        return publishCommands(this.rest_(), this.user.id, this.commands, this.botName);
     }
 }

@@ -109,12 +109,6 @@ export class PremiumService {
         return resolved;
     }
 
-    /** Every premium LuckPerms group this guild manages, so the plugin can revoke the others. */
-    static async managedGroups(guildId: string): Promise<string[]> {
-        const config = await MinecraftConfigRepository.get(guildId);
-        return [...new Set((config?.premiumTiers ?? []).map(tier => tier.luckPermsGroup))];
-    }
-
     /** The `/back` window length for this guild. */
     static async backWindowMs(guildId: string): Promise<number> {
         const config = await MinecraftConfigRepository.get(guildId);

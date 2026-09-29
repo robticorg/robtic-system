@@ -78,11 +78,6 @@ export class ModerationService {
         };
     }
 
-    /** Records that a frozen player disconnected, which is what the staff alert is built from. */
-    static async noteFreezeDisconnect(guildId: string, uuid: string): Promise<void> {
-        await MinecraftFreezeRepository.markDisconnected(guildId, normaliseUuid(uuid));
-    }
-
     /**
      * Opens a jail sentence. An existing unreleased sentence is a conflict rather than a second
      * overlapping one — the moderator is shown what is already in force and can extend it instead.

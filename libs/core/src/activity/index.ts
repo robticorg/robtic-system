@@ -3,7 +3,6 @@ export {
     getLastActivity,
     primeActivity,
     flushActivity,
-    forgetGuildActivity,
     trackedActivityCount,
     type ActivitySource,
 } from "./activity-tracker";

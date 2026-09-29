@@ -1,12 +1,11 @@
 import { Events, type GuildMember } from "discord.js";
-import type { BotClient } from "@core/bot-client";
 import { getModerationSecurityConfig, resolveLogChannel } from "../../utils/moderation/security";
 import { memberKickEmbed } from "../../utils/moderation/embed";
 import { detectKickAuditEntry } from "../../utils/moderation/security";
 
 export default {
     name: Events.GuildMemberRemove,
-    async execute(member: GuildMember, client: BotClient) {
+    async execute(member: GuildMember) {
         if (member.user.bot) return;
         const kickInfo = await detectKickAuditEntry(member.guild, member.id);
         if (!kickInfo) return;

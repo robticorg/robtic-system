@@ -45,9 +45,4 @@ export class StaffBackupRepository {
     static async remove(guildId: string, minecraftUuid: string, serverId: string): Promise<void> {
         await StaffBackup.deleteOne({ guildId, minecraftUuid: minecraftUuid.toLowerCase(), serverId });
     }
-
-    /** Outstanding backups for a server, which is how a crash is detected on the next start. */
-    static async listByServer(guildId: string, serverId: string): Promise<IStaffBackup[]> {
-        return StaffBackup.find({ guildId, serverId });
-    }
 }

@@ -13,7 +13,7 @@ export const HELP = {
         `Get a command wrong (e.g. a missing argument) and I'll reply with its correct usage.`,
     categoriesLine: (categories: string[]) => `**Categories:** ${categories.join(" • ")}`,
     pickPrompt: "Use the menu below to browse a category's commands and their usage.",
-    slashOnlyNote: (prefix: string, name: string) => `⚠️ Slash only — use \`/${name}\` (opens a form).`,
+    slashOnlyNote: (name: string) => `⚠️ Slash only — use \`/${name}\` (opens a form).`,
     footer: (count: number) => `${count} command${count === 1 ? "" : "s"} • ! or / both work`,
     emptyCategory: "No commands in this category.",
     noCommands: "No commands are available here.",

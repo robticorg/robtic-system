@@ -1,6 +1,5 @@
 import { EmbedBuilder, MessageFlags, type ButtonInteraction } from "discord.js";
 import type { ComponentHandler } from "@typings/command";
-import type { BotClient } from "@core/bot-client";
 import { StreakRepository } from "@database/repositories";
 import { COLORS } from "@constants";
 import { applyStreakRole } from "../utils/streak-role";
@@ -8,7 +7,7 @@ import { applyStreakRole } from "../utils/streak-role";
 export const streakSyncConfirmHandler: ComponentHandler<ButtonInteraction> = {
     customId: /^streak-sync-(confirm|cancel)_(\d+)(?:_(\d+))?$/,
 
-    async run(interaction: ButtonInteraction, client: BotClient) {
+    async run(interaction: ButtonInteraction) {
         const match = /^streak-sync-(confirm|cancel)_(\d+)(?:_(\d+))?$/.exec(interaction.customId);
         const [, action, initiatorId, sourceGuildId] = match ?? [];
 

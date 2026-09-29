@@ -1,6 +1,6 @@
 import { Punishment, type IPunishment } from "@database/models/Punishment";
 import { User } from "@database/models/User";
-import { MEMBER_PUNISHMENTS, PUNISHMENT_POINTS } from "@constants";
+import { MEMBER_PUNISHMENTS } from "@constants";
 
 export class PunishmentRepository {
     static async create(data: Partial<IPunishment>): Promise<IPunishment> {
@@ -13,14 +13,6 @@ export class PunishmentRepository {
 
     static async findByUser(userId: string, guildId: string): Promise<IPunishment[]> {
         return Punishment.find({ userId, guildId }).sort({ createdAt: -1 });
-    }
-
-    static async findActiveByUser(userId: string, guildId: string): Promise<IPunishment[]> {
-        return Punishment.find({ userId, guildId, active: true });
-    }
-
-    static async findByUserAndType(userId: string, guildId: string, type: IPunishment["type"]): Promise<IPunishment[]> {
-        return Punishment.find({ userId, guildId, type, active: true }).sort({ createdAt: -1 });
     }
 
     static async findAllByUserAndType(userId: string, guildId: string, type: IPunishment["type"]): Promise<IPunishment[]> {
@@ -48,10 +40,6 @@ export class PunishmentRepository {
             { appealed: true, active: false, appealReason: reason },
             { returnDocument: "after" }
         );
-    }
-
-    static async countByUser(userId: string, guildId: string): Promise<number> {
-        return Punishment.countDocuments({ userId, guildId });
     }
 
     static async getNextCaseId(guildId: string): Promise<string> {

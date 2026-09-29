@@ -17,10 +17,3 @@ export function startStreakScheduler(client: Client): void {
 
     Logger.info("Streak scheduler started", CTX);
 }
-
-export function stopStreakScheduler(): void {
-    if (streakInterval) {
-        clearInterval(streakInterval);
-        streakInterval = null;
-    }
-}

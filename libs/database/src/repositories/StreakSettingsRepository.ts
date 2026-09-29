@@ -13,11 +13,6 @@ export class StreakSettingsRepository {
         return settings;
     }
 
-    static async isStreakChannel(guildId: string, channelId: string): Promise<boolean> {
-        const settings = await StreakSettings.findOne({ guildId });
-        return settings?.channels.includes(channelId) ?? false;
-    }
-
     static async addChannel(guildId: string, channelId: string): Promise<IStreakSettings> {
         return StreakSettings.findOneAndUpdate(
             { guildId },
@@ -30,15 +25,6 @@ export class StreakSettingsRepository {
         return StreakSettings.findOneAndUpdate(
             { guildId },
             { $pull: { channels: channelId } },
-            { upsert: true, returnDocument: "after" }
-        ) as Promise<IStreakSettings>;
-    }
-
-    /** Replaces the whole channel list at once — used by the admin config panel. */
-    static async setChannels(guildId: string, channels: string[]): Promise<IStreakSettings> {
-        return StreakSettings.findOneAndUpdate(
-            { guildId },
-            { $set: { channels } },
             { upsert: true, returnDocument: "after" }
         ) as Promise<IStreakSettings>;
     }
@@ -86,14 +72,6 @@ export class StreakSettingsRepository {
         return StreakSettings.findOneAndUpdate(
             { guildId },
             { breakOnTimeout, breakOnKick },
-            { upsert: true, returnDocument: "after" }
-        ) as Promise<IStreakSettings>;
-    }
-
-    static async setReturnRoles(guildId: string, returnRoleIds: string[]): Promise<IStreakSettings> {
-        return StreakSettings.findOneAndUpdate(
-            { guildId },
-            { returnRoleIds },
             { upsert: true, returnDocument: "after" }
         ) as Promise<IStreakSettings>;
     }

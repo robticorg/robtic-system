@@ -25,9 +25,3 @@ export function startActivityFlush(): void {
 
     Logger.info("Activity flush scheduler started", CTX);
 }
-
-export function stopActivityFlush(): void {
-    if (!timer) return;
-    clearInterval(timer);
-    timer = null;
-}

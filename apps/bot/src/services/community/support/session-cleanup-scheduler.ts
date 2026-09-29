@@ -15,10 +15,3 @@ export function startSessionCleanupScheduler(): void {
     }, SESSION_CLEANUP_INTERVAL_MS);
     Logger.info("Support session cleanup scheduler started (every 5min, stale after 10min)", CTX);
 }
-
-export function stopSessionCleanupScheduler(): void {
-    if (staleInterval) {
-        clearInterval(staleInterval);
-        staleInterval = null;
-    }
-}

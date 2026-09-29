@@ -32,19 +32,6 @@ export class ServerConfigRepository {
         return config?.roles?.[type] ?? null;
     }
 
-    static async getAdminPanelRoles(guildId: string): Promise<string[]> {
-        const config = await ServerConfig.findOne({ guildId });
-        return config?.adminPanelRoles ?? [];
-    }
-
-    static async setAdminPanelRoles(guildId: string, roleIds: string[]): Promise<IServerConfig> {
-        return ServerConfig.findOneAndUpdate(
-            { guildId },
-            { $set: { adminPanelRoles: roleIds } },
-            { upsert: true, returnDocument: "after" }
-        ) as Promise<IServerConfig>;
-    }
-
     /**
      * Roles that count as bot administrators here.
      *
@@ -65,18 +52,6 @@ export class ServerConfigRepository {
         const config = await ServerConfig.findOneAndUpdate(
             { guildId },
             { $addToSet: { botAdminRoles: roleId } },
-            { upsert: true, returnDocument: "after" }
-        ) as IServerConfig;
-
-        botAdminRolesCache.delete(guildId);
-        return config.botAdminRoles ?? [];
-    }
-
-    /** Replaces the whole list — the admin panel sends the section, not a delta. */
-    static async setBotAdminRoles(guildId: string, roleIds: string[]): Promise<string[]> {
-        const config = await ServerConfig.findOneAndUpdate(
-            { guildId },
-            { $set: { botAdminRoles: roleIds } },
             { upsert: true, returnDocument: "after" }
         ) as IServerConfig;
 

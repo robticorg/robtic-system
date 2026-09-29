@@ -71,15 +71,3 @@ export function startMinecraftScheduler(client: Client): void {
 
     Logger.info("Minecraft bridge and status schedulers started", CTX);
 }
-
-export function stopMinecraftScheduler(): void {
-    if (bridgeInterval) {
-        clearInterval(bridgeInterval);
-        bridgeInterval = null;
-    }
-
-    if (statusInterval) {
-        clearInterval(statusInterval);
-        statusInterval = null;
-    }
-}

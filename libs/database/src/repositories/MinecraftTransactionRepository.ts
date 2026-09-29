@@ -21,10 +21,6 @@ export class MinecraftTransactionRepository {
         return MinecraftTransaction.create({ ...entry, minecraftUuid: entry.minecraftUuid.toLowerCase() });
     }
 
-    static async listByUser(guildId: string, discordId: string, limit = 10): Promise<IMinecraftTransaction[]> {
-        return MinecraftTransaction.find({ guildId, discordId }).sort({ createdAt: -1 }).limit(limit);
-    }
-
     static async listByGuild(guildId: string, limit = 10): Promise<IMinecraftTransaction[]> {
         return MinecraftTransaction.find({ guildId }).sort({ createdAt: -1 }).limit(limit);
     }

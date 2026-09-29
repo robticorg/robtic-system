@@ -56,7 +56,7 @@ export async function processGuildDecay(client: Client, guild: Guild): Promise<v
         );
 
         await logToChannel(client, "decay", decayEmbed(
-            user.discordId, user.username, actualLoss, levelDown, user.level, newLevel,
+            user.discordId, actualLoss, levelDown, user.level, newLevel,
         ));
     }
 }

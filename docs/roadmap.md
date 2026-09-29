@@ -4,7 +4,7 @@
 
 - Bun workspaces (`apps/*`, `libs/*`)
 - Bot moved to `apps/bot`; core/database/types split into `libs/`
-- Scaffolds for `apps/dashboard`, `libs/sdk`, and future extraction libs
+- Scaffolds for `libs/sdk`, and future extraction libs
 - Documentation set under `docs/`
 
 ## Phase 2 — Library Extraction
@@ -25,7 +25,6 @@
 ## Phase 4 — Platform
 
 - `libs/events` + WebSocket gateway for live data.
-- `apps/dashboard`: guild configuration UI replacing config slash-commands.
 - `libs/cache`: Redis for hot-path caches currently held in process memory (combo partner cache, cooldowns) once multiple processes exist.
 
 ## Phase 5 — Distribution

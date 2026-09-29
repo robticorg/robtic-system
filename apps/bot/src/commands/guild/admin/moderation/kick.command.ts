@@ -3,7 +3,6 @@ import {
     EmbedBuilder,
     MessageFlags,
     SlashCommandBuilder,
-    type GuildMember,
 } from "discord.js";
 import { COLORS } from "@constants";
 import { errorText } from "@utils";

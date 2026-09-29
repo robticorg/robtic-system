@@ -92,7 +92,7 @@ export class FriendService {
             throw ApiError.validation({ targetUuid: "you cannot befriend yourself" });
         }
 
-        const outcome = await this.apply(self, input.username, target, input.targetUsername, input.action);
+        const outcome = await this.apply(self, input.username, target, input.action);
         const friendCount = await MinecraftFriendRepository.countFriends(self);
 
         return { action: input.action, outcome, friendCount };
@@ -102,7 +102,6 @@ export class FriendService {
         self: string,
         username: string,
         target: string,
-        targetUsername: string,
         action: FriendAction,
     ): Promise<FriendActionResponse["outcome"]> {
         switch (action) {
@@ -155,22 +154,5 @@ export class FriendService {
             default:
                 throw ApiError.validation({ action: `unknown friend action "${action}"` });
         }
-    }
-
-    // The friend-teleport preference is set through SurvivalService.setSettings, alongside every
-    // other player preference. It used to have its own method and endpoint here, which meant two
-    // routes writing the same document.
-
-    /** Used by `/friend tp` to decide whether to ask the target first. */
-    static async canTeleportTo(requesterUuid: string, targetUuid: string): Promise<{ friends: boolean; auto: boolean }> {
-        const self = normaliseUuid(requesterUuid);
-        const target = normaliseUuid(targetUuid);
-
-        const [friends, prefs] = await Promise.all([
-            MinecraftFriendRepository.areFriends(self, target),
-            MinecraftPlayerPrefsRepository.get(target),
-        ]);
-
-        return { friends, auto: prefs?.friendTpAutoAccept ?? false };
     }
 }

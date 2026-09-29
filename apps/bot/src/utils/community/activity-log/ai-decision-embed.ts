@@ -2,7 +2,6 @@ import { EmbedBuilder } from "discord.js";
 import { COLORS, COMMUNITY_MESSAGES } from "@constants";
 
 export function aiDecisionEmbed(
-    username: string,
     userId: string,
     classification: string,
     confidence: number,

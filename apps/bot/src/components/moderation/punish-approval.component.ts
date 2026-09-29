@@ -66,7 +66,7 @@ export default {
         if (type === "mute") {
             const durationHours = parseInt(extra) || 24;
             const durationMs = durationHours * 60 * 60 * 1000;
-            const result = await executeMute(client, guildId, targetId, targetUsername, reason, reasonAr, requesterId, member, durationMs, guild);
+            const result = await executeMute(client, guildId, targetId, targetUsername, reason, reasonAr, requesterId, member, durationMs);
             const approvedEmbed = result.embed.setFooter({ text: `Approved by ${interaction.user.username}` });
             await interaction.editReply({ embeds: [approvedEmbed], components: [] });
         }

@@ -9,7 +9,6 @@ import { BOT_STATUSES } from "./bot-status";
 const PANEL_KEY = "system_status";
 const SERVER_TARGET = BRANCH_CONFIG.server.statusTargetHost;
 const PANEL_REFRESH_MS = 30_000;
-const CORE_REACHABILITY_CHECK_MS = 20_000;
 
 const COLORS: Record<StatusType, number> = {
     STARTING: 0xf39c12,
@@ -63,7 +62,6 @@ let statusClient: Client | null = null;
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
 let refreshHandle: ReturnType<typeof setTimeout> | null = null;
 let refreshInFlight = false;
-let coreReachabilityHandle: ReturnType<typeof setInterval> | null = null;
 
 type CoreSnapshot = {
     status: StatusType;
@@ -169,13 +167,6 @@ export async function buildSystemStatusEmbed(): Promise<EmbedBuilder> {
     const botEntry = BOT_STATUSES.get(BOT_DEFINITION.name);
     const botStatus: StatusType = botEntry?.status ?? "OFFLINE";
     const botLine = `${ICONS[botStatus]} **${BOT_DEFINITION.name}** - ${botEntry?.message ?? "No recent status message"} (${relativeTime(BOT_LAST_UPDATED.get(BOT_DEFINITION.name))})`;
-
-    const serviceLines = Array.from(SERVICE_STATUSES.values())
-        .filter((service) => service.key !== "core-reachability-local")
-        .map((service) => {
-        const details = service.details?.length ? ` | ${service.details.join(" | ")}` : "";
-        return `${ICONS[service.status]} **${service.label}**: ${service.status} - ${service.message ?? "No details"}${details} (updated ${relativeTime(service.updatedAt)})`;
-    });
 
     const systemUsage = os.totalmem() > 0 ? ((os.totalmem() - os.freemem()) / os.totalmem()) * 100 : 0;
     const processMemory = process.memoryUsage();

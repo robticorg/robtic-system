@@ -44,7 +44,6 @@ export interface HelpContext {
  * each redraw would turn browsing help into a stream of database round trips.
  */
 export async function buildHelpContext(
-    client: BotClient,
     guildId: string | null,
     userId: string,
     member: GuildMember | null = null,

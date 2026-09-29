@@ -97,7 +97,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
                 return;
             }
 
-            const result = await executeMute(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember, durationMs, interaction.guild!);
+            const result = await executeMute(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember, durationMs);
             await interaction.editReply({ embeds: [result.embed] });
         } else if (type === "ban") {
             const durationInput = getOptionalText(interaction.fields, "duration").toLowerCase() || "perm";

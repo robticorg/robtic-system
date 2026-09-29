@@ -4,7 +4,6 @@ import {
     MessageFlags,
 } from "discord.js";
 import type { BotClient } from "@core/bot-client";
-import type { ComponentHandler } from "@typings/command";
 import { COLORS } from "@constants";
 import { ReasonRepository } from "@database/repositories";
 import { getMemberLevel } from "@bot/utils/access";
@@ -68,7 +67,7 @@ export default {
         } else if (type === "mute") {
             const durationHours = parseInt(extra) || 24;
             const durationMs = durationHours * 60 * 60 * 1000;
-            const result = await executeMute(client, guildId, targetId, targetUser.username, reason, reasonAr, moderatorId, targetMember, durationMs, guild);
+            const result = await executeMute(client, guildId, targetId, targetUser.username, reason, reasonAr, moderatorId, targetMember, durationMs);
             await interaction.editReply({ embeds: [result.embed] });
         } else if (type === "ban") {
             const permanent = extra === "perm";

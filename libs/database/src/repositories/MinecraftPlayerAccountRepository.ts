@@ -141,14 +141,6 @@ export class MinecraftPlayerAccountRepository {
         return account?.failedAttempts ?? 0;
     }
 
-    /** Clears a failure run, for the admin unlock and for a window that has elapsed. */
-    static async clearFailures(guildId: string, minecraftUuid: string): Promise<void> {
-        await MinecraftPlayerAccount.updateOne(
-            { guildId, minecraftUuid: this.key(minecraftUuid) },
-            { $set: { failedAttempts: 0 }, $unset: { failedAttemptsSince: "" } },
-        );
-    }
-
     /** Removes the account entirely. Used by unlink, which drops the credential with the link. */
     static async delete(guildId: string, minecraftUuid: string): Promise<boolean> {
         const result = await MinecraftPlayerAccount.deleteOne({

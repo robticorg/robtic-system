@@ -105,9 +105,4 @@ export class MinecraftChestRepository {
             { upsert: true, returnDocument: "after" }
         ) as Promise<IMinecraftPortableChest>;
     }
-
-    static async unlinkPortable(uuid: string, serverKey: string): Promise<boolean> {
-        const result = await MinecraftPortableChest.deleteOne({ minecraftUuid: this.key(uuid), serverKey });
-        return result.deletedCount > 0;
-    }
 }

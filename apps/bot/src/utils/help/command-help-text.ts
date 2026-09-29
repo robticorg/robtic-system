@@ -72,7 +72,7 @@ const targetPath = (target: HelpTarget): string =>
  * an embed field wrap awkwardly on mobile and cannot be copied cleanly, and the surrounding title,
  * colour and footer carry nothing the reader asked for.
  */
-export function buildCommandHelpText(client: BotClient, context: HelpContext, target: HelpTarget): string {
+export function buildCommandHelpText(context: HelpContext, target: HelpTarget): string {
     const { prefix } = context;
     const { command } = target;
 
@@ -85,7 +85,7 @@ export function buildCommandHelpText(client: BotClient, context: HelpContext, ta
     ];
 
     if (isFromDisabledFeature(command, context)) lines.push(HELP.disabledNote);
-    if (command.modalOnly) lines.push(HELP.slashOnlyNote(prefix, commandName(command)));
+    if (command.modalOnly) lines.push(HELP.slashOnlyNote(commandName(command)));
 
     lines.push("", HELP.textUsageHeading);
     for (const usage of usageForms(context, target)) lines.push(`- ${usage}`);

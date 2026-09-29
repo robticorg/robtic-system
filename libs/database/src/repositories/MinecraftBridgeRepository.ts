@@ -85,10 +85,6 @@ export class MinecraftBridgeRepository {
         return claimed;
     }
 
-    static async pendingCount(guildId: string, direction: MinecraftBridgeDirection): Promise<number> {
-        return MinecraftBridgeEvent.countDocuments({ guildId, direction, consumed: false });
-    }
-
     /** Guilds with queued work in one direction, so idle guilds cost nothing to poll. */
     static async guildIdsWithPending(direction: MinecraftBridgeDirection): Promise<string[]> {
         return MinecraftBridgeEvent.distinct("guildId", { direction, consumed: false });

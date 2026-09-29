@@ -15,10 +15,3 @@ export function startDecayScheduler(client: Client): void {
 
     Logger.info("XP decay scheduler started", "community");
 }
-
-export function stopDecayScheduler(): void {
-    if (decayInterval) {
-        clearInterval(decayInterval);
-        decayInterval = null;
-    }
-}

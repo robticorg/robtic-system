@@ -13,38 +13,6 @@ export class XPSettingsRepository {
         return settings;
     }
 
-    static async setExcludedChannels(guildId: string, channels: string[]): Promise<IXPSettings> {
-        return XPSettings.findOneAndUpdate(
-            { guildId },
-            { excludedChannels: channels },
-            { upsert: true, returnDocument: "after" }
-        );
-    }
-
-    static async setSupportChannels(guildId: string, channels: string[]): Promise<IXPSettings> {
-        return XPSettings.findOneAndUpdate(
-            { guildId },
-            { supportChannels: channels },
-            { upsert: true, returnDocument: "after" }
-        );
-    }
-
-    static async setStaffChannels(guildId: string, channels: string[]): Promise<IXPSettings> {
-        return XPSettings.findOneAndUpdate(
-            { guildId },
-            { staffChannels: channels },
-            { upsert: true, returnDocument: "after" }
-        );
-    }
-
-    static async setAllowedRoles(guildId: string, roles: string[]): Promise<IXPSettings> {
-        return XPSettings.findOneAndUpdate(
-            { guildId },
-            { allowedRoles: roles },
-            { upsert: true, returnDocument: "after" }
-        );
-    }
-
     static async setDecayEnabled(guildId: string, enabled: boolean): Promise<IXPSettings> {
         return XPSettings.findOneAndUpdate(
             { guildId },

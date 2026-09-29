@@ -5,13 +5,12 @@ import {
 } from "discord.js";
 
 import { Send } from "@database/models";
-import type { BotClient } from "@core/bot-client";
 import type { ComponentHandler } from "@typings/command";
 
 const createEmbedModal: ComponentHandler<ModalSubmitInteraction> = {
     customId: "create-embed",
 
-    async run(interaction: ModalSubmitInteraction, client: BotClient) {
+    async run(interaction: ModalSubmitInteraction) {
 
         if (!interaction.isModalSubmit()) return;
 

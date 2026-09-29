@@ -32,8 +32,6 @@ Dockerfile paths below are relative to `infra/docker/dockerfiles/`.
 |---|---|---|---|---|
 | `deploy-minecraft-api.yml` | push to `main` | `ghcr.io/robticorg/robtic-minecraft-api` | `minecraft-api.Dockerfile` | `robtic-minecraft-api` |
 | `deploy-bot.yml` | the Minecraft API workflow finishing | `ghcr.io/robticorg/robtic-system` | `bot.Dockerfile` | `robtic-system` |
-| `deploy-dashboard-api.yml` | push to `main` | `ghcr.io/robticorg/robtic-dashboard-api` | `dashboard-api.Dockerfile` | `robtic-dashboard-api` |
-| `deploy-dashboard.yml` | the dashboard API workflow finishing | `ghcr.io/robticorg/robtic-dashboard` | `dashboard.Dockerfile` | `robtic-dashboard` |
 
 The Minecraft API (`apps/minecraft-api`, `minecraft.api.robtic.org`) is the service the Minecraft
 plugin talks to, and the only one permitted to reach MongoDB. It deploys first, because the bot and
@@ -59,15 +57,13 @@ the shared workflow does not append project args to overridden commands); the bo
 commands name no service at all, so its `compose pull` + `up -d` covers the whole stack — by which
 point every image exists in GHCR.
 
-### The two chains
+### The deploy chain
 
-A client restarts *after* the service it depends on, and each chain is wired to the upstream
+A client restarts *after* the service it depends on, and the chain is wired to the upstream
 *workflow* finishing, whatever it decided:
 
 - The bot is a client of the Minecraft API: `deploy-bot.yml` fires when **Deploy Minecraft API**
   finishes.
-- The web dashboard is a client of the dashboard API: `deploy-dashboard.yml` fires when
-  **Deploy dashboard API** finishes.
 
 - A **skipped** deploy (unchanged) still releases the client. Only a *failed* service run stops it,
   because restarting a client against a half-deployed service is worse than not restarting it.
@@ -98,10 +94,9 @@ A push touching one service used to rebuild and redeploy everything. Now each se
 | Service | Signature covers |
 |---|---|
 | `bot` | `infra/docker/dockerfiles/bot.Dockerfile` · `apps/bot` · `libs` · `images` |
-| `dashboard-api` | `infra/docker/dockerfiles/dashboard-api.Dockerfile` · `apps/dashboard-api` · `libs` |
-| `dashboard` | `infra/docker/dockerfiles/dashboard.Dockerfile` · `apps/dashboard` — **no `libs`** |
+| `minecraft-api` | `infra/docker/dockerfiles/minecraft-api.Dockerfile` · `apps/minecraft-api` · `libs` |
 
-Each Dockerfile is named explicitly. Three of them used to be covered incidentally, by sitting
+Each Dockerfile is named explicitly. They used to be covered incidentally, by sitting
 inside the app directory already being hashed; once they moved to `infra/docker/` that stopped being
 true, and an unlisted Dockerfile is the worst thing to miss here — editing it would leave the
 signature unchanged, so the deploy would be skipped as *already deployed* and the edit would never
@@ -117,9 +112,7 @@ signature stayed identical, so the deploy that would have applied it was skipped
 local stack is deliberately absent — it never runs on the server.
 
 Each image copies only the app it runs rather than all of `apps`, so a change confined to one app
-cannot produce a different image for another and force a pointless redeploy of it. The web dashboard
-goes further and omits `libs` entirely: it imports nothing from them — it is a client of
-`dashboard-api` and nothing else — so a repository-wide library change leaves its image untouched.
+cannot produce a different image for another and force a pointless redeploy of it.
 
 Properties worth knowing:
 
@@ -144,17 +137,10 @@ Properties worth knowing:
 ```
 robtic-system          (no ports — outbound Discord gateway only)
 robtic-minecraft-api   0.0.0.0:3002   -> 3002
-robtic-dashboard-api   127.0.0.1:3003 -> 3003
-robtic-dashboard       127.0.0.1:3000 -> 3000
 ```
 
 `robtic-minecraft-api` is the one service published on all interfaces: Minecraft servers reach it
 from outside the host, which loopback would refuse. The API key is what protects it.
-
-No domain / no Nginx for the dashboard right now: both dashboard ports bind to loopback and are
-reached at `http://localhost:3000` / `http://localhost:3003` from the server itself or through an
-SSH tunnel (`ssh -L 3000:127.0.0.1:3000 -L 3003:127.0.0.1:3003 <server>`). The browser calls the
-API port directly — `DASHBOARD_PUBLIC_API_URL` is `http://localhost:3003`.
 
 The `127.0.0.1:` prefix is deliberate and should not be removed: a connection refused from another
 machine is that binding working correctly.
@@ -163,25 +149,6 @@ machine is that binding working correctly.
 domains; describes the Nginx topology, including `minecraft.api.robtic.org`.
 
 ## Required Configuration
-
-Dashboard stack — all required before `robtic-dashboard-api` will start, which it announces by
-name rather than failing later at the first login attempt:
-
-| Variable | |
-|---|---|
-| `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | The OAuth application. Add `http://localhost:3003/auth/callback` to its redirects. |
-| `MainBotToken` (bot variables, above) | Also read by the dashboard API, to read a guild's roles and channels for the settings pickers. There is no separate dashboard bot token. |
-| `DASHBOARD_SESSION_SECRET` | Signs session cookies. Rotating it signs everybody out — the intended emergency stop. |
-| `DASHBOARD_API_URL` | `http://localhost:3003` — the OAuth redirect is built from it. |
-| `DASHBOARD_URL` | `http://localhost:3000` — the API's single permitted CORS origin. |
-| `DASHBOARD_PUBLIC_API_URL` | `http://localhost:3003` — what the web app tells the browser to call. |
-
-`DASHBOARD_URL` and the web origin must match exactly, scheme included. They are a CORS pair, and a
-mismatch is rejected by the browser before the request ever reaches the server — which reads as
-"saving does nothing" with no log line anywhere.
-
-Nothing here is baked into an image. `DASHBOARD_PUBLIC_API_URL` is read at request time, so the same
-`robtic-dashboard` digest runs in any environment and a wrong URL is a restart, not a rebuild.
 
 **GitHub secret**: `DISCORD_WEBHOOK_DEPLOY` (already configured) — deploy notifications for each job.
 

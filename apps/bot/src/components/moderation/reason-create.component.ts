@@ -3,7 +3,6 @@ import {
     EmbedBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/bot-client";
 import type { ComponentHandler } from "@typings/command";
 import { COLORS } from "@constants";
 import { ReasonRepository } from "@database/repositories";
@@ -12,7 +11,7 @@ import { errorText } from "@utils";
 export const reasonCreateHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^reason_create_(warn|mute|ban)$/,
 
-    async run(interaction: ModalSubmitInteraction, client: BotClient) {
+    async run(interaction: ModalSubmitInteraction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const type = interaction.customId.split("_")[2] as "warn" | "mute" | "ban";

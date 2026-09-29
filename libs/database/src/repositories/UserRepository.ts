@@ -64,28 +64,4 @@ export class UserRepository {
             profileTemplate: user?.profileTemplate ?? null,
         };
     }
-
-    /** Partial write — only the provided keys change; empty strings clear a field. */
-    static async setCustomization(
-        discordId: string,
-        username: string,
-        update: Partial<{ profileColor: string; textColor: string; bannerUrl: string; bio: string; profileTemplate: string }>,
-    ): Promise<IUser> {
-        const set: Record<string, string> = {};
-        const unset: Record<string, 1> = {};
-        for (const [key, value] of Object.entries(update)) {
-            if (value === undefined) continue;
-            if (value === "") unset[key] = 1;
-            else set[key] = value;
-        }
-        return User.findOneAndUpdate(
-            { discordId },
-            {
-                ...(Object.keys(set).length ? { $set: set } : {}),
-                ...(Object.keys(unset).length ? { $unset: unset } : {}),
-                $setOnInsert: { username },
-            },
-            { upsert: true, returnDocument: "after" }
-        ) as Promise<IUser>;
-    }
 }

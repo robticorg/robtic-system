@@ -34,10 +34,6 @@ export function getSession(guildId: string, discordId: string): LiveSession | un
     return sessions.get(keyOf(guildId, discordId));
 }
 
-export function allSessions(): LiveSession[] {
-    return [...sessions.values()];
-}
-
 export function sessionCount(): number {
     return sessions.size;
 }
@@ -126,12 +122,4 @@ export async function persistDirtySessions(): Promise<number> {
     }
 
     return pending.length;
-}
-
-/** Drops in-memory sessions for a guild the bot has left, without writing them back. */
-export function forgetGuildSessions(guildId: string): void {
-    const prefix = `${guildId}:`;
-    for (const key of sessions.keys()) {
-        if (key.startsWith(prefix)) sessions.delete(key);
-    }
 }

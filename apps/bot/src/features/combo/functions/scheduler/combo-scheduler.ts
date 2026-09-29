@@ -17,10 +17,3 @@ export function startComboScheduler(client: Client): void {
 
     Logger.info("Combo scheduler started", CTX);
 }
-
-export function stopComboScheduler(): void {
-    if (comboInterval) {
-        clearInterval(comboInterval);
-        comboInterval = null;
-    }
-}

@@ -1,1 +1,1 @@
-export { startActivityFlush, stopActivityFlush } from "./start-activity-flush";
+export { startActivityFlush } from "./start-activity-flush";

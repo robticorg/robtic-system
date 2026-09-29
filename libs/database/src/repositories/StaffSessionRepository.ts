@@ -48,8 +48,4 @@ export class StaffSessionRepository {
     static async listActive(guildId: string, serverId?: string): Promise<IStaffSession[]> {
         return StaffSession.find({ guildId, active: true, ...(serverId ? { serverId } : {}) });
     }
-
-    static async countByMember(guildId: string, minecraftUuid: string): Promise<number> {
-        return StaffSession.countDocuments({ guildId, minecraftUuid: minecraftUuid.toLowerCase() });
-    }
 }
