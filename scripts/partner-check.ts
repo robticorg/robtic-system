@@ -41,13 +41,15 @@ const check = (name: string, ok: boolean, detail = "") => {
 // The public post.
 {
     const id = "65f0c0ffee0000000000abcd";
-    const [container] = buildPartnerPost(id, "Test Server", Buffer.from("png")).components.map(c => c.toJSON()) as any[];
-    const [gallery, row] = container.components;
-    check("post is one container", container.type === ComponentType.Container);
+    const components = buildPartnerPost(id, "Test Server", Buffer.from("png")).components.map(c => c.toJSON()) as any[];
+    const [gallery, infoSection, joinSection] = components;
+    check("post has no container (no embed-style card)", components.every(c => c.type !== ComponentType.Container));
     check("post shows the banner full width (media gallery)", gallery.type === ComponentType.MediaGallery && gallery.items[0].media.url === "attachment://partner.png");
-    check("post has exactly two buttons", row.type === ComponentType.ActionRow && row.components.length === 2);
+    check("post is the banner then two sections", components.length === 3 && infoSection.type === ComponentType.Section && joinSection.type === ComponentType.Section);
+    check("each section carries text beside its button", [infoSection, joinSection].every(s => s.components.length > 0 && s.accessory.type === ComponentType.Button));
+    check("the section names the partner", infoSection.components[0].content.includes("Test Server"));
 
-    const [info, beAPartner] = row.components;
+    const [info, beAPartner] = [infoSection.accessory, joinSection.accessory];
     check("Information is grey with the info emoji", info.style === ButtonStyle.Secondary && info.emoji.id === PARTNER_CONFIG.emojis.info.id && info.label === "| Information");
     check("Be a Partner links to the partner channel", beAPartner.style === ButtonStyle.Link && beAPartner.url === PARTNER_CONFIG.beAPartnerUrl);
     check("Be a Partner uses the robtic emoji", beAPartner.emoji.id === PARTNER_CONFIG.emojis.robtic.id && beAPartner.label === "| Be a Partner");
@@ -62,13 +64,15 @@ const check = (name: string, ok: boolean, detail = "") => {
         inviteUrl: "https://discord.gg/abc", image: Buffer.from("png"), guildId: "1", channelId: "2", messageId: "3",
     } as any;
     const info = buildPartnerInfo(partner);
-    const [container] = info.components.map(c => c.toJSON()) as any[];
-    check("information panel shows the stored image as a thumbnail", container.components[0].accessory.media.url === "attachment://partner-logo.png");
+    const [about, , contact] = info.components.map(c => c.toJSON()) as any[];
+    check("information panel shows the stored image as a thumbnail", about.type === ComponentType.Section && about.accessory.media.url === "attachment://partner-logo.png");
     check("information panel attaches the stored image", info.files.length === 1);
+    check("Join Server sits beside the representative", contact.type === ComponentType.Section && contact.accessory.style === ButtonStyle.Link && contact.accessory.url === partner.inviteUrl);
 
     const many = Array.from({ length: 200 }, (_, i) => ({ ...partner, name: `Server ${i}` }));
-    const [list] = buildPartnerList("Robtic", many).components.map(c => c.toJSON()) as any[];
-    const chars = list.components.filter((c: any) => c.type === ComponentType.TextDisplay).reduce((n: number, c: any) => n + c.content.length, 0);
+    const list = buildPartnerList("Robtic", many).components.map(c => c.toJSON()) as any[];
+    check("the list has no container either", list.every(c => c.type !== ComponentType.Container));
+    const chars = list.filter((c: any) => c.type === ComponentType.TextDisplay).reduce((n: number, c: any) => n + c.content.length, 0);
     check("a long partner list stays within the 4000-character message limit", chars <= 4000, `${chars}`);
     check("a long partner list says how many were left out", JSON.stringify(list).includes("more."));
 }

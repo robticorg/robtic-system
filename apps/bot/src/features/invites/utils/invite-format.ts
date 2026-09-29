@@ -1,5 +1,5 @@
 import { escapeMarkdown } from "discord.js";
-import { BP_SCALE } from "@constants";
+import { BP_SCALE, INVITES_CONFIG } from "@constants";
 
 /**
  * Every piece of invites text, pure so the exact wording is testable. The mention stays a mention
@@ -32,6 +32,42 @@ export function invitedJoinMessage(memberId: string, inviterName: string, invite
 
 export function unknownJoinMessage(memberId: string): string {
     return `**<@${memberId}>** just joined, but I couldn't tell which invite they used.`;
+}
+
+/**
+ * The earliest real join that makes a join at `joinedAt` fake. A member who rejoins within
+ * `fakeWindowDays` of their last real join is fake for whoever invited them this time; after the
+ * window the join is real again and opens a new one.
+ */
+export function fakeWindowStart(joinedAt: Date): Date {
+    return new Date(joinedAt.getTime() - INVITES_CONFIG.fakeWindowDays * 86_400_000);
+}
+
+export function invitedLeaveMessage(memberName: string, inviterName: string): string {
+    return `**${escapeMarkdown(memberName)}** has left. They were invited by **${escapeMarkdown(inviterName)}**.`;
+}
+
+export function vanityLeaveMessage(memberName: string): string {
+    return `**${escapeMarkdown(memberName)}** has left. They were invited using a vanity invite.`;
+}
+
+export function unknownLeaveMessage(memberName: string): string {
+    return `**${escapeMarkdown(memberName)}** has left but I haven't registered who invited them.`;
+}
+
+export interface TicketQuery {
+    kind: "info" | "invites";
+    /** The mentioned or pasted user id; `null` means the author themselves. */
+    userId: string | null;
+}
+
+const TICKET_QUERY = /^(info|invites)(?:\s+(?:<@!?(\d{17,20})>|(\d{17,20})))?\s*$/i;
+
+/** `info @user` / `invites @user` / `invites 123…` / bare `info` — anything else is not a query. */
+export function parseTicketQuery(content: string): TicketQuery | null {
+    const match = TICKET_QUERY.exec(content.trim());
+    if (!match) return null;
+    return { kind: match[1]!.toLowerCase() as TicketQuery["kind"], userId: match[2] ?? match[3] ?? null };
 }
 
 /** How many pages `total` rows fill, never fewer than one (an empty list is still one page). */

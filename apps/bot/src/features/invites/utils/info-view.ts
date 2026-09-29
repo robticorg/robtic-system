@@ -34,7 +34,7 @@ export async function buildInfoView(guildId: string, invokerId: string, target: 
 
     const lines = rows.map((row, i) => {
         const since = `<t:${Math.floor(row.joinedAt.getTime() / 1000)}:R>`;
-        const status = row.leftAt ? "Left Server" : "Available";
+        const status = row.fake ? "Fake" : row.leftAt ? "Left Server" : "Available";
         return `**${page * PAGE_SIZE + i + 1}.** <@${row.inviteeId}> · ${since} (${status})`;
     });
 

@@ -8,7 +8,13 @@ import {
     unknownJoinMessage,
     pageCount,
     clampPage,
+    invitedLeaveMessage,
+    vanityLeaveMessage,
+    unknownLeaveMessage,
+    fakeWindowStart,
+    parseTicketQuery,
 } from "@bot/features/invites/utils/invite-format";
+import { hasTicketName } from "@bot/features/invites/utils/ticket-channels";
 import { INFO_PAGE_ID } from "@bot/features/invites/utils/info-view";
 import { invitesFeature } from "@bot/features/invites/invites";
 import { detectUsedInvite, inviteBonusBp, type InviteUseSnapshot } from "@core/rewards";
@@ -78,6 +84,39 @@ const check = (name: string, ok: boolean, detail = "") => {
     const names: string[] = invitesFeature.commands.map(c => c.name);
     check("commands: /invites, /info, /invites-config", ["invites", "info", "invites-config"].every(n => names.includes(n)));
     check("/invites-config is admin-only", invitesFeature.commands.find(c => c.name === "invites-config")?.access === "admin");
+}
+
+// Leave announcements — the exact wording asked for.
+{
+    const invited = invitedLeaveMessage("raouf._.159", "robo._.38");
+    check("invited leave message", invited === "**raouf.\\_.159** has left. They were invited by **robo.\\_.38**.", invited);
+
+    const vanity = vanityLeaveMessage("raouf._.159");
+    check("vanity leave message", vanity === "**raouf.\\_.159** has left. They were invited using a vanity invite.", vanity);
+
+    const unknown = unknownLeaveMessage("c_iot");
+    check("unknown leave message", unknown === "**c\\_iot** has left but I haven't registered who invited them.", unknown);
+}
+
+// Fake window: a rejoin within 30 days of the last real join is fake.
+{
+    const now = new Date("2026-09-28T12:00:00Z");
+    const start = fakeWindowStart(now);
+    check("fake window is 30 days", now.getTime() - start.getTime() === 30 * 86_400_000);
+    check("a real join 29 days ago is inside the window", new Date(now.getTime() - 29 * 86_400_000) >= start);
+    check("a real join 31 days ago is outside it", new Date(now.getTime() - 31 * 86_400_000) < start);
+}
+
+// Bare ticket-channel queries.
+{
+    const id = "1440413794198360136";
+    check("info @user", JSON.stringify(parseTicketQuery(`info <@${id}>`)) === JSON.stringify({ kind: "info", userId: id }));
+    check("invites @user (nickname mention)", parseTicketQuery(`invites <@!${id}>`)?.userId === id);
+    check("invites <id>", parseTicketQuery(`Invites ${id}`)?.kind === "invites");
+    check("bare info means yourself", parseTicketQuery("info")?.userId === null);
+    check("chatter is not a query", parseTicketQuery("info about the server please") === null && parseTicketQuery("my invites") === null);
+    check("a prefixed command is not a bare query", parseTicketQuery(`!info <@${id}>`) === null);
+    check("ticket channels are recognised by name", hasTicketName("ticket-0042") && hasTicketName("Ticket-x") && !hasTicketName("tickets") && !hasTicketName(null));
 }
 
 if (failures > 0) {

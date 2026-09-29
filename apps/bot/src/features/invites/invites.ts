@@ -13,7 +13,7 @@ const USER_OPTION = { name: "user", description: "Member to check (defaults to y
  */
 export const invitesFeature = defineFeature({
     key: "invites",
-    description: "Invite tracking: join announcements, /invites and /info",
+    description: "Invite tracking: join/leave announcements, /invites and /info",
     activation: "default-on",
     commands: [
         {
@@ -49,6 +49,6 @@ export const invitesFeature = defineFeature({
             ],
         },
     ],
-    events: ["clientReady", "guildCreate", "guildDelete", "guildMemberAdd", "guildMemberRemove"],
+    events: ["clientReady", "guildCreate", "guildDelete", "guildMemberAdd", "guildMemberRemove", "channelCreate", "channelDelete", "messageCreate"],
     components: ["invites"],
 });

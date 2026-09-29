@@ -4,11 +4,14 @@ import { INVITES_CONFIG } from "@constants";
 import { inviteTotal } from "../utils/invite-format";
 
 export interface InviteStats {
+    /** Real joins — fakes excluded. */
     joins: number;
     leaves: number;
+    /** Rejoins inside the fake window. */
+    fakes: number;
     /** Joins minus leaves — "N invites in total". */
     total: number;
-    /** Joins inside the rolling `recentWindowDays` window — "N invites this week". */
+    /** Real joins inside the rolling `recentWindowDays` window still in the server — "N invites this week". */
     recentJoins: number;
     /** The live Invite reward bonus, from the same active credits `claimReward` counts. */
     bonusBp: number;

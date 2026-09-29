@@ -12,6 +12,9 @@ export type InviteJoinSource = "invite" | "vanity" | "unknown";
  *
  * The unique index on `{guildId, inviteeId, joinedAt}` makes a replayed join event a no-op — the
  * same join always carries the same `joinedAt`.
+ *
+ * `fake` is decided once, at join time: a rejoin within `INVITES_CONFIG.fakeWindowDays` of the
+ * member's last real join. Fake joins are listed but never counted as Joins, Leaves or this week.
  */
 export interface IInviteJoin extends Document {
     guildId: string;
@@ -22,6 +25,7 @@ export interface IInviteJoin extends Document {
     source: InviteJoinSource;
     joinedAt: Date;
     leftAt: Date | null;
+    fake: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -35,6 +39,7 @@ const inviteJoinSchema = new Schema<IInviteJoin>(
         source: { type: String, enum: ["invite", "vanity", "unknown"], required: true },
         joinedAt: { type: Date, required: true },
         leftAt: { type: Date, default: null },
+        fake: { type: Boolean, default: false },
     },
     { timestamps: true }
 );
