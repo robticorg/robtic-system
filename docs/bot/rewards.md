@@ -40,7 +40,7 @@ repeated floating-point percent math would.
 | Booster | additive, +15% max, reached faster with more concurrent boosts | `REWARD_BOOSTER_BONUS` |
 | Server tag | additive, flat +10% | `REWARD_SERVER_TAG_BONUS` |
 | Invite | additive, +1%/active invite, 10 slots max | `REWARD_INVITE_BONUS` |
-| Referral | additive, +2%/qualified referral, +15% max | `REWARD_REFERRAL_BONUS` |
+| Referral | additive, the applied code's configured bonus, +15% max | `REWARD_REFERRAL_BONUS` |
 
 All in `libs/constants/src/rewards.ts` — no magic numbers in the calculator or anywhere else.
 
@@ -54,7 +54,28 @@ All in `libs/constants/src/rewards.ts` — no magic numbers in the calculator or
 | Staff | **Live** — best-scoring `StaffTier` among the member's held roles |
 | Booster | **Live, dynamic** — see "Booster bonus" below |
 | Invite | **Live, dynamic** — see "Invite bonus" below |
-| Referral | **Not tracked yet.** The calculator and the resolver accept it (`UnwiredRewardBonusInputs`); it resolves to zero until a producer exists. |
+| Referral | **Live, dynamic** — see "Referral Code bonus" below |
+
+### Referral Code bonus — the applied code's live configuration, never a stored percent
+
+```
+bonus = code exists && code.active ? min(code.bonusBp, 15%) : 0
+```
+
+- Staff create codes with `/referral-config create code owner [bonus]` (admin access; default
+  +10%, anything above +15% is refused). `edit` turns a code on/off or changes its bonus/owner,
+  `delete` removes it, `list` shows every code with its member count, `reset` frees a member.
+- Members apply one code with `/referral use code` and check it with `/referral info`. Rules,
+  enforced in `applyReferralCode` (`libs/core/src/rewards/referral-code.ts`): the code must be
+  well-formed, exist in this guild and be active; an owner can't use their own code; a member
+  holds one code — switching is refused while it exists (even inactive). A deleted code, or a
+  staff `reset`, lets them apply another.
+- Storage: `ReferralCode` (the code, its owner, `bonusBp`, `active`) and `ReferralCodeUse` (member →
+  code id, unique per guild). Nothing about the bonus is stored on the member, so deactivating a
+  code is +0% on everyone's next claim, reactivating restores it, and editing its bonus applies at
+  once. Deleting a code leaves the link rows in place; they simply resolve to +0%.
+- The +15% cap is enforced three times: the command rejects it, the calculator clamps whatever is
+  stored (`referralBonusBp`), and the resolver never accepts a referral value from a caller.
 
 ### Booster bonus — current count × current continuous duration, never a stored percent
 
@@ -312,8 +333,8 @@ reward table (300 daily messages → 5 units → 5M Credits; 600 → 50 units �
 - No `/rewards`-style command or scheduler that actually calls `claimMessageRewards` /
   `claimVoiceRewards` — the pipeline reaches `RewardTransaction`, but nothing in the bot invokes it
   yet, and `/profile` is untouched.
-- No referral tracking — only the bonus math it will feed. Server tag, booster and invite are fully
-  wired, each with the smallest state its rule needs.
+- Server tag, booster, invite and referral are fully wired, each with the smallest state its rule
+  needs. Premium is not part of the reward bonuses.
 - No withdrawal/conversion flow beyond the wallet primitive (`withdrawReward` moves the balance and
   writes a `WITHDRAW` ledger row; nothing decides an exchange rate yet).
 

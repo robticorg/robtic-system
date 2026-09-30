@@ -34,7 +34,9 @@ on or off. Everything else is an ordinary command and is always available.
 | [combo](#combo) | default-on | Two-person conversation scoring |
 | [top](#top) | default-on | Every leaderboard, in one panel |
 | [invites](docs/bot/invites.md) | default-on | Invite tracking, join announcements, `/invites` and `/info` |
-| [partner](docs/bot/partner.md) | default-on | Partner servers, each announced with a banner |
+| [partner](docs/bot/partner.md) | default-on | Partner servers, each announced with a banner; `/partner edit` and `/partner update` redraw posts |
+| boost | default-on | Thanks each booster in the `/boost channel` (Arabic + English) |
+| referral | default-on | Referral codes: `/referral use\|info`, `/referral-config` — the code's bonus (≤ +15%) applies to rewards ([rewards.md](docs/bot/rewards.md)) |
 | [logging](#logging) | default-on | Log-channel routing |
 | [panels](#panels) | default-on | Reusable message panels |
 | [shortcuts](#shortcuts) | default-on | Run any command from a custom phrase |

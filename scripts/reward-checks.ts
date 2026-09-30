@@ -31,7 +31,18 @@ import {
     type InviteUseSnapshot,
     type InviteCreditStore,
 } from "@core/rewards";
-import { BP_SCALE, REWARD_LEVEL_BONUS, REWARD_STREAK_BONUS, REWARD_BOOSTER_BONUS, REWARD_SERVER_TAG_BONUS, REWARD_INVITE_BONUS, REWARD_BASE_VALUES } from "@constants";
+import {
+    referralBonusBp,
+    referralCodeBonusBp,
+    referralPercentToBp,
+    normalizeReferralCode,
+    getReferralCodeBonusBp,
+    getMemberReferral,
+    applyReferralCode,
+    type ReferralCodeSnapshot,
+    type ReferralStore,
+} from "@core/rewards";
+import { BP_SCALE, REWARD_LEVEL_BONUS, REWARD_STREAK_BONUS, REWARD_BOOSTER_BONUS, REWARD_SERVER_TAG_BONUS, REWARD_INVITE_BONUS, REWARD_REFERRAL_BONUS, REWARD_BASE_VALUES } from "@constants";
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -139,12 +150,13 @@ const LEVEL_POINTS = [50, 99] as const;
         boosterContinuousDays: 999_999,
         hasServerTag: true,
         activeInviteSlots: 999,
-        qualifiedReferrals: 999,
+        referralCodeBp: 99_999,
     });
     check("bonuses clamp to their configured maximums under extreme input", [b.levelBp, b.streakBp, b.boosterBp].every(v => v > 0));
     check("level bonus never exceeds its max", b.levelBp === REWARD_LEVEL_BONUS.maxBp, `${b.levelBp}`);
     check("streak bonus never exceeds its max", b.streakBp === REWARD_STREAK_BONUS.maxBp, `${b.streakBp}`);
     check("booster bonus never exceeds its max", b.boosterBp === REWARD_BOOSTER_BONUS.maxBp, `${b.boosterBp}`);
+    check("referral bonus never exceeds its max", b.referralBp === REWARD_REFERRAL_BONUS.maxBp, `${b.referralBp}`);
 }
 
 // Determinism: identical inputs always produce an identical result, with no floating-point drift.
@@ -753,6 +765,145 @@ const voiceTiers: ActivityRewardTier[] = REWARD_BASE_VALUES.voice.map(t => ({ th
     const second = reward(100, everything);
     check("integration: no duplicate bonuses — the total is exactly the sum of each capped source", first.totalBonusBp === 5_000 + 1_000 + 1_500 + 1_000 + 1_000);
     check("integration: repeated resolution never accumulates", JSON.stringify(first) === JSON.stringify(second));
+}
+
+// ============================================================================
+// REFERRAL CODE — the member's applied code, its live state, a +15% cap.
+// ============================================================================
+
+const referralCode = (over: Partial<ReferralCodeSnapshot> = {}): ReferralCodeSnapshot =>
+    ({ id: "c1", code: "robo", ownerId: "OWNER", bonusBp: 1_000, active: true, ...over });
+
+/** An in-memory `ReferralStore` — the same reads and writes the repositories do. */
+function memoryReferralStore() {
+    const codes = new Map<string, ReferralCodeSnapshot>(); // key: guild:id
+    const uses = new Map<string, string>();                // key: guild:member → code id
+    const store: ReferralStore = {
+        findUse: async (g, m) => (uses.has(`${g}:${m}`) ? { codeId: uses.get(`${g}:${m}`)! } : null),
+        findCodeById: async (g, id) => codes.get(`${g}:${id}`) ?? null,
+        findCode: async (g, code) => [...codes.entries()].find(([k, c]) => k.startsWith(`${g}:`) && c.code === code)?.[1] ?? null,
+        setUse: async (g, m, id) => void uses.set(`${g}:${m}`, id),
+    };
+    return { store, codes, uses };
+}
+
+// Basic.
+{
+    check("referral: no code → +0%", referralCodeBonusBp(null) === 0);
+    check("referral: valid active code → its configured bonus", referralCodeBonusBp(referralCode({ bonusBp: 1_000 })) === 1_000);
+    check("referral: inactive code → +0%", referralCodeBonusBp(referralCode({ active: false })) === 0);
+    check("referral: malformed codes are rejected before any lookup",
+        normalizeReferralCode("a") === null && normalizeReferralCode("has space") === null && normalizeReferralCode("x".repeat(21)) === null && normalizeReferralCode("$$$") === null);
+    check("referral: codes are matched case-insensitively", normalizeReferralCode("  RoBo_38 ") === "robo_38");
+}
+
+// Maximum.
+{
+    check("referral: configured below +15% is unchanged", referralBonusBp(1_250) === 1_250);
+    check("referral: configured exactly +15% stays +15%", referralBonusBp(1_500) === 1_500);
+    check("referral: configured above +15% is clamped to +15%", referralBonusBp(4_000) === 1_500 && referralCodeBonusBp(referralCode({ bonusBp: 99_999 })) === 1_500);
+    check("referral: a negative or garbage configuration is +0%", referralBonusBp(-500) === 0 && referralBonusBp(Number.NaN) === 0);
+    check("referral: the cap is +15%", REWARD_REFERRAL_BONUS.maxBp === 1_500);
+    check("referral: staff input converts to whole basis points", referralPercentToBp(12.5) === 1_250 && referralPercentToBp(15) === 1_500 && referralPercentToBp(0) === 0);
+    check("referral: staff input above +15% or below 0 is refused, not stored", referralPercentToBp(15.01) === null && referralPercentToBp(-1) === null && referralPercentToBp(Number.NaN) === null);
+}
+
+// The member ↔ code relationship, resolved live through the store.
+await (async () => {
+    const { store, codes, uses } = memoryReferralStore();
+    const now = new Date("2026-09-29T00:00:00Z");
+    codes.set("g:c1", referralCode());
+
+    check("referral flow: a member with no code gets +0%", await getReferralCodeBonusBp("g", "M", store) === 0);
+    check("referral flow: an invalid code is refused", (await applyReferralCode("g", "M", "no such code!", now, store)).decision === "invalid");
+    check("referral flow: an unknown code is refused", (await applyReferralCode("g", "M", "nothere", now, store)).decision === "not-found");
+    check("referral flow: the owner can't use their own code", (await applyReferralCode("g", "OWNER", "robo", now, store)).decision === "own-code");
+    check("referral flow: a code from another guild doesn't apply", (await applyReferralCode("g2", "M", "robo", now, store)).decision === "not-found");
+
+    codes.set("g:c1", referralCode({ active: false }));
+    check("referral flow: an inactive code can't be applied", (await applyReferralCode("g", "M", "robo", now, store)).decision === "inactive");
+    check("referral flow: refused attempts store nothing", uses.size === 0);
+
+    codes.set("g:c1", referralCode());
+    check("referral flow: a valid active code applies", (await applyReferralCode("g", "M", "ROBO", now, store)).decision === "applied");
+    check("referral flow: …and gives its configured bonus", await getReferralCodeBonusBp("g", "M", store) === 1_000);
+
+    codes.set("g:c2", referralCode({ id: "c2", code: "other", bonusBp: 1_500 }));
+    check("referral flow: one code per member — switching is refused", (await applyReferralCode("g", "M", "other", now, store)).decision === "already-linked");
+    check("referral flow: …and the original code still applies", await getReferralCodeBonusBp("g", "M", store) === 1_000);
+
+    codes.set("g:c1", referralCode({ active: false }));
+    check("referral flow: deactivating the code → +0% on the next claim", await getReferralCodeBonusBp("g", "M", store) === 0);
+    check("referral flow: …the member keeps the code while it is inactive", (await applyReferralCode("g", "M", "other", now, store)).decision === "already-linked");
+
+    codes.set("g:c1", referralCode({ active: true }));
+    check("referral flow: reactivating restores the configured bonus", await getReferralCodeBonusBp("g", "M", store) === 1_000);
+
+    codes.set("g:c1", referralCode({ bonusBp: 700 }));
+    check("referral flow: changing the code's bonus applies immediately, nothing per member", await getReferralCodeBonusBp("g", "M", store) === 700);
+
+    codes.set("g:c1", referralCode({ bonusBp: 50_000 }));
+    check("referral flow: an over-cap stored configuration still resolves to +15%", await getReferralCodeBonusBp("g", "M", store) === 1_500);
+
+    codes.delete("g:c1");
+    const afterDelete = await getMemberReferral("g", "M", store);
+    check("referral flow: a deleted code → +0%", afterDelete.bonusBp === 0 && afterDelete.code === null);
+    check("referral flow: the link row is left in place (nothing destroyed)", uses.get("g:M") === "c1");
+    check("referral flow: after deletion the member may apply another code", (await applyReferralCode("g", "M", "other", now, store)).decision === "applied");
+    check("referral flow: …and gets the new code's bonus", await getReferralCodeBonusBp("g", "M", store) === 1_500);
+})();
+
+// Integration — Referral combined with every other bonus, additively and exactly once.
+{
+    const referralBp = referralBonusBp(1_000);
+
+    const level = reward(100, { level: 50, configuredLevelPoints: [50], referralCodeBp: 1_000 });
+    check("referral integration: + level", level.totalBonusBp === 5_000 + 1_000, `${level.totalBonusBp}`);
+
+    const streak = reward(100, { streakDays: 50, referralCodeBp: 1_000 });
+    check("referral integration: + streak", streak.totalBonusBp === 500 + 1_000, `${streak.totalBonusBp}`);
+
+    const tag = reward(100, { hasServerTag: true, referralCodeBp: 1_000 });
+    check("referral integration: + server tag", tag.totalBonusBp === 1_000 + 1_000, `${tag.totalBonusBp}`);
+
+    const booster = reward(100, { boosterCount: 1, boosterContinuousDays: 30, referralCodeBp: 1_000 });
+    check("referral integration: + booster", booster.totalBonusBp === 750 + 1_000, `${booster.totalBonusBp}`);
+
+    const invites = reward(100, { activeInviteSlots: 4, referralCodeBp: 1_000 });
+    check("referral integration: + invites", invites.totalBonusBp === 400 + 1_000, `${invites.totalBonusBp}`);
+
+    // Referral is additive, never a second multiplier: 50M × 1.4 × 1.10 = 77M.
+    const staffed = calculateReward(50, {
+        staffMultiplierBp: 14_000, levelBp: 0, streakBp: 0, boosterBp: 0, serverTagBp: 0, inviteBp: 0, referralBp,
+    });
+    check("referral integration: + staff — 50M × 1.4 × 1.10 = 77M", staffed.final === 77, `final=${staffed.final}`);
+    check("referral integration: staff stays the only multiplier", staffed.staffMultiplierBp === 14_000 && staffed.totalBonusBp === 1_000);
+
+    // The spec's worked example: 20 + 5 + 10 + 7.5 + 4 + 10 = +56.5%.
+    const all = {
+        staffMultiplierBp: BP_SCALE,
+        levelBp: levelBonusBp(4, [4, 10]),
+        streakBp: streakBonusBp(50),
+        serverTagBp: serverTagBonusBp(true),
+        boosterBp: boosterBonusBp(1, 30),
+        inviteBp: inviteBonusBp(4),
+        referralBp,
+    };
+    const total = calculateReward(100, all);
+    check("referral integration: all six additive bonuses total +56.5%", total.totalBonusBp === 5_650, `${total.totalBonusBp}`);
+    check("referral integration: each bonus is counted exactly once", total.totalBonusBp === Object.values(total.bonuses).reduce((a, b) => a + b, 0));
+    check("referral integration: 100 × (1 + 0.565) = 156.5 → 157", total.final === 157, `final=${total.final}`);
+
+    const maxed = reward(100, {
+        level: 99, configuredLevelPoints: LEVEL_POINTS, staffScore: 100, streakDays: 100, boosterCount: 50,
+        boosterContinuousDays: 9_999, hasServerTag: true, activeInviteSlots: 99, referralCodeBp: 99_999,
+    });
+    check("referral integration: every source capped, summed once", maxed.totalBonusBp === 5_000 + 1_000 + 1_500 + 1_000 + 1_000 + 1_500, `${maxed.totalBonusBp}`);
+
+    // Premium is not involved: the breakdown carries exactly these sources and nothing else.
+    const keys = Object.keys(calculateBonusBreakdown({})).sort().join(",");
+    check("referral integration: no Premium term in the bonus breakdown",
+        keys === ["boosterBp", "inviteBp", "levelBp", "referralBp", "serverTagBp", "staffMultiplierBp", "streakBp"].join(","), keys);
 }
 
 if (failures > 0) {

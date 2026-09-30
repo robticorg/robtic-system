@@ -80,9 +80,21 @@ export const REWARD_INVITE_BONUS = {
     inviteDurationDays: 7,
 } as const;
 
+/**
+ * Referral Code bonus: a member who applied an active referral code (`/referral use`) gets that
+ * code's configured bonus. The bonus lives on the code (`ReferralCode.bonusBp`), never on the
+ * member, so changing or deactivating a code changes every member's next claim.
+ */
 export const REWARD_REFERRAL_BONUS = {
-    perReferralBp: 200,
+    /** Hard cap. No code's configuration, however it was stored, resolves above this. */
     maxBp: 1_500,
+    /** The bonus a new code gets when `/referral-config create` is given none. */
+    defaultBp: 1_000,
+} as const;
+
+/** What a referral code may look like. Codes are stored lowercase, so matching is case-insensitive. */
+export const REFERRAL_CODE_RULES = {
+    pattern: /^[a-z0-9_-]{3,20}$/,
 } as const;
 
 

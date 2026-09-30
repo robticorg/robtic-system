@@ -114,9 +114,12 @@ export function inviteBonusBp(activeSlots: number): number {
     return clampBp(capped * REWARD_INVITE_BONUS.perInviteBp, REWARD_INVITE_BONUS.maxBp);
 }
 
-export function referralBonusBp(qualifiedReferrals: number): number {
-    if (!Number.isFinite(qualifiedReferrals) || qualifiedReferrals <= 0) return 0;
-    return clampBp(qualifiedReferrals * REWARD_REFERRAL_BONUS.perReferralBp, REWARD_REFERRAL_BONUS.maxBp);
+/**
+ * A referral code's configured bonus, clamped to `[0, maxBp]`. The cap is enforced here, at read
+ * time, so no stored configuration — however it got there — can resolve above +15%.
+ */
+export function referralBonusBp(configuredBp: number): number {
+    return clampBp(configuredBp, REWARD_REFERRAL_BONUS.maxBp);
 }
 
 /** Resolves every bonus field to its clamped basis-point value. Pure — no database, no gateway. */
@@ -128,7 +131,7 @@ export function calculateBonusBreakdown(inputs: RewardBonusInputs): RewardBonusB
         boosterBp: boosterBonusBp(inputs.boosterCount ?? 0, inputs.boosterContinuousDays ?? 0),
         serverTagBp: serverTagBonusBp(Boolean(inputs.hasServerTag)),
         inviteBp: inviteBonusBp(inputs.activeInviteSlots ?? 0),
-        referralBp: referralBonusBp(inputs.qualifiedReferrals ?? 0),
+        referralBp: referralBonusBp(inputs.referralCodeBp ?? 0),
     };
 }
 

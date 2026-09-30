@@ -6,9 +6,8 @@
  * design — it is live Discord state, resolved for real via `isServerTagActive` from whatever the
  * caller reads off `member.user.primaryGuild` — see `resolve-reward-bonuses.ts`'s
  * `UnwiredRewardBonusInputs` for how it reaches here. Booster (`booster-state.ts`) and invite
- * (`invite-credit.ts`) are resolved from their own minimal state. Referral has no tracking system
- * yet; it is still a first-class field here so a future system fills it in without this shape, the
- * calculator, or anything downstream changing.
+ * (`invite-credit.ts`) are resolved from their own minimal state, and Referral from the member's
+ * applied referral code (`referral-code.ts`).
  */
 export interface RewardBonusInputs {
     /** The member's current level (existing XP/level system). 0 = no bonus. */
@@ -31,8 +30,11 @@ export interface RewardBonusInputs {
     hasServerTag?: boolean;
     /** Currently active invite slots (each lasts a fixed duration — see `REWARD_INVITE_BONUS`). */
     activeInviteSlots?: number;
-    /** Qualified referrals, for members eligible to hold a referral code. */
-    qualifiedReferrals?: number;
+    /**
+     * The configured bonus of the member's referral code — already 0 unless that code exists and is
+     * active (see `referralCodeBonusBp`). Clamped to the +15% cap again by the calculator.
+     */
+    referralCodeBp?: number;
 }
 
 /**

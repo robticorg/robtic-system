@@ -63,6 +63,19 @@ export {
     type InviteCreditStore,
 } from "./invite-credit";
 
+export {
+    normalizeReferralCode,
+    referralPercentToBp,
+    referralCodeBonusBp,
+    getMemberReferral,
+    getReferralCodeBonusBp,
+    applyReferralCode,
+    repositoryReferralStore,
+    type ReferralCodeSnapshot,
+    type ReferralStore,
+    type ReferralApplyDecision,
+} from "./referral-code";
+
 export { creditReward, type RewardWalletMovement } from "./reward-wallet-service";
 
 export { unitsToCredits, formatCredits } from "./format-credits";

@@ -11,12 +11,12 @@ import { STAFF_TIER_THRESHOLDS } from "@constants";
  * Partner Manager role that isn't a staff tier is granted with `/command-access` rather than a
  * second permission system here.
  *
- * `modalOnly` because `add` opens a modal, which the prefix stand-in cannot show — `!partner` is
+ * `modalOnly` because `add` and `edit` open a modal, which the prefix stand-in cannot show — `!partner` is
  * refused with a clear message instead of failing halfway.
  */
 export const partnerFeature = defineFeature({
     key: "partner",
-    description: "Partner servers: banner posts, the partner role, /partner add|list|remove|role|channel",
+    description: "Partner servers: banner posts, the partner role, /partner add|edit|update|list|remove|role|channel",
     activation: "default-on",
     commands: [
         {
@@ -28,6 +28,14 @@ export const partnerFeature = defineFeature({
             modalOnly: true,
             subcommands: [
                 { name: "add", description: "Add a partner server and post its banner" },
+                {
+                    name: "edit",
+                    description: "Change a partner's details or logo, and its post",
+                    options: [
+                        { name: "partner", description: "Which partner", type: "string", required: true, autocomplete: true },
+                    ],
+                },
+                { name: "update", description: "Redraw every partner post with the current template" },
                 { name: "list", description: "Every partner server" },
                 {
                     name: "remove",

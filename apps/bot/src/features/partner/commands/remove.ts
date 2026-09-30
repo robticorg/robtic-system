@@ -32,8 +32,8 @@ export const remove: FeatureSubcommandHandler = async (interaction, _client) => 
     await interaction.editReply({ content: `**${partner.name}** is no longer a partner.${postNote}${roleNote}`, allowedMentions: { parse: [] } });
 };
 
-/** Suggests this guild's partners by name; the value sent back is the partner's id. */
-export async function removeAutocomplete(interaction: AutocompleteInteraction): Promise<void> {
+/** Suggests this guild's partners by name (`/partner remove` and `edit`); the value sent back is the partner's id. */
+export async function partnerAutocomplete(interaction: AutocompleteInteraction): Promise<void> {
     const matches = await PartnerServerRepository.search(interaction.guildId!, interaction.options.getFocused(), 25);
     await interaction.respond(matches.map(m => ({ name: m.name.slice(0, 100), value: m.id })));
 }

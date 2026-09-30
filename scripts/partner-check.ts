@@ -5,6 +5,7 @@ import { ComponentType, ButtonStyle } from "discord.js";
 import { PARTNER_CONFIG } from "@constants";
 import { renderPartnerBanner, normalizePartnerImage } from "@bot/features/partner/utils/render-partner-banner";
 import { buildPartnerPost, buildPartnerInfo, buildPartnerList, PARTNER_INFO_ID } from "@bot/features/partner/utils/partner-views";
+import { buildPartnerModal, PARTNER_ADD_MODAL_ID, PARTNER_EDIT_MODAL_ID } from "@bot/features/partner/utils/partner-form";
 import { partnerFeature } from "@bot/features/partner/partner";
 
 let failures = 0;
@@ -77,11 +78,30 @@ const check = (name: string, ok: boolean, detail = "") => {
     check("a long partner list says how many were left out", JSON.stringify(list).includes("more."));
 }
 
+// The add and edit forms.
+{
+    const partner = {
+        _id: "65f0c0ffee0000000000abcd", name: "Test", description: "desc", representativeId: "1440413794198360136",
+        inviteUrl: "https://discord.gg/abc",
+    } as any;
+    const addForm = buildPartnerModal().toJSON() as any;
+    const editForm = buildPartnerModal(partner).toJSON() as any;
+    const inputs = (form: any) => form.components.map((label: any) => label.component);
+
+    check("the add form uses the add id", addForm.custom_id === PARTNER_ADD_MODAL_ID);
+    check("the edit form id matches its handler", PARTNER_EDIT_MODAL_ID.test(editForm.custom_id) && editForm.custom_id.endsWith(partner._id));
+    check("the add form starts empty", inputs(addForm).every((c: any) => !c.value));
+    check("the edit form is prefilled with the current values",
+        ["https://discord.gg/abc", "Test", "1440413794198360136", "desc"].every((v, i) => inputs(editForm)[i].value === v));
+    check("the add form requires an image", inputs(addForm)[4].required === true);
+    check("the edit form keeps the current logo unless a new one is uploaded", inputs(editForm)[4].required === false && inputs(editForm)[4].min_values === 0);
+}
+
 // Manifest.
 {
     const partner = partnerFeature.commands[0]!;
     const subs: string[] = partner.subcommands.map(s => s.name);
-    check("/partner has add, list, remove, role, channel", ["add", "list", "remove", "role", "channel"].every(s => subs.includes(s)));
+    check("/partner has add, edit, update, list, remove, role, channel", ["add", "edit", "update", "list", "remove", "role", "channel"].every(s => subs.includes(s)));
     check("the feature listens for joins (representatives who join later get the role)", (partnerFeature.events as readonly string[] | undefined)?.includes("guildMemberAdd") === true);
     check("/partner needs the Manager staff tier", partner.requiredPermission === 80);
 }

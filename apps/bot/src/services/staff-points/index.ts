@@ -32,7 +32,8 @@ export async function awardMessageMilestone(guildId: string, userId: string, mes
                 userId,
                 amount: 1,
                 reason: `Reached ${messageCount} messages`,
-                type: "MESSAGE_MILESTONE",
+                // One of the API's known point transaction types ("msg", "ticket", …).
+                type: "msg",
                 idempotencyKey: `messages:${guildId}:${userId}:${messageCount}`,
             }),
             signal: AbortSignal.timeout(5_000),
