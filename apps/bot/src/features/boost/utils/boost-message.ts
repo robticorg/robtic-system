@@ -1,11 +1,9 @@
 import {
     AttachmentBuilder,
     MediaGalleryBuilder,
-    SectionBuilder,
     TextDisplayBuilder,
 } from "discord.js";
-
-export const LINE_IMAGE_NAME = "line.png";
+import type { LineImage } from "@core/assets";
 
 /**
  * The thank-you text, exactly as worded: every booster's mention on one line (`@a, @b, @c`), then
@@ -22,26 +20,19 @@ export function boostThanksMessage(memberIds: readonly string[], emoji: string):
 }
 
 /**
- * The Components V2 message: a section holding the thank-you text, with the server icon as its
- * thumbnail, then `line.png` full width underneath. A section's accessory (button or thumbnail) is
- * required and sits beside the text, so the line goes in a media gallery below it rather than in
- * the section. Without a server icon the text is sent as a plain text display instead.
- *
- * No container, so it reads as message content rather than an embed-style card.
+ * The Components V2 message: the thank-you text, then the line image (`/setline`) full width
+ * underneath. Nothing beside the text, and no container, so it reads as plain message content
+ * rather than an embed-style card.
  */
-export function buildBoostThanks(memberIds: readonly string[], emoji: string, serverIconUrl: string | null, line: Buffer | null) {
+export function buildBoostThanks(memberIds: readonly string[], emoji: string, line: LineImage | null) {
     const text = new TextDisplayBuilder().setContent(boostThanksMessage(memberIds, emoji));
 
-    const head = serverIconUrl
-        ? new SectionBuilder().addTextDisplayComponents(text).setThumbnailAccessory(thumb => thumb.setURL(serverIconUrl))
-        : text;
-
     const components = line
-        ? [head, new MediaGalleryBuilder().addItems(item => item.setURL(`attachment://${LINE_IMAGE_NAME}`))]
-        : [head];
+        ? [text, new MediaGalleryBuilder().addItems(item => item.setURL(`attachment://${line.name}`))]
+        : [text];
 
     return {
         components,
-        files: line ? [new AttachmentBuilder(line, { name: LINE_IMAGE_NAME })] : [],
+        files: line ? [new AttachmentBuilder(line.data, { name: line.name })] : [],
     };
 }

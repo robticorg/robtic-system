@@ -1,15 +1,11 @@
 import { MessageFlags, type Guild } from "discord.js";
-import { existsSync } from "fs";
-import { readFile } from "fs/promises";
-import path from "path";
 import { BOOST_CONFIG } from "@constants";
+import { getLineImage } from "@core/assets";
 import { isFeatureEnabled } from "@core/features";
 import { ServerConfigRepository } from "@database/repositories";
 import { handleError, BotError } from "@core/handlers";
 import { buildBoostThanks } from "../utils/boost-message";
 import { createBoostBatcher } from "../utils/boost-batcher";
-
-const LINE_IMAGE_PATH = path.join(process.cwd(), "images", "line.png");
 
 async function resolveEmoji(guild: Guild): Promise<string> {
     const own = guild.emojis.cache.find(e => e.name === BOOST_CONFIG.emojiName);
@@ -32,14 +28,12 @@ async function sendBoostThanks(guild: Guild, memberIds: string[]): Promise<void>
 
     const [emoji, line] = await Promise.all([
         resolveEmoji(guild),
-        existsSync(LINE_IMAGE_PATH) ? readFile(LINE_IMAGE_PATH) : Promise.resolve(null),
+        getLineImage().catch(() => null),
     ]);
-    const icon = guild.iconURL({ size: 256 });
-
     for (let i = 0; i < memberIds.length; i += BOOST_CONFIG.maxMentionsPerMessage) {
         const group = memberIds.slice(i, i + BOOST_CONFIG.maxMentionsPerMessage);
         await channel.send({
-            ...buildBoostThanks(group, emoji, icon, line),
+            ...buildBoostThanks(group, emoji, line),
             flags: MessageFlags.IsComponentsV2,
             allowedMentions: { users: group },
         });

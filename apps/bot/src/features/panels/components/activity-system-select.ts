@@ -1,9 +1,7 @@
-import path from "path";
 import { AttachmentBuilder, ContainerBuilder, MessageFlags, type StringSelectMenuInteraction } from "discord.js";
 import type { ComponentHandler } from "@typings/command";
+import { getLineImage } from "@core/assets";
 import { ACTIVITY_OPTIONS } from "../definitions/activity-system";
-
-const LINE_IMAGE_PATH = path.join(process.cwd(), "images", "line.png");
 
 export const activitySystemSelectHandler: ComponentHandler<StringSelectMenuInteraction> = {
     customId: "activity_system_select",
@@ -17,16 +15,16 @@ export const activitySystemSelectHandler: ComponentHandler<StringSelectMenuInter
             return;
         }
 
-        const lineAttachment = new AttachmentBuilder(LINE_IMAGE_PATH, { name: "line.png" });
+        const line = await getLineImage().catch(() => null);
 
         const container = new ContainerBuilder()
             .addTextDisplayComponents(td => td.setContent(`## ${option.emoji ? `${option.emoji} ` : ""}${option.label}`))
-            .addTextDisplayComponents(td => td.setContent(option.content))
-            .addMediaGalleryComponents(mg => mg.addItems(item => item.setURL("attachment://line.png")));
+            .addTextDisplayComponents(td => td.setContent(option.content));
+        if (line) container.addMediaGalleryComponents(mg => mg.addItems(item => item.setURL(`attachment://${line.name}`)));
 
         await interaction.reply({
             components: [container],
-            files: [lineAttachment],
+            files: line ? [new AttachmentBuilder(line.data, { name: line.name })] : [],
             flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral],
         });
     },

@@ -112,7 +112,10 @@ const leafOptions = (json: CommandJSON): { path: string; options: OptionJSON[] }
 };
 
 const unreachable: string[] = [];
-for (const { json } of loaded) {
+for (const { json, config } of loaded) {
+    // Declared slash-only (`modalOnly`): the prefix router refuses it up front, so its options
+    // never need to be parseable from text.
+    if (config.modalOnly === true) continue;
     for (const leaf of leafOptions(json)) {
         for (const option of leaf.options) {
             if (UNRESOLVABLE.has(option.type)) unreachable.push(`${leaf.path}:${option.name}`);

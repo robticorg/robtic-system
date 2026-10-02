@@ -1,7 +1,7 @@
 /** Verifies the boost thank-you wording, layout, 30-minute batching and manifest — no database, no gateway. */
 import { ComponentType } from "discord.js";
 import { BOOST_CONFIG } from "@constants";
-import { boostThanksMessage, buildBoostThanks, LINE_IMAGE_NAME } from "@bot/features/boost/utils/boost-message";
+import { boostThanksMessage, buildBoostThanks } from "@bot/features/boost/utils/boost-message";
 import { createBoostBatcher, type BatchTimers } from "@bot/features/boost/utils/boost-batcher";
 import { boostFeature } from "@bot/features/boost/boost";
 
@@ -26,20 +26,20 @@ const check = (name: string, ok: boolean, detail = "") => {
     check("without the emoji there is no trailing space", !/ \*\*$/.test(bare.split("\n")[1]!) && !bare.endsWith(" "));
 }
 
-// Layout: a section (text + server icon), then the line full width. No container.
+// Layout: only the text, then the line full width. No server icon, no section, no container.
 {
-    const msg = buildBoostThanks(["1", "2"], "", "https://cdn.discordapp.com/icons/1/a.png", Buffer.from("png"));
-    const [head, gallery] = msg.components.map(c => c.toJSON()) as any[];
-    check("first a section with the thank-you text", head.type === ComponentType.Section && head.components[0].content.startsWith("<@1>, <@2>"));
-    check("the server icon is the section's thumbnail", head.accessory.type === ComponentType.Thumbnail && head.accessory.media.url.includes("icons"));
-    check("then line.png, full width", gallery.type === ComponentType.MediaGallery && gallery.items[0].media.url === `attachment://${LINE_IMAGE_NAME}`);
-    check("line.png is attached", msg.files.length === 1);
+    const line = { data: Buffer.from("png"), name: "line.webp" };
+    const msg = buildBoostThanks(["1", "2"], "", line);
+    const [text, gallery] = msg.components.map(c => c.toJSON()) as any[];
+    check("first the thank-you as plain text", text.type === ComponentType.TextDisplay && text.content.startsWith("<@1>, <@2>"));
+    check("no server icon or anything beside the text", msg.components.every(c => ![ComponentType.Section, ComponentType.Thumbnail].includes((c.toJSON() as any).type)));
+    check("then the line image, full width, under its own file name", gallery.type === ComponentType.MediaGallery && gallery.items[0].media.url === "attachment://line.webp");
+    check("exactly two parts: text and line", msg.components.length === 2);
+    check("the line image is attached", msg.files.length === 1);
     check("no container (not an embed-style card)", msg.components.every(c => (c.toJSON() as any).type !== ComponentType.Container));
 
-    const noIcon = buildBoostThanks(["1"], "", null, Buffer.from("png")).components.map(c => c.toJSON()) as any[];
-    check("without a server icon the text is plain (a section needs its thumbnail)", noIcon[0].type === ComponentType.TextDisplay);
-    const noLine = buildBoostThanks(["1"], "", null, null);
-    check("without line.png the thanks still goes out", noLine.components.length === 1 && noLine.files.length === 0);
+    const noLine = buildBoostThanks(["1"], "", null);
+    check("without a line image the thanks still goes out", noLine.components.length === 1 && noLine.files.length === 0);
 }
 
 // Batching: 30 quiet minutes, reset by every boost, each member once.

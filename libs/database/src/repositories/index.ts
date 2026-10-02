@@ -77,5 +77,6 @@ export * from "./RewardBoosterStateRepository";
 export * from "./RewardInviteCreditRepository";
 export * from "./InviteJoinRepository";
 export * from "./PartnerServerRepository";
+export * from "./BranchAssetRepository";
 export * from "./ReferralCodeRepository";
 export * from "./ReferralCodeUseRepository";

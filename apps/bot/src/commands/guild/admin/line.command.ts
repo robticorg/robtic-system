@@ -1,100 +1,74 @@
 import {
     SlashCommandBuilder,
     type ChatInputCommandInteraction,
-    type AutocompleteInteraction,
-    EmbedBuilder,
     MessageFlags,
-    ChannelType,
 } from "discord.js";
-import type { BotClient } from "@core/bot-client";
-import { COLORS } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
+import { LINE_SHORTCUT_LIMITS, parseLineShortcuts } from "@bot/utils/line/line-shortcuts";
 
+/**
+ * `/line shortcut [words] [clear]` — words that post the line: when someone who can manage messages
+ * sends one of them on its own, the bot deletes it and posts the line image (`/setline`) instead.
+ * Auto-line channels moved to `/autoline`.
+ */
 export default {
     scope: "guild",
     category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("line")
-        .setDescription("Manage the channels that auto-attach the line image and react to every message")
+        .setDescription("The line image and the words that post it")
         .addSubcommand(sub =>
-            sub.setName("add")
-                .setDescription("Add a line channel")
-                .addChannelOption(opt =>
-                    opt.setName("channel")
-                        .setDescription("The channel to add as a line channel")
-                        .addChannelTypes(ChannelType.GuildText)
-                        .setRequired(true)
-                )
-        )
-        .addSubcommand(sub =>
-            sub.setName("remove")
-                .setDescription("Remove a line channel")
+            sub.setName("shortcut")
+                .setDescription("Set the words that post the line (no words shows the current ones)")
                 .addStringOption(opt =>
-                    opt.setName("channel")
-                        .setDescription("The line channel to remove")
-                        .setRequired(true)
-                        .setAutocomplete(true)
+                    opt.setName("words")
+                        .setDescription("Comma-separated, e.g. خط, line — replaces the current list")
+                        .setMaxLength(500)
+                )
+                .addBooleanOption(opt =>
+                    opt.setName("clear").setDescription("Remove every shortcut word")
                 )
         ),
 
     requiredPermission: 100,
 
-    async autocomplete(interaction: AutocompleteInteraction) {
-        if (!interaction.guildId) {
-            await interaction.respond([]);
+    async run(interaction: ChatInputCommandInteraction) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        const guildId = interaction.guildId;
+        if (!guildId) {
+            await interaction.editReply({ content: "❌ This command can only be used in a server." });
             return;
         }
 
-        const focused = interaction.options.getFocused().toLowerCase();
-        const channelIds = await ServerConfigRepository.getLineChannels(interaction.guildId);
+        const list = (words: string[]) => words.map(w => `\`${w}\``).join(", ");
 
-        const choices = channelIds
-            .map(id => {
-                const channel = interaction.guild?.channels.cache.get(id);
-                return { name: channel ? `#${channel.name}` : id, value: id };
-            })
-            .filter(c => c.name.toLowerCase().includes(focused) || c.value.includes(focused));
+        if (interaction.options.getBoolean("clear")) {
+            await ServerConfigRepository.setLineShortcuts(guildId, []);
+            await interaction.editReply({ content: "Line shortcuts removed." });
+            return;
+        }
 
-        await interaction.respond(choices.slice(0, 25));
-    },
-
-    async run(interaction: ChatInputCommandInteraction, _client: BotClient) {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-        if (!interaction.guildId) {
+        const input = interaction.options.getString("words");
+        if (input === null) {
+            const { shortcuts } = await ServerConfigRepository.getLineConfig(guildId);
             await interaction.editReply({
-                embeds: [new EmbedBuilder()
-                    .setDescription("❌ This command can only be used in a server.")
-                    .setColor(COLORS.error)],
+                content: shortcuts.length
+                    ? `Line shortcuts: ${list(shortcuts)}`
+                    : "No line shortcuts set. Add some with `/line shortcut words:`.",
             });
             return;
         }
 
-        const subcommand = interaction.options.getSubcommand();
-
-        if (subcommand === "add") {
-            const channel = interaction.options.getChannel("channel", true);
-            await ServerConfigRepository.addLineChannel(interaction.guildId, channel.id);
-
-            const embed = new EmbedBuilder()
-                .setTitle("✅ Line Channel Added")
-                .setColor(COLORS.success)
-                .setDescription(`Every message sent in <#${channel.id}> will now automatically get the line image attached and reacted to.`)
-                .setTimestamp();
-
-            await interaction.editReply({ embeds: [embed] });
+        const words = parseLineShortcuts(input);
+        if (!words.length) {
+            await interaction.editReply({ content: `Give at least one word (up to ${LINE_SHORTCUT_LIMITS.maxLength} characters each), separated by commas.` });
             return;
         }
 
-        const channelId = interaction.options.getString("channel", true);
-        await ServerConfigRepository.removeLineChannel(interaction.guildId, channelId);
-
-        const embed = new EmbedBuilder()
-            .setTitle("✅ Line Channel Removed")
-            .setColor(COLORS.success)
-            .setDescription(`<#${channelId}> will no longer get the line image attached or reacted to.`)
-            .setTimestamp();
-
-        await interaction.editReply({ embeds: [embed] });
+        await ServerConfigRepository.setLineShortcuts(guildId, words);
+        await interaction.editReply({
+            content: `Line shortcuts set: ${list(words)}.\nSending one of them on its own (if you can manage messages) replaces it with the line.`,
+        });
     },
 };

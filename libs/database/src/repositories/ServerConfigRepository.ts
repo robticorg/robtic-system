@@ -169,6 +169,20 @@ export class ServerConfigRepository {
         return ServerConfig.findOneAndUpdate({ guildId }, update, { returnDocument: "after" });
     }
 
+    /** Replaces the line shortcut words. Stored lowercase; an empty list turns shortcuts off. */
+    static async setLineShortcuts(guildId: string, words: string[]): Promise<void> {
+        await ServerConfig.updateOne({ guildId }, { $set: { lineShortcuts: words } }, { upsert: true });
+    }
+
+    /** Auto-line channels and shortcut words in one read — the message handler needs both per message. */
+    static async getLineConfig(guildId: string): Promise<{ channels: string[]; shortcuts: string[] }> {
+        const config = await ServerConfig.findOne({ guildId }).select("lineChannelId lineChannelIds lineShortcuts").lean();
+        if (!config) return { channels: [], shortcuts: [] };
+        const channels = config.lineChannelIds ?? [];
+        const legacy = config.lineChannelId && !channels.includes(config.lineChannelId) ? [config.lineChannelId] : [];
+        return { channels: [...channels, ...legacy], shortcuts: config.lineShortcuts ?? [] };
+    }
+
     static async getLineChannels(guildId: string): Promise<string[]> {
         const config = await ServerConfig.findOne({ guildId });
         if (!config) return [];

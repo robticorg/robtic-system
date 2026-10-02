@@ -1,25 +1,38 @@
-import { Events, type Message, AttachmentBuilder } from "discord.js";
-import path from "path";
-import { existsSync } from "fs";
+import { Events, type Message, AttachmentBuilder, PermissionFlagsBits } from "discord.js";
 import { ServerConfigRepository } from "@database/repositories";
 import { BRANCH_EMOJIS as emojis } from "@config";
+import { getLineImage } from "@core/assets";
 import type { BotClient } from "@core/bot-client";
+import { matchesLineShortcut } from "@bot/utils/line/line-shortcuts";
 
-const LINE_IMAGE_PATH = path.join(process.cwd(), "images", "line.png");
-
+/**
+ * The line image (`/setline`), posted two ways:
+ *
+ * - a shortcut word (`/line shortcut`) sent on its own by someone who can manage messages there:
+ *   the word is deleted and the line takes its place;
+ * - an auto-line channel (`/autoline`): every message gets the line after it, and a reaction.
+ */
 export default {
     name: Events.MessageCreate,
 
     async execute(message: Message, _client: BotClient) {
         if (message.author.bot) return;
-        if (!message.guild) return;
+        if (!message.inGuild() || !message.channel.isSendable()) return;
 
-        const lineChannelIds = await ServerConfigRepository.getLineChannels(message.guild.id);
-        if (!lineChannelIds.includes(message.channel.id)) return;
+        const { channels, shortcuts } = await ServerConfigRepository.getLineConfig(message.guild.id);
+        const isShortcut = matchesLineShortcut(message.content, shortcuts)
+            && Boolean(message.member?.permissionsIn(message.channel.id).has(PermissionFlagsBits.ManageMessages));
+        const isAutoLine = channels.includes(message.channel.id);
+        if (!isShortcut && !isAutoLine) return;
 
-        if (message.channel.isSendable() && existsSync(LINE_IMAGE_PATH)) {
-            const attachment = new AttachmentBuilder(LINE_IMAGE_PATH, { name: "line.png" });
-            await message.channel.send({ files: [attachment] }).catch(() => null);
+        const line = await getLineImage().catch(() => null);
+        if (!line) return;
+
+        await message.channel.send({ files: [new AttachmentBuilder(line.data, { name: line.name })] }).catch(() => null);
+
+        if (isShortcut) {
+            await message.delete().catch(() => null);
+            return;
         }
 
         await message.react(emojis.add).catch(() => null);
