@@ -1,3 +1,4 @@
+import { delay } from "@utils/delay";
 import { workflowMessages, workflows, type StartTransferOptions, type Workflow, client } from ".";
 
 export async function startTransfer({
@@ -49,6 +50,10 @@ export async function startTransfer({
         transferMessage.id,
         userId,
     );
+
+    await delay(1000);
+
+    transferMessage.delete().catch(() => null);
 
     return {
         success: true,
