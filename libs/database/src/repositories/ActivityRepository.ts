@@ -152,6 +152,8 @@ export class ActivityRepository {
                 "decay.messageDecayedAt": null,
                 "decay.voiceDecayedAt": null,
             } }],
+            // Mongoose 9 refuses an update pipeline (the array above) unless it is asked for.
+            { updatePipeline: true },
         );
         return result.modifiedCount;
     }
