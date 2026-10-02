@@ -1,7 +1,6 @@
 import { Events, MessageType, type GuildMember } from "discord.js";
 import type { EventConfig } from "@typings/event";
-import { handleError, BotError } from "@core/handlers";
-import { thankBooster } from "./functions/thank-booster";
+import { queueBoostThanks } from "./functions/thank-booster";
 
 /**
  * A boost reaches the bot two ways, and neither alone is enough:
@@ -10,7 +9,8 @@ import { thankBooster } from "./functions/thank-booster";
  *   those messages;
  * - `premiumSince` going from empty to set — always, but only for a member's first boost.
  *
- * Both are listened to; `thankBooster` sends one thank-you when both arrive for the same boost.
+ * Both are listened to. Each adds the booster to the guild's batch (`queueBoostThanks`), which thanks
+ * everyone together once 30 minutes pass with no new boost — a member is never listed twice.
  */
 
 const BOOST_MESSAGES: ReadonlySet<MessageType> = new Set([
@@ -20,16 +20,13 @@ const BOOST_MESSAGES: ReadonlySet<MessageType> = new Set([
     MessageType.GuildBoostTier3,
 ]);
 
-function report(err: unknown): void {
-    handleError(new BotError(`Failed to thank a booster: ${err}`, "EVENT"), "main/boost");
-}
 
 export default [
     {
         name: Events.MessageCreate,
         execute: message => {
             if (!message.guild || !BOOST_MESSAGES.has(message.type) || message.author.bot) return;
-            return thankBooster(message.guild, message.author.id).catch(report);
+            queueBoostThanks(message.guild, message.author.id);
         },
     } satisfies EventConfig<Events.MessageCreate>,
 
@@ -39,7 +36,7 @@ export default [
             const member = newMember as GuildMember;
             // A partial old member has no premiumSince to compare, so it can't prove a new boost.
             if (member.user.bot || oldMember.partial || oldMember.premiumSince || !member.premiumSince) return;
-            return thankBooster(member.guild, member.id).catch(report);
+            queueBoostThanks(member.guild, member.id);
         },
     } satisfies EventConfig<Events.GuildMemberUpdate>,
 ];

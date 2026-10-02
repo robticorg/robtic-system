@@ -6,8 +6,10 @@ export const BOOST_CONFIG = {
      */
     emojiName: "CrystalSub",
     /**
-     * Discord can report one boost twice — the "just boosted" system message and the member's
-     * `premiumSince` changing. Thanks for the same member inside this window are sent once.
+     * Boosts are thanked together: every boost restarts this wait, and once no boost has arrived for
+     * this long, everyone who boosted in the meantime is thanked in one message.
      */
-    dedupeWindowMs: 5 * 60_000,
+    batchQuietMs: 30 * 60_000,
+    /** Most members mentioned in one thank-you; a larger batch is split over several messages. */
+    maxMentionsPerMessage: 50,
 } as const;
