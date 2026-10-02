@@ -45,5 +45,5 @@ export async function grantXP(
 
     await PeriodicStatRepository.incrementAllPeriods(guildId, "messageXp", discordId, xp);
 
-    return applyXpGain(discordId, guildId, username, guild, xp, record.level, updated, CTX);
+    return applyXpGain("message", discordId, guildId, username, guild, xp, record, updated, CTX);
 }

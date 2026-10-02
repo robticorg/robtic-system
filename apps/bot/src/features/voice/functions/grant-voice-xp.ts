@@ -10,9 +10,9 @@ const CTX = "voice";
 /**
  * Awards one tick's worth of XP and Points for time spent in voice.
  *
- * Voice feeds the *existing* level system — same randomXP range, same level maths, same rewards
- * and announcement — so a level is a level however it was earned. It writes through
- * `addNonMessageXP` rather than `addXP` so voice time does not inflate the message counters.
+ * Voice has its own level (`voiceLevel`) on the same curve as chat — same randomXP range, same level maths, same rewards
+ * and announcement machinery, but only voice XP raises it. It writes through
+ * `addVoiceXP` rather than `addXP` so voice time does not inflate the message counters.
  *
  * The message-XP cooldown and the AI meaningfulness check are deliberately skipped: the tick is
  * already once a minute, and there is no message to judge. Voice has its own gates — AFK, the AFK
@@ -29,14 +29,14 @@ export async function grantVoiceXp(
     const xp = Math.max(1, Math.round(base * multiplier));
 
     const record = await ActivityRepository.findOrCreate(discordId, guild.id, username);
-    const updated = await ActivityRepository.addNonMessageXP(discordId, guild.id, xp);
+    const updated = await ActivityRepository.addVoiceXP(discordId, guild.id, xp);
 
     if (!updated) {
         Logger.debug(`Could not add voice XP for ${discordId} in ${guild.id}`, CTX);
         return 0;
     }
 
-    await applyXpGain(discordId, guild.id, username, guild, xp, record.level, updated, CTX);
+    await applyXpGain("voice", discordId, guild.id, username, guild, xp, record, updated, CTX);
 
     await PeriodicStatRepository.incrementAllPeriods(guild.id, "voiceXp", discordId, xp);
     publishMetric({ guildId: guild.id, discordId, username, metric: "voiceXp", value: xp });

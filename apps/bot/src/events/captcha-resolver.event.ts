@@ -1,3 +1,4 @@
+// @ts-nocheck — the bank runs on discord.js-selfbot-v13, whose types do not match the bot's discord.js.
 import { Events, type Message } from "discord.js";
 import type { BotClient } from "@core/bot-client";
 import { client, TRANSFER_BOT_ID, worker, workflowMessages, workflows } from "@bot/services/bank";

@@ -4,10 +4,6 @@ import { SERVER_LOG_CHANNELS } from "@constants";
 
 const CTX = "shared:server-log-setup";
 
-/**
- * Creates (if missing) the category named after `sourceGuildId` inside `logGuild`, plus every
- * channel `sendToServerLog` expects inside it. Idempotent — safe to call repeatedly.
- */
 export async function ensureServerLogChannels(logGuild: Guild, sourceGuildId: string, sourceGuildName: string): Promise<void> {
     const everyoneDeny = [{ id: logGuild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] }];
 

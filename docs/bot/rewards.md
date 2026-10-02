@@ -48,7 +48,7 @@ All in `libs/constants/src/rewards.ts` — no magic numbers in the calculator or
 
 | Source | Status |
 |---|---|
-| Level | **Live, dynamic** — see "Dynamic level bonus" below |
+| Level | **Live, dynamic** — see "Level bonus" below |
 | Streak | **Live** — reads `Streak.currentStreak` via `StreakRepository.find`, evaluated fresh every call |
 | Server tag | **Live, dynamic** — see "Server tag bonus" below |
 | Staff | **Live** — best-scoring `StaffTier` among the member's held roles |
@@ -155,35 +155,33 @@ per credit — there is no weekly reset. The count is taken at claim time with o
 - Self-invites and bot inviters are never credited. The invitee does not need to reach any
   activity threshold.
 
-### Dynamic level bonus — no hardcoded reference level
+### Level bonus — from the level-reward roles, message and voice levels kept separate
 
-The level bonus does **not** read a fixed "max level" constant. It is derived, every time, from
-whichever levels are currently configured on the existing `LevelReward` roles — the same
-`/level-rewards set|remove|list` command and the same `LevelRewardRepository.getAll(guildId)` the
-level-up role grant already uses (`grant-level-rewards.ts`). No second configuration format, no
-new command, no stored per-member bonus.
+Message XP and voice XP are separate levels (`ActivityXP.messageXP`/`messageLevel` and
+`voiceXP`/`voiceLevel`, on the same XP curve). Chat only raises the message level, voice only the
+voice level, each with its own level-up announcement. `totalXP` stays as the combined total for the
+combined leaderboard.
 
-Each configured level's own bonus is proportional to where it sits relative to the *highest*
-currently configured level, which always resolves to the full `+50%`:
-
-```
-bonus(level) = (level / highestConfiguredLevel) × 50%
-```
-
-A member's actual level is then piecewise-linearly interpolated between the two configured levels
-it falls between (flat at the endpoint's bonus below the lowest, or above the highest):
+`/level-rewards set role [message_level] [voice_level]` gives a role for a message level, a voice
+level, or both (e.g. message 10 + voice 5). A member gets the role once they meet every level it
+names. The level bonus comes from those same roles, not a raw level number:
 
 ```
-bonus = bonusA + ((currentLevel - levelA) / (levelB - levelA)) × (bonusB - bonusA)
+size(role)   = requiredMessageLevel + requiredVoiceLevel
+bonus(role)  = size(role) / size(hardest configured role) × 50%
+member bonus = bonus of the best role they qualify for, or +0% before any
 ```
 
-Example: with roles configured at levels 5 and 50, level 50 is the highest and is worth the full
-+50%, and level 5 is worth `5/50` of it → +5%. Adding a third role at level 100 through the *same*
-`/level-rewards` command makes 100 the new highest — level 50 automatically becomes worth `50/100`
-of the maximum instead (+25%), with no migration and nothing recalculated or stored per member: the
-next read simply sees three configured points instead of two. `resolveRewardBonuses` passes the
-configured levels in fresh on every call (`levelRewards.map(r => r.level)`), so an admin changing
-`/level-rewards` changes every member's bonus immediately.
+Example: roles "message 10" (size 10), "voice 5" (size 5) and "message 10 + voice 5" (size 15).
+The combined role is the hardest, so it is +50%; "message 10" alone is +33.33%, "voice 5" alone is
++16.67%. The bonus is stepwise (the best role reached), not interpolated between roles, and never
+stacks. Adding a harder role re-ranks everything on the next read — nothing is stored per member.
+
+**Migration** (`migrateLevelSplit`, run at bot startup, a no-op once done): each member's voice XP
+becomes their recorded all-time voice XP (`PeriodicStat`), and message XP the rest of `totalXP`;
+each old single-level role becomes a message-level role. A role that was set for several levels
+keeps its lowest one. **Decay** is taken from message and voice XP in proportion to how much of
+each the member has, and removes any role they no longer qualify for.
 
 ### Server tag bonus — live Discord state, plus a 6-hour anti-abuse window
 

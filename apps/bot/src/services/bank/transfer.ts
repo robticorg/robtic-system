@@ -1,11 +1,10 @@
-import { workflowMessages, workflows, type StartTransferOptions, type Workflow } from ".";
+import { workflowMessages, workflows, type StartTransferOptions, type Workflow, client } from ".";
 
 export async function startTransfer({
     userId,
     guildId,
     channelId,
     amount,
-    sendMessage,
 }: StartTransferOptions) {
 
     if (workflows.has(userId)) return {
@@ -13,7 +12,20 @@ export async function startTransfer({
             reason: "ACTIVE_WORKFLOW",
         } as const;
 
-    const transferMessage = await sendMessage(
+    
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) return {
+            success: false,
+            reason: "GUILD_NOT_FOUND",
+        } as const;
+
+    const channel = guild.channels.cache.get(channelId);
+    if (!channel?.isText()) return {
+            success: false,
+            reason: "CHANNEL_NOT_FOUND",
+        } as const;
+
+    const transferMessage = await channel.send(
         `!transfer ${userId} ${amount}`,
     );
 

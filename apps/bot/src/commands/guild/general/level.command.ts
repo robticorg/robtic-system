@@ -5,7 +5,7 @@ import {
 } from "discord.js";
 import { ActivityRepository } from "@database/repositories";
 import { COLORS } from "@constants";
-import { calculateLevel, xpForLevel } from "@bot/services/community/xp";
+import { levelProgress } from "@core/xp";
 
 export default {
     scope: "guild",
@@ -28,22 +28,18 @@ export default {
 
         const record = await ActivityRepository.findOrCreate(target.id, guildId, target.username);
         const rank = await ActivityRepository.getRank(target.id, guildId);
-        const currentLevel = calculateLevel(record.totalXP);
-        const nextLevelXP = xpForLevel(currentLevel + 1);
-        const progress = record.totalXP - xpForLevel(currentLevel);
-        const needed = nextLevelXP - xpForLevel(currentLevel);
-
-        const progressBar = generateBar(progress, needed);
+        const message = levelProgress(record.messageXP ?? 0);
+        const voice = levelProgress(record.voiceXP ?? 0);
+        const line = (p: ReturnType<typeof levelProgress>) => `${generateBar(p.progress, p.needed)} ${p.progress}/${p.needed}`;
 
         const embed = new EmbedBuilder()
             .setTitle(`${target.username}'s Level`)
             .setThumbnail(target.displayAvatarURL())
             .addFields(
-                { name: "Level", value: `${currentLevel}`, inline: true },
-                { name: "Total XP", value: `${record.totalXP}`, inline: true },
-                { name: "Rank", value: `#${rank}`, inline: true },
+                { name: "💬 Message Level", value: `**${message.level}** · ${record.messageXP ?? 0} XP\n${line(message)}`, inline: true },
+                { name: "🎙️ Voice Level", value: `**${voice.level}** · ${record.voiceXP ?? 0} XP\n${line(voice)}`, inline: true },
+                { name: "Total XP", value: `${record.totalXP} · Rank #${rank}`, inline: false },
                 { name: "Messages", value: `${record.messageCount}`, inline: true },
-                { name: "Progress", value: `${progressBar} ${progress}/${needed}`, inline: false },
             )
             .setColor(COLORS.activity)
             .setTimestamp();
@@ -54,6 +50,6 @@ export default {
 
 function generateBar(current: number, max: number): string {
     const total = 10;
-    const filled = Math.round((current / max) * total);
+    const filled = max > 0 ? Math.round((current / max) * total) : 0;
     return "█".repeat(filled) + "░".repeat(total - filled);
 }

@@ -9,6 +9,13 @@ import {
     REWARD_REFERRAL_BONUS,
 } from "@constants";
 import type { RewardBonusBreakdown, RewardBonusInputs } from "./reward-bonus-types";
+import {
+    hasAnyRequirement,
+    levelRequirementSize,
+    qualifiesForLevelReward,
+    type LevelRequirement,
+    type MemberLevels,
+} from "../xp/level-split";
 
 /** Rounds to whole basis points and clamps to `[0, maxBp]`. Never negative, never above its cap. */
 function clampBp(value: number, maxBp: number): number {
@@ -17,50 +24,27 @@ function clampBp(value: number, maxBp: number): number {
 }
 
 /**
- * The level bonus, derived entirely from whichever levels are currently configured on the
- * existing `LevelReward` roles (`/level-rewards`) — there is no hardcoded reference level.
+ * The level bonus, derived from the level-reward roles configured with `/level-rewards` — each a
+ * message level, a voice level, or both. There is no hardcoded reference level.
  *
- * Each configured level's own bonus is proportional to how it sits relative to the *highest*
- * currently configured level, so that level always resolves to exactly `maxBp`: with points at
- * levels 5 and 50, level 50 is the highest and is worth the full bonus, and level 5 is worth
- * `5/50` of it. Adding a new, higher level (say 100) makes *that* the new highest — 50 then sits
- * at `50/100` of the maximum instead, with no migration and nothing stored per member: the next
- * read simply sees the new configuration.
+ * Roles are ranked by how hard they are to earn (`levelRequirementSize`: their required levels
+ * added together). The hardest configured role is worth exactly `maxBp`; every other role is worth
+ * its size in proportion to it. A member's bonus is the value of the best role they currently
+ * qualify for — meeting every level it requires — and +0% before they qualify for any.
  *
- * A member's actual level is piecewise-linearly interpolated between the two configured levels it
- * falls between, using each node's bonus computed as above:
- *
- * `bonus = bonusA + ((level - levelA) / (levelB - levelA)) × (bonusB - bonusA)`
- *
- * Below the lowest configured level, or above the highest, the bonus is flat at that endpoint's
- * value — never extrapolated beyond the configured range.
+ * With "message 10" and "message 10 + voice 5" configured, the second (15) is worth +50% and the
+ * first (10) +33.33%. Configuring a harder role re-ranks everything on the next read; nothing is
+ * stored per member.
  */
-export function levelBonusBp(level: number, configuredLevelPoints: readonly number[]): number {
-    const points = [...new Set(configuredLevelPoints.filter(point => Number.isFinite(point) && point > 0))]
-        .sort((a, b) => a - b);
+export function levelBonusBp(levels: MemberLevels, levelRewards: readonly LevelRequirement[]): number {
+    const valid = levelRewards.filter(hasAnyRequirement);
+    if (valid.length === 0) return 0;
 
-    if (points.length === 0 || !Number.isFinite(level)) return 0;
+    const hardest = Math.max(...valid.map(levelRequirementSize));
+    const best = Math.max(0, ...valid.filter(req => qualifiesForLevelReward(req, levels)).map(levelRequirementSize));
+    if (hardest <= 0 || best <= 0) return 0;
 
-    const highest = points[points.length - 1]!;
-    const nodeBp = (point: number) => clampBp((point / highest) * REWARD_LEVEL_BONUS.maxBp, REWARD_LEVEL_BONUS.maxBp);
-
-    if (level <= points[0]!) return nodeBp(points[0]!);
-    if (level >= highest) return nodeBp(highest);
-
-    for (let i = 0; i < points.length - 1; i++) {
-        const levelA = points[i]!;
-        const levelB = points[i + 1]!;
-        if (level < levelA || level > levelB) continue;
-
-        const bonusA = nodeBp(levelA);
-        const bonusB = nodeBp(levelB);
-        if (levelB === levelA) return bonusA;
-
-        const interpolated = bonusA + ((level - levelA) / (levelB - levelA)) * (bonusB - bonusA);
-        return clampBp(interpolated, REWARD_LEVEL_BONUS.maxBp);
-    }
-
-    return nodeBp(highest);
+    return clampBp((best / hardest) * REWARD_LEVEL_BONUS.maxBp, REWARD_LEVEL_BONUS.maxBp);
 }
 
 /** `perDayBp` per consecutive day, capped at `maxDays` worth. */
@@ -126,7 +110,10 @@ export function referralBonusBp(configuredBp: number): number {
 export function calculateBonusBreakdown(inputs: RewardBonusInputs): RewardBonusBreakdown {
     return {
         staffMultiplierBp: staffMultiplierBp(inputs.staffScore),
-        levelBp: levelBonusBp(inputs.level ?? 0, inputs.configuredLevelPoints ?? []),
+        levelBp: levelBonusBp(
+            { messageLevel: inputs.messageLevel ?? 0, voiceLevel: inputs.voiceLevel ?? 0 },
+            inputs.levelRewards ?? [],
+        ),
         streakBp: streakBonusBp(inputs.streakDays ?? 0),
         boosterBp: boosterBonusBp(inputs.boosterCount ?? 0, inputs.boosterContinuousDays ?? 0),
         serverTagBp: serverTagBonusBp(Boolean(inputs.hasServerTag)),

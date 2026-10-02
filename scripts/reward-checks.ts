@@ -32,6 +32,15 @@ import {
     type InviteCreditStore,
 } from "@core/rewards";
 import {
+    levelProgress,
+    splitExistingXp,
+    decayLossForKind,
+    decayRateBp,
+    qualifiesForLevelReward,
+    levelRequirementSize,
+    xpForLevel,
+} from "@core/xp";
+import {
     referralBonusBp,
     referralCodeBonusBp,
     referralPercentToBp,
@@ -52,8 +61,14 @@ const check = (name: string, ok: boolean, detail = "") => {
 
 const reward = (base: number, inputs: RewardBonusInputs) => calculateReward(base, calculateBonusBreakdown(inputs));
 
-/** A representative guild configuration for the existing cases below: two `/level-rewards` roles, at 50 and 99. */
+/** A representative guild configuration for the existing cases below: two `/level-rewards` roles, at message level 50 and 99. */
 const LEVEL_POINTS = [50, 99] as const;
+
+/** Message-level-only roles at these levels — the pre-split shape, still the common case. */
+const msgRoles = (levels: readonly number[]) => levels.map(level => ({ messageLevel: level, voiceLevel: null }));
+
+/** The level bonus of a member at message level `level`, against message-only roles at `levels`. */
+const lvl = (level: number, levels: readonly number[]) => levelBonusBp({ messageLevel: level, voiceLevel: 0 }, msgRoles(levels));
 
 // ============================================================================
 // REWARD CALCULATOR
@@ -65,9 +80,9 @@ const LEVEL_POINTS = [50, 99] as const;
     check("1. normal user: final equals base, staff neutral", r.final === 100 && r.staffMultiplierBp === BP_SCALE, `final=${r.final}`);
 }
 
-// 2. Level bonus only (level 49 — below the lowest configured role, flat at its bonus).
+// 2. Level bonus only (message level 50 — qualifies for the lower of the two roles).
 {
-    const r = reward(100, { level: 49, configuredLevelPoints: LEVEL_POINTS });
+    const r = reward(100, { messageLevel: 50, levelRewards: msgRoles(LEVEL_POINTS) });
     check("2. level bonus only: no staff multiplier applied", r.staffMultiplierBp === BP_SCALE);
     check("2. level bonus only: bonus scales with configured levels, capped below max", r.totalBonusBp > 0 && r.totalBonusBp < REWARD_LEVEL_BONUS.maxBp);
     check("2. level bonus only: reward exceeds base", r.final > 100, `final=${r.final}`);
@@ -83,7 +98,7 @@ const LEVEL_POINTS = [50, 99] as const;
 
 // 4. Level + Staff, both moderate.
 {
-    const r = reward(100, { level: 49, configuredLevelPoints: LEVEL_POINTS, staffScore: 50 });
+    const r = reward(100, { messageLevel: 50, levelRewards: msgRoles(LEVEL_POINTS), staffScore: 50 });
     check("4. level+staff: staff still multiplies", r.staffMultiplierBp === 15_000);
     check("4. level+staff: level still adds", r.totalBonusBp > 0);
     check(
@@ -94,7 +109,7 @@ const LEVEL_POINTS = [50, 99] as const;
 
 // 5. Maximum level (the highest configured role) + maximum staff.
 {
-    const r = reward(100, { level: 99, configuredLevelPoints: LEVEL_POINTS, staffScore: 100 });
+    const r = reward(100, { messageLevel: 99, levelRewards: msgRoles(LEVEL_POINTS), staffScore: 100 });
     check("5. max level + max staff: staff caps at ×1.6", r.staffMultiplierBp === 16_000);
     check("5. max level + max staff: level bonus caps at +50%", r.totalBonusBp === 5_000);
     check("5. max level + max staff: 100 × 1.6 × 1.5 = 240", r.final === 240, `final=${r.final}`);
@@ -103,7 +118,7 @@ const LEVEL_POINTS = [50, 99] as const;
 // 6. Maximum bonuses + maximum staff — the spec's worked example (level 50% + streak 10% + booster 15% = +75%, staff ×1.6 → ×2.8).
 {
     const r = reward(100, {
-        level: 99, configuredLevelPoints: LEVEL_POINTS, staffScore: 100,
+        messageLevel: 99, levelRewards: msgRoles(LEVEL_POINTS), staffScore: 100,
         streakDays: 100, boosterCount: 6, boosterContinuousDays: 5,
     });
     check("6. max bonuses: total is exactly +75%", r.totalBonusBp === 7_500, `totalBonusBp=${r.totalBonusBp}`);
@@ -119,9 +134,9 @@ const LEVEL_POINTS = [50, 99] as const;
 
 // 8. Zero / invalid values.
 {
-    check("8. zero base yields zero reward", reward(0, { level: 99, configuredLevelPoints: LEVEL_POINTS, staffScore: 100 }).final === 0);
-    check("8. negative base yields zero reward", reward(-10, { level: 99, configuredLevelPoints: LEVEL_POINTS }).final === 0);
-    check("8. NaN level contributes no bonus", calculateBonusBreakdown({ level: Number.NaN, configuredLevelPoints: LEVEL_POINTS }).levelBp === 0);
+    check("8. zero base yields zero reward", reward(0, { messageLevel: 99, levelRewards: msgRoles(LEVEL_POINTS), staffScore: 100 }).final === 0);
+    check("8. negative base yields zero reward", reward(-10, { messageLevel: 99, levelRewards: msgRoles(LEVEL_POINTS) }).final === 0);
+    check("8. NaN level contributes no bonus", calculateBonusBreakdown({ messageLevel: Number.NaN, levelRewards: msgRoles(LEVEL_POINTS) }).levelBp === 0);
     check("8. negative streak contributes no bonus", calculateBonusBreakdown({ streakDays: -5 }).streakBp === 0);
 }
 
@@ -143,8 +158,7 @@ const LEVEL_POINTS = [50, 99] as const;
 // Bonuses never exceed their configured maximum, even with absurd inputs.
 {
     const b = calculateBonusBreakdown({
-        level: 99_999,
-        configuredLevelPoints: LEVEL_POINTS,
+        messageLevel: 99_999, levelRewards: msgRoles(LEVEL_POINTS),
         streakDays: 99_999,
         boosterCount: 999,
         boosterContinuousDays: 999_999,
@@ -161,7 +175,7 @@ const LEVEL_POINTS = [50, 99] as const;
 
 // Determinism: identical inputs always produce an identical result, with no floating-point drift.
 {
-    const inputs: RewardBonusInputs = { level: 42, configuredLevelPoints: LEVEL_POINTS, staffScore: 63, streakDays: 17, boosterCount: 2, boosterContinuousDays: 20 };
+    const inputs: RewardBonusInputs = { messageLevel: 42, levelRewards: msgRoles(LEVEL_POINTS), staffScore: 63, streakDays: 17, boosterCount: 2, boosterContinuousDays: 20 };
     const a = reward(777, inputs);
     const b = reward(777, inputs);
     check("final reward is deterministic across repeated calculation", JSON.stringify(a) === JSON.stringify(b));
@@ -169,88 +183,125 @@ const LEVEL_POINTS = [50, 99] as const;
 }
 
 // ============================================================================
-// DYNAMIC LEVEL BONUS — derived from the existing `/level-rewards` configuration,
-// never a hardcoded reference level.
+// LEVEL BONUS — from the `/level-rewards` roles (message level, voice level, or both).
+// The hardest configured role is +50%; others scale by their total required level.
+// A member gets the value of the best role they qualify for — stepwise, never interpolated.
 // ============================================================================
 
 // No configuration at all → no bonus, for any level.
 {
-    check("no configured level rewards: no bonus at level 1", levelBonusBp(1, []) === 0);
-    check("no configured level rewards: no bonus at level 1000", levelBonusBp(1000, []) === 0);
+    check("no level rewards: no bonus at level 1", lvl(1, []) === 0);
+    check("no level rewards: no bonus at level 1000", lvl(1000, []) === 0);
 }
 
-// One configured level reward — the single point is simultaneously the lowest and the highest, so
-// it always resolves to the full maximum, for every level.
+// One role — it is the hardest, so qualifying gives the full maximum; not qualifying gives nothing.
 {
-    check("one configured level reward: below it still gets the max", levelBonusBp(0, [50]) === REWARD_LEVEL_BONUS.maxBp);
-    check("one configured level reward: exactly on it gets the max", levelBonusBp(50, [50]) === REWARD_LEVEL_BONUS.maxBp);
-    check("one configured level reward: above it still gets the max", levelBonusBp(500, [50]) === REWARD_LEVEL_BONUS.maxBp);
+    check("one role: below it there is no bonus yet", lvl(49, [50]) === 0);
+    check("one role: reaching it gives the max", lvl(50, [50]) === REWARD_LEVEL_BONUS.maxBp);
+    check("one role: past it still the max", lvl(500, [50]) === REWARD_LEVEL_BONUS.maxBp);
 }
 
-// Two configured level rewards — the worked example from the spec: 5 → +5%, 50 → +50%.
+// Two message roles: 5 and 50 → +5% and +50%, stepwise.
 {
-    check("two points: the lowest configured level is +5%", levelBonusBp(5, [5, 50]) === 500, `${levelBonusBp(5, [5, 50])}`);
-    check("two points: the highest configured level is the max (+50%)", levelBonusBp(50, [5, 50]) === REWARD_LEVEL_BONUS.maxBp);
-    check("two points: below the first configured level uses its bonus", levelBonusBp(1, [5, 50]) === 500);
-    check("two points: above the highest configured level uses its bonus", levelBonusBp(9999, [5, 50]) === REWARD_LEVEL_BONUS.maxBp);
-    check("two points: exactly on a configured level matches it", levelBonusBp(5, [5, 50]) === 500 && levelBonusBp(50, [5, 50]) === 5000);
-    check("two points: between them interpolates linearly — level 27 is +27%", levelBonusBp(27, [5, 50]) === 2700, `${levelBonusBp(27, [5, 50])}`);
+    check("two roles: the easier role is +5%", lvl(5, [5, 50]) === 500, `${lvl(5, [5, 50])}`);
+    check("two roles: the hardest role is the max (+50%)", lvl(50, [5, 50]) === REWARD_LEVEL_BONUS.maxBp);
+    check("two roles: before the first role there is no bonus", lvl(1, [5, 50]) === 0);
+    check("two roles: between them the member keeps the lower role's bonus (no interpolation)", lvl(27, [5, 50]) === 500, `${lvl(27, [5, 50])}`);
+    check("two roles: above the hardest stays the max", lvl(9999, [5, 50]) === REWARD_LEVEL_BONUS.maxBp);
 }
 
-// Three configured level rewards — adding a higher role changes the whole curve, automatically,
-// with nothing stored per member: level 50 goes from +50% (when it was the highest) to +25% (once
-// 100 is configured and becomes the new highest).
+// Adding a harder role re-ranks everything automatically, with nothing stored per member.
 {
-    const twoPoints = levelBonusBp(50, [5, 50]);
-    const threePoints = levelBonusBp(50, [5, 50, 100]);
-
-    check("three points: level 50 was the max with two points", twoPoints === 5_000, `${twoPoints}`);
-    check("three points: adding level 100 changes level 50's bonus automatically", threePoints === 2_500, `${threePoints}`);
-    check("three points: the new highest (100) is the max", levelBonusBp(100, [5, 50, 100]) === REWARD_LEVEL_BONUS.maxBp);
-    check("three points: adding a level changed the interpolation, not just the endpoint", threePoints < twoPoints);
+    const before = lvl(50, [5, 50]);
+    const after = lvl(50, [5, 50, 100]);
+    check("re-rank: level 50 was the max with two roles", before === 5_000, `${before}`);
+    check("re-rank: adding a level-100 role halves it", after === 2_500, `${after}`);
+    check("re-rank: the new hardest role is the max", lvl(100, [5, 50, 100]) === REWARD_LEVEL_BONUS.maxBp);
 }
 
-// Level below the first configured point, exactly on a configured level, between two configured
-// points, and above the highest — each named explicitly, per the spec's test list.
+// Voice levels and combined roles.
 {
-    const points = [10, 40, 80];
-    check("below the first configured point: flat at its bonus", levelBonusBp(3, points) === levelBonusBp(10, points));
-    check("exactly on a configured level: matches it exactly", levelBonusBp(40, points) === Math.round((40 / 80) * REWARD_LEVEL_BONUS.maxBp));
-    check(
-        "between two configured points: strictly between their bonuses",
-        levelBonusBp(60, points) > levelBonusBp(40, points) && levelBonusBp(60, points) < levelBonusBp(80, points)
-    );
-    check("above the highest configured point: flat at the max", levelBonusBp(999, points) === REWARD_LEVEL_BONUS.maxBp);
+    const roles = [
+        { messageLevel: 10, voiceLevel: null },   // size 10
+        { messageLevel: null, voiceLevel: 5 },    // size 5
+        { messageLevel: 10, voiceLevel: 5 },      // size 15 — the hardest
+    ];
+    const bonus = (messageLevel: number, voiceLevel: number) => levelBonusBp({ messageLevel, voiceLevel }, roles);
+
+    check("voice: a voice-only role counts on the voice level alone", bonus(0, 5) === Math.round((5 / 15) * 5_000), `${bonus(0, 5)}`);
+    check("voice: message XP does not unlock a voice-only role", bonus(99, 0) === Math.round((10 / 15) * 5_000), `${bonus(99, 0)}`);
+    check("combined: needs both levels — message 10 + voice 5 is the max", bonus(10, 5) === REWARD_LEVEL_BONUS.maxBp);
+    check("combined: message 10 alone is only the message role", bonus(10, 4) === Math.round((10 / 15) * 5_000));
+    check("combined: voice 5 alone is only the voice role", bonus(9, 5) === Math.round((5 / 15) * 5_000));
+    check("best role wins, bonuses are not stacked", bonus(10, 5) === 5_000);
 }
 
-// Configuration with arbitrary (non-round, unsorted, duplicated) levels — order and duplicates in
-// the input must not matter, since the existing repository always returns them, but sorting must
-// not be assumed by the caller.
+// A role naming no level is ignored — it can neither be earned nor set the ranking.
 {
-    const arbitrary = [88, 3, 17, 42, 17, 3];
-    const sorted = [3, 17, 42, 88];
-    check(
-        "arbitrary/unsorted/duplicated input matches the sorted, deduplicated equivalent",
-        levelBonusBp(30, arbitrary) === levelBonusBp(30, sorted)
-    );
-    check("arbitrary configuration stays monotonic across levels", levelBonusBp(3, sorted) <= levelBonusBp(17, sorted) && levelBonusBp(17, sorted) <= levelBonusBp(42, sorted) && levelBonusBp(42, sorted) <= levelBonusBp(88, sorted));
+    const withEmpty = [{ messageLevel: null, voiceLevel: null }, { messageLevel: 20, voiceLevel: null }];
+    check("empty requirement is ignored", levelBonusBp({ messageLevel: 20, voiceLevel: 0 }, withEmpty) === 5_000);
+    check("empty requirement qualifies nobody", levelBonusBp({ messageLevel: 0, voiceLevel: 0 }, withEmpty) === 0);
 }
 
-// The maximum is always +50%, and there is no hardcoded reference level (99, 90, 100 or otherwise)
-// — an arbitrarily large configured level still resolves to exactly the max at that level.
+// The maximum is always +50%, and there is no hardcoded reference level.
 {
-    check("max level bonus is never exceeded, even far past any historically hardcoded ceiling", levelBonusBp(500, [5, 50, 250]) <= REWARD_LEVEL_BONUS.maxBp);
-    check("no hardcoded level 99: a config topping out at 30 still reaches the max at 30", levelBonusBp(30, [5, 30]) === REWARD_LEVEL_BONUS.maxBp);
-    check("no hardcoded level 90/100: a config topping out at 500 only reaches the max at 500", levelBonusBp(99, [5, 500]) < REWARD_LEVEL_BONUS.maxBp);
+    check("max level bonus is never exceeded", lvl(500, [5, 50, 250]) <= REWARD_LEVEL_BONUS.maxBp);
+    check("no hardcoded level 99: a config topping out at 30 reaches the max at 30", lvl(30, [5, 30]) === REWARD_LEVEL_BONUS.maxBp);
+    check("no hardcoded level 90/100: a config topping out at 500 only reaches the max at 500", lvl(99, [5, 500]) < REWARD_LEVEL_BONUS.maxBp);
     check(`REWARD_LEVEL_BONUS carries no maxLevel constant`, !("maxLevel" in REWARD_LEVEL_BONUS));
 }
 
 // Integer/basis-point safety and determinism.
 {
-    const a = levelBonusBp(37, [5, 12, 61, 88]);
-    const b = levelBonusBp(37, [5, 12, 61, 88]);
+    const a = lvl(37, [5, 12, 61, 88]);
+    const b = lvl(37, [5, 12, 61, 88]);
     check("level bonus is always a whole number of basis points", Number.isInteger(a));
     check("level bonus is deterministic across repeated calculation", a === b);
+}
+
+// ============================================================================
+// MESSAGE / VOICE LEVEL SPLIT — separate levels, the migration split, decay, role qualification.
+// ============================================================================
+
+{
+    check("progress: 0 XP is level 0", levelProgress(0).level === 0 && levelProgress(0).progress === 0);
+    const p = levelProgress(xpForLevel(3) + 7);
+    check("progress: level and progress into the next level", p.level === 3 && p.progress === 7 && p.needed === xpForLevel(4) - xpForLevel(3));
+
+    const split = splitExistingXp(1_000, 300);
+    check("migration: recorded voice XP moves to voice, the rest stays message", split.voiceXP === 300 && split.messageXP === 700);
+    check("migration: recorded voice XP can't exceed the total", splitExistingXp(100, 500).voiceXP === 100 && splitExistingXp(100, 500).messageXP === 0);
+    check("migration: no recorded voice XP → all message", splitExistingXp(1_000, 0).messageXP === 1_000);
+    check("migration: nothing is lost in the split", splitExistingXp(12_345, 678).messageXP + splitExistingXp(12_345, 678).voiceXP === 12_345);
+
+    // Decay — a percentage of the kind's own XP, once a day, from its own inactivity clock.
+    const now = new Date("2026-10-10T12:00:00Z");
+    const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
+
+    check("decay: active within the threshold → nothing", decayLossForKind(10_000, daysAgo(1), null, now).loss === 0);
+    check("decay: exactly at the threshold → the first rate (1%)", decayLossForKind(10_000, daysAgo(2), null, now).loss === 100);
+    check("decay: the rate grows each further day (+0.5%)", decayLossForKind(10_000, daysAgo(3), null, now).loss === 150 && decayLossForKind(10_000, daysAgo(4), null, now).loss === 200);
+    check("decay: the rate caps (5%)", decayLossForKind(10_000, daysAgo(60), null, now).rateBp === 500 && decayLossForKind(10_000, daysAgo(60), null, now).loss === 500);
+    check("decay: based on the member's XP — high XP loses more", decayLossForKind(100_000, daysAgo(2), null, now).loss === 1_000);
+    check("decay: …low XP loses less", decayLossForKind(1_000, daysAgo(2), null, now).loss === 10);
+    check("decay: a tiny balance still shrinks (rounded up)", decayLossForKind(7, daysAgo(2), null, now).loss === 1);
+    check("decay: never more than the member holds", decayLossForKind(1, daysAgo(99), null, now).loss === 1);
+    check("decay: nothing to lose, nothing lost", decayLossForKind(0, daysAgo(99), null, now).loss === 0);
+    check("decay: at most once a day — decayed 23h ago → nothing", decayLossForKind(10_000, daysAgo(5), new Date(now.getTime() - 23 * 3_600_000), now).loss === 0);
+    check("decay: …decayed 24h ago → decays again", decayLossForKind(10_000, daysAgo(5), daysAgo(1), now).loss > 0);
+    check("decay: an hourly scheduler can't speed it up", Array.from({ length: 24 }, (_, h) =>
+        decayLossForKind(10_000, daysAgo(5), new Date(now.getTime() - h * 3_600_000), now).loss).every(l => l === 0));
+    check("decay: message and voice are independent — each only from its own clock",
+        decayLossForKind(5_000, daysAgo(0), null, now).loss === 0 && decayLossForKind(5_000, daysAgo(10), null, now).loss > 0);
+    check("decay: a broken timestamp never decays", decayLossForKind(5_000, new Date(Number.NaN), null, now).loss === 0);
+    check("decay: rate table", decayRateBp(0) === 100 && decayRateBp(1) === 150 && decayRateBp(8) === 500 && decayRateBp(50) === 500 && decayRateBp(-1) === 0);
+
+    check("roles: message-only role ignores voice", qualifiesForLevelReward({ messageLevel: 10, voiceLevel: null }, { messageLevel: 10, voiceLevel: 0 }));
+    check("roles: voice-only role ignores message", !qualifiesForLevelReward({ messageLevel: null, voiceLevel: 5 }, { messageLevel: 99, voiceLevel: 4 }));
+    check("roles: combined role needs both", !qualifiesForLevelReward({ messageLevel: 10, voiceLevel: 5 }, { messageLevel: 10, voiceLevel: 4 })
+        && qualifiesForLevelReward({ messageLevel: 10, voiceLevel: 5 }, { messageLevel: 10, voiceLevel: 5 }));
+    check("roles: an empty requirement is never met", !qualifiesForLevelReward({ messageLevel: null, voiceLevel: null }, { messageLevel: 99, voiceLevel: 99 }));
+    check("roles: difficulty is the required levels added", levelRequirementSize({ messageLevel: 10, voiceLevel: 5 }) === 15);
 }
 
 // ============================================================================
@@ -377,7 +428,7 @@ const LEVEL_POINTS = [50, 99] as const;
     // one: 4/10 of the configured maximum.
     const breakdown = {
         staffMultiplierBp: 14_000,
-        levelBp: levelBonusBp(4, [4, 10]),
+        levelBp: lvl(4, [4, 10]),
         streakBp: streakBonusBp(50),
         boosterBp: 0,
         serverTagBp: serverTagBonusBp(true),
@@ -408,7 +459,7 @@ const LEVEL_POINTS = [50, 99] as const;
 
     // No duplicate application: resolving the same breakdown twice from identical inputs is
     // byte-for-byte identical — nothing accumulates across calls.
-    const inputs: RewardBonusInputs = { hasServerTag: true, streakDays: 30, level: 20, configuredLevelPoints: [50] };
+    const inputs: RewardBonusInputs = { hasServerTag: true, streakDays: 30, messageLevel: 20, levelRewards: msgRoles([50]) };
     const first = calculateBonusBreakdown(inputs);
     const second = calculateBonusBreakdown(inputs);
     check("integration: no duplicate bonus application across repeated resolution", JSON.stringify(first) === JSON.stringify(second));
@@ -729,7 +780,7 @@ const voiceTiers: ActivityRewardTier[] = REWARD_BASE_VALUES.voice.map(t => ({ th
     // booster +7.5% (1 boost, 30 days), invites +4%.
     const breakdown = {
         staffMultiplierBp: 14_000,
-        levelBp: levelBonusBp(4, [4, 10]),
+        levelBp: lvl(4, [4, 10]),
         streakBp: streakBonusBp(50),
         boosterBp: boosterBonusBp(1, 30),
         serverTagBp: serverTagBonusBp(true),
@@ -748,7 +799,7 @@ const voiceTiers: ActivityRewardTier[] = REWARD_BASE_VALUES.voice.map(t => ({ th
     check("integration: booster + invite are additive", calculateReward(100, both).totalBonusBp === 2_500);
     check("integration: max booster is +15%, max invite is +10%", both.boosterBp === 1_500 && both.inviteBp === 1_000);
 
-    const withLevel = reward(100, { level: 50, configuredLevelPoints: [50], boosterCount: 1, boosterContinuousDays: 30, activeInviteSlots: 3 });
+    const withLevel = reward(100, { messageLevel: 50, levelRewards: msgRoles([50]), boosterCount: 1, boosterContinuousDays: 30, activeInviteSlots: 3 });
     check("integration: booster + invite + level", withLevel.totalBonusBp === 5_000 + 750 + 300, `${withLevel.totalBonusBp}`);
 
     const withStreak = reward(100, { streakDays: 100, boosterCount: 3, boosterContinuousDays: 15, activeInviteSlots: 2 });
@@ -758,7 +809,7 @@ const voiceTiers: ActivityRewardTier[] = REWARD_BASE_VALUES.voice.map(t => ({ th
     check("integration: staff multiplies once, bonuses add once — 100 × 1.6 × 1.25 = 200", staffed.final === 200, `final=${staffed.final}`);
 
     const everything: RewardBonusInputs = {
-        level: 99, configuredLevelPoints: LEVEL_POINTS, staffScore: 100, streakDays: 100,
+        messageLevel: 99, levelRewards: msgRoles(LEVEL_POINTS), staffScore: 100, streakDays: 100,
         boosterCount: 50, boosterContinuousDays: 9_999, hasServerTag: true, activeInviteSlots: 99,
     };
     const first = reward(100, everything);
@@ -857,7 +908,7 @@ await (async () => {
 {
     const referralBp = referralBonusBp(1_000);
 
-    const level = reward(100, { level: 50, configuredLevelPoints: [50], referralCodeBp: 1_000 });
+    const level = reward(100, { messageLevel: 50, levelRewards: msgRoles([50]), referralCodeBp: 1_000 });
     check("referral integration: + level", level.totalBonusBp === 5_000 + 1_000, `${level.totalBonusBp}`);
 
     const streak = reward(100, { streakDays: 50, referralCodeBp: 1_000 });
@@ -882,7 +933,7 @@ await (async () => {
     // The spec's worked example: 20 + 5 + 10 + 7.5 + 4 + 10 = +56.5%.
     const all = {
         staffMultiplierBp: BP_SCALE,
-        levelBp: levelBonusBp(4, [4, 10]),
+        levelBp: lvl(4, [4, 10]),
         streakBp: streakBonusBp(50),
         serverTagBp: serverTagBonusBp(true),
         boosterBp: boosterBonusBp(1, 30),
@@ -895,7 +946,7 @@ await (async () => {
     check("referral integration: 100 × (1 + 0.565) = 156.5 → 157", total.final === 157, `final=${total.final}`);
 
     const maxed = reward(100, {
-        level: 99, configuredLevelPoints: LEVEL_POINTS, staffScore: 100, streakDays: 100, boosterCount: 50,
+        messageLevel: 99, levelRewards: msgRoles(LEVEL_POINTS), staffScore: 100, streakDays: 100, boosterCount: 50,
         boosterContinuousDays: 9_999, hasServerTag: true, activeInviteSlots: 99, referralCodeBp: 99_999,
     });
     check("referral integration: every source capped, summed once", maxed.totalBonusBp === 5_000 + 1_000 + 1_500 + 1_000 + 1_000 + 1_500, `${maxed.totalBonusBp}`);

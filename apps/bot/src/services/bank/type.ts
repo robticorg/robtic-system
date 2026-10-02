@@ -23,9 +23,6 @@ interface StartTransferOptions {
     guildId: string;
     channelId: string;
     amount: string;
-    sendMessage: (content: string) => Promise<{
-        id: string;
-    }>;
 }
 
 export type { Workflow, WorkflowStep, StartTransferOptions };

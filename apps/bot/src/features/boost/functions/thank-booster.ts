@@ -1,8 +1,12 @@
-import type { Guild } from "discord.js";
+import { AttachmentBuilder, type Guild } from "discord.js";
+import { existsSync } from "fs";
+import path from "path";
 import { BOOST_CONFIG } from "@constants";
 import { isFeatureEnabled } from "@core/features";
 import { ServerConfigRepository } from "@database/repositories";
 import { boostThanksMessage } from "../utils/boost-message";
+
+const LINE_IMAGE_PATH = path.join(process.cwd(), "images", "line.png");
 
 const recentlyThanked = new Map<string, number>();
 
@@ -29,4 +33,9 @@ export async function thankBooster(guild: Guild, memberId: string): Promise<void
     if (!channel?.isSendable()) return;
 
     await channel.send({ content: boostThanksMessage(memberId, await resolveEmoji(guild)), allowedMentions: { users: [memberId] } });
+
+    // The separator line under each thank-you, the same image the line channels use.
+    if (existsSync(LINE_IMAGE_PATH)) {
+        await channel.send({ files: [new AttachmentBuilder(LINE_IMAGE_PATH, { name: "line.png" })] }).catch(() => null);
+    }
 }

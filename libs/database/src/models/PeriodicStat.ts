@@ -37,7 +37,7 @@ const periodicStatSchema = new Schema<IPeriodicStat>(
         guildId: { type: String, required: true },
         period: { type: String, enum: ["daily", "weekly", "monthly", "alltime"], required: true },
         periodKey: { type: String, required: true },
-        metric: { type: String, enum: ["xp", "messages", "voiceTime", "voiceXp"], required: true },
+        metric: { type: String, enum: ["xp", "messageXp", "messages", "voiceTime", "voiceXp"] satisfies PeriodicStatMetric[], required: true },
         discordId: { type: String, required: true },
         value: { type: Number, required: true, default: 0 },
     },

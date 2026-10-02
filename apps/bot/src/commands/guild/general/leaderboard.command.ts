@@ -6,7 +6,6 @@ import {
 } from "discord.js";
 import { ActivityRepository } from "@database/repositories";
 import { COLORS } from "@constants";
-import { calculateLevel } from "@bot/services/community/xp";
 
 export default {
     scope: "guild",
@@ -40,8 +39,7 @@ export default {
 
         const lines = pageData.map((user, i) => {
             const rank = (page - 1) * perPage + i + 1;
-            const lvl = calculateLevel(user.totalXP);
-            return `**${rank}.** <@${user.discordId}> — Level ${lvl} | ${user.totalXP} XP`;
+            return `**${rank}.** <@${user.discordId}> — 💬 Lv ${user.messageLevel ?? 0} · 🎙️ Lv ${user.voiceLevel ?? 0} | ${user.totalXP} XP`;
         });
 
         const embed = new EmbedBuilder()

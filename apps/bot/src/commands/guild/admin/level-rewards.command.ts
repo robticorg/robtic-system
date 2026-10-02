@@ -4,9 +4,16 @@ import {
     EmbedBuilder,
     MessageFlags,
 } from "discord.js";
-import type { BotClient } from "@core/bot-client";
 import { LevelRewardRepository } from "@database/repositories";
 import { COLORS } from "@constants";
+
+/** "Message 10 + Voice 5" — what a level-reward role requires. */
+function describe(reward: { messageLevel: number | null; voiceLevel: number | null }): string {
+    return [
+        reward.messageLevel ? `💬 Message **${reward.messageLevel}**` : "",
+        reward.voiceLevel ? `🎙️ Voice **${reward.voiceLevel}**` : "",
+    ].filter(Boolean).join(" + ");
+}
 
 export default {
     scope: "guild",
@@ -18,20 +25,23 @@ export default {
         .addSubcommand(sub =>
             sub
                 .setName("set")
-                .setDescription("Set a role reward for a level")
-                .addIntegerOption(opt =>
-                    opt.setName("level").setDescription("Level to reward at").setMinValue(1).setRequired(true)
-                )
+                .setDescription("Give a role for reaching a message level, a voice level, or both")
                 .addRoleOption(opt =>
                     opt.setName("role").setDescription("Role to grant").setRequired(true)
+                )
+                .addIntegerOption(opt =>
+                    opt.setName("message_level").setDescription("Message level required (leave empty if none)").setMinValue(1)
+                )
+                .addIntegerOption(opt =>
+                    opt.setName("voice_level").setDescription("Voice level required (leave empty if none)").setMinValue(1)
                 )
         )
         .addSubcommand(sub =>
             sub
                 .setName("remove")
-                .setDescription("Remove a level reward")
-                .addIntegerOption(opt =>
-                    opt.setName("level").setDescription("Level to remove reward from").setMinValue(1).setRequired(true)
+                .setDescription("Remove a level reward role")
+                .addRoleOption(opt =>
+                    opt.setName("role").setDescription("Role to stop granting").setRequired(true)
                 )
         )
         .addSubcommand(sub =>
@@ -42,30 +52,38 @@ export default {
 
     requiredPermission: 80,
 
-    async run(interaction: ChatInputCommandInteraction, _client: BotClient) {
+    async run(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const guildId = interaction.guildId!;
         const sub = interaction.options.getSubcommand();
 
         if (sub === "set") {
-            const level = interaction.options.getInteger("level", true);
             const role = interaction.options.getRole("role", true);
+            const messageLevel = interaction.options.getInteger("message_level");
+            const voiceLevel = interaction.options.getInteger("voice_level");
 
-            await LevelRewardRepository.set(guildId, level, role.id);
+            if (!messageLevel && !voiceLevel) {
+                await interaction.editReply({ content: "Set a `message_level`, a `voice_level`, or both." });
+                return;
+            }
+
+            const reward = await LevelRewardRepository.set(guildId, role.id, messageLevel || null, voiceLevel || null);
             await interaction.editReply({
-                content: `Level **${level}** will now grant <@&${role.id}>.`,
+                content: `<@&${role.id}> will be granted at ${describe(reward)}.`,
+                allowedMentions: { parse: [] },
             });
         }
 
         else if (sub === "remove") {
-            const level = interaction.options.getInteger("level", true);
-            const removed = await LevelRewardRepository.remove(guildId, level);
+            const role = interaction.options.getRole("role", true);
+            const removed = await LevelRewardRepository.remove(guildId, role.id);
 
             await interaction.editReply({
                 content: removed
-                    ? `Removed reward for level **${level}**.`
-                    : `No reward found for level **${level}**.`,
+                    ? `<@&${role.id}> is no longer a level reward.`
+                    : `<@&${role.id}> isn't a level reward.`,
+                allowedMentions: { parse: [] },
             });
         }
 
@@ -77,7 +95,7 @@ export default {
                 return;
             }
 
-            const lines = rewards.map(r => `Level **${r.level}** → <@&${r.roleId}>`);
+            const lines = rewards.map(r => `${describe(r)} → <@&${r.roleId}>`);
 
             const embed = new EmbedBuilder()
                 .setTitle("Level Rewards")

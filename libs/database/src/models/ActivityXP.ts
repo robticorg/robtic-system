@@ -4,8 +4,16 @@ export interface IActivityXP extends Document {
     discordId: string;
     guildId: string;
     username: string;
+    /** Message XP + voice XP. The combined leaderboard and rank read this. */
     totalXP: number;
+    /** The combined level (from `totalXP`). Kept for the combined leaderboard; level roles and the reward bonus use the two levels below. */
     level: number;
+    /** XP from chat only — drives `messageLevel`. */
+    messageXP: number;
+    /** XP from voice only — drives `voiceLevel`. */
+    voiceXP: number;
+    messageLevel: number;
+    voiceLevel: number;
     messageCount: number;
     /** Total non-spam, non-short messages ever sent, counted everywhere (not gated by XP channels/cooldown/role). */
     realMessageCount: number;
@@ -24,8 +32,17 @@ export interface IActivityXP extends Document {
 
     decay: {
         enabled: boolean;
+        /** Any activity at all (messages, reactions, commands, voice) — presence/AFK reads this. */
         lastActiveAt: Date;
+        /** No longer drives decay (see the per-kind clocks below); kept for older readers. */
         inactiveDays: number;
+        /** Last real message — the message-XP decay clock. */
+        messageActiveAt: Date;
+        /** Last minute of active voice — the voice-XP decay clock. */
+        voiceActiveAt: Date;
+        /** When message / voice XP last decayed, so each decays at most once per day. */
+        messageDecayedAt: Date | null;
+        voiceDecayedAt: Date | null;
     };
 
     createdAt: Date;
@@ -39,6 +56,10 @@ const activityXPSchema = new Schema<IActivityXP>(
         username: { type: String, required: true },
         totalXP: { type: Number, default: 0, index: true },
         level: { type: Number, default: 0 },
+        messageXP: { type: Number, default: 0 },
+        voiceXP: { type: Number, default: 0 },
+        messageLevel: { type: Number, default: 0 },
+        voiceLevel: { type: Number, default: 0 },
         messageCount: { type: Number, default: 0 },
         realMessageCount: { type: Number, default: 0 },
         lastMessageAt: { type: Date, default: Date.now },
@@ -58,6 +79,10 @@ const activityXPSchema = new Schema<IActivityXP>(
             enabled: { type: Boolean, default: true },
             lastActiveAt: { type: Date, default: Date.now },
             inactiveDays: { type: Number, default: 0 },
+            messageActiveAt: { type: Date, default: Date.now },
+            voiceActiveAt: { type: Date, default: Date.now },
+            messageDecayedAt: { type: Date, default: null },
+            voiceDecayedAt: { type: Date, default: null },
         },
     },
     { timestamps: true }

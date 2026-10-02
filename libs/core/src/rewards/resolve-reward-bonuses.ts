@@ -83,8 +83,9 @@ export async function resolveRewardBonuses(
     ]);
 
     const inputs: RewardBonusInputs = {
-        level: activity?.level ?? 0,
-        configuredLevelPoints: levelRewards.map(reward => reward.level),
+        messageLevel: activity?.messageLevel ?? 0,
+        voiceLevel: activity?.voiceLevel ?? 0,
+        levelRewards: levelRewards.map(reward => ({ messageLevel: reward.messageLevel, voiceLevel: reward.voiceLevel })),
         staffScore: bestStaffScore(tiers, roleIds),
         streakDays: streak?.currentStreak ?? 0,
         boosterCount: booster.boostCount,

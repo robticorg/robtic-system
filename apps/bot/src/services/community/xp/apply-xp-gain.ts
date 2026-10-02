@@ -1,7 +1,7 @@
 import type { Guild } from "discord.js";
 import { ActivityRepository, ActivityLogRepository, PeriodicStatRepository } from "@database/repositories";
 import type { IActivityXP } from "@database/models";
-import { calculateLevel } from "@core/xp";
+import { calculateLevel, type XpKind } from "@core/xp";
 import { publishMetric } from "@core/metrics";
 import { Logger } from "@logger";
 import { announceLevelUp } from "./announce-level-up";
@@ -14,20 +14,20 @@ export interface XpGainResult {
 }
 
 /**
- * Everything that happens *after* XP lands on the record, shared by every source.
+ * Everything that happens *after* XP lands on the record, shared by chat and voice.
  *
- * Chat and voice differ only in how they decide to award and how the total is written — the
- * level maths, the level-up rewards, the announcement and the logs are the same, and there is one
- * level system rather than one per source. Keeping this in a single place is what stops voice
- * quietly growing its own copy that drifts.
+ * Message and voice are separate levels: `kind` says which one this XP raised, and only that level
+ * can level up, be announced, and unlock roles. The combined `level` (from `totalXP`) is still kept
+ * current for the combined leaderboard, silently.
  */
 export async function applyXpGain(
+    kind: XpKind,
     discordId: string,
     guildId: string,
     username: string,
     guild: Guild,
     xp: number,
-    previousLevel: number,
+    previous: Pick<IActivityXP, "level" | "messageLevel" | "voiceLevel">,
     updated: IActivityXP,
     ctx: string,
 ): Promise<XpGainResult> {
@@ -35,25 +35,38 @@ export async function applyXpGain(
 
     publishMetric({ guildId, discordId, username, metric: "xp", value: xp });
 
-    const newLevel = calculateLevel(updated.totalXP);
+    const levelField = kind === "message" ? "messageLevel" : "voiceLevel";
+    const previousLevel = previous[levelField] ?? 0;
+    const newLevel = calculateLevel(kind === "message" ? updated.messageXP : updated.voiceXP);
     const leveledUp = newLevel > previousLevel;
+    const combinedLevel = calculateLevel(updated.totalXP);
+
+    if (leveledUp || combinedLevel !== previous.level) {
+        await ActivityRepository.setLevels(discordId, guildId, {
+            level: combinedLevel,
+            ...(leveledUp ? { [levelField]: newLevel } : {}),
+        });
+    }
 
     if (leveledUp) {
         publishMetric({ guildId, discordId, username, metric: "levelUp", value: newLevel - previousLevel });
 
-        Logger.debug(`${username} leveled up: ${previousLevel} → ${newLevel} (totalXP: ${updated.totalXP})`, ctx);
+        Logger.debug(`${username} ${kind} level up: ${previousLevel} → ${newLevel} (${kind} XP: ${kind === "message" ? updated.messageXP : updated.voiceXP})`, ctx);
 
-        await ActivityRepository.updateLevel(discordId, guildId, newLevel);
         await ActivityLogRepository.log({
             guildId,
             userId: discordId,
             type: "level_up",
             amount: newLevel,
-            details: `Leveled up from ${previousLevel} to ${newLevel}`,
+            details: `${kind === "message" ? "Message" : "Voice"} level ${previousLevel} → ${newLevel}`,
         });
 
-        await grantLevelRewards(discordId, guildId, newLevel, guild);
-        await announceLevelUp(guild, discordId, newLevel);
+        const levels = {
+            messageLevel: kind === "message" ? newLevel : previous.messageLevel ?? 0,
+            voiceLevel: kind === "voice" ? newLevel : previous.voiceLevel ?? 0,
+        };
+        await grantLevelRewards(discordId, guildId, levels, guild);
+        await announceLevelUp(guild, discordId, kind, newLevel);
     }
 
     await ActivityLogRepository.log({ guildId, userId: discordId, type: "xp_gain", amount: xp });

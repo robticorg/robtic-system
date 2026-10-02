@@ -10,7 +10,7 @@ import {
 import { COLORS } from "@constants";
 import { PunishmentRepository, NoteRepository, ActivityRepository, ComboUserStatsRepository, UserRepository } from "@database/repositories";
 import { getMemberLevel, isStaff } from "@bot/utils/access";
-import { calculateLevel, xpForLevel } from "@bot/services/community/xp";
+import { levelProgress } from "@core/xp";
 import { getStaffActivity, getSupportStats } from "@bot/utils/staff-activity";
 import { getStreakSummary } from "@core/streak";
 import { getUserHighestCombo } from "@core/combo";
@@ -65,11 +65,10 @@ export default {
         const levelBar = buildLevelBar(punishmentLevel);
 
         const xpRecord = await ActivityRepository.findOrCreate(target.id, guildId, target.username);
-        const xpLevel = calculateLevel(xpRecord.totalXP);
-        const nextLevelXP = xpForLevel(xpLevel + 1);
-        const progress = xpRecord.totalXP - xpForLevel(xpLevel);
-        const needed = nextLevelXP - xpForLevel(xpLevel);
-        const xpBar = buildXPBar(progress, needed);
+        const messageLevel = levelProgress(xpRecord.messageXP ?? 0);
+        const voiceLevel = levelProgress(xpRecord.voiceXP ?? 0);
+        const levelLine = (key: string, p: ReturnType<typeof levelProgress>) =>
+            `${t(key, lang, { level: `${p.level}` })}\n${buildXPBar(p.progress, p.needed)} \`${p.progress}/${p.needed}\` XP`;
         const rank = await ActivityRepository.getRank(target.id, guildId);
 
         const streak = await getStreakSummary(target.id, guildId, target.username);
@@ -116,8 +115,12 @@ export default {
                 { name: t("profile.field_account_created", lang), value: `<t:${Math.floor(target.createdTimestamp / 1000)}:R>`, inline: true },
                 ...(member ? [{ name: t("profile.field_joined_server", lang), value: member.joinedAt ? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:R>` : "Unknown", inline: true }] : []),
                 ...(staffLevel && staffLevel.level !== "Member" ? [{ name: t("profile.field_staff_level", lang), value: `${staffLevel.level} (${staffLevel.score})`, inline: true }] : []),
-                { name: t("profile.field_xp_level", lang), value: `${t("profile.xp_level_value", lang, { level: `${xpLevel}`, rank: `${rank}` })}\n${xpBar} \`${progress}/${needed}\` XP`, inline: true },
-                { name: t("profile.field_total_xp", lang), value: `${xpRecord.totalXP}`, inline: true },
+                {
+                    name: t("profile.field_xp_level", lang),
+                    value: `${levelLine("profile.message_level_value", messageLevel)}\n${levelLine("profile.voice_level_value", voiceLevel)}`,
+                    inline: true,
+                },
+                { name: t("profile.field_total_xp", lang), value: `${xpRecord.totalXP} · #${rank}`, inline: true },
                 { name: t("profile.field_streak", lang), value: t("profile.streak_value", lang, { current: `${streak.record.currentStreak}`, best: `${streak.record.bestStreak}` }), inline: true },
                 { name: t("profile.field_combo", lang), value: comboValue, inline: true },
                 { name: "🎯 Points", value: `${pointSummary.points}${pointSummary.rank > 0 ? ` (#${pointSummary.rank})` : ""}${pointSummary.rc > 0 ? ` · ${pointSummary.rc} RC` : ""}`, inline: true },

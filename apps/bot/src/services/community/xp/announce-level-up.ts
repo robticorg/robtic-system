@@ -1,6 +1,7 @@
 import type { Guild, TextChannel } from "discord.js";
 import { XPSettingsRepository } from "@database/repositories";
 import { LEVEL_UP_MESSAGES } from "@constants";
+import type { XpKind } from "@core/xp";
 import { Logger } from "@logger";
 
 const CTX = "main:xp";
@@ -12,7 +13,7 @@ const CTX = "main:xp";
  * level-up has no single channel it "belongs" to and announcing it wherever the member happened to
  * be typing would be noise in the middle of a conversation.
  */
-export async function announceLevelUp(guild: Guild, userId: string, level: number): Promise<void> {
+export async function announceLevelUp(guild: Guild, userId: string, kind: XpKind, level: number): Promise<void> {
     const settings = await XPSettingsRepository.get(guild.id);
     if (!settings?.levelUpChannelId) return;
 
@@ -25,7 +26,7 @@ export async function announceLevelUp(guild: Guild, userId: string, level: numbe
     }
 
     await (channel as TextChannel).send({
-        content: LEVEL_UP_MESSAGES.reached(userId, level),
+        content: LEVEL_UP_MESSAGES.reached(userId, kind, level),
         allowedMentions: { users: [userId] },
     }).catch(err => {
         Logger.warn(`Could not post level-up announcement in ${settings.levelUpChannelId}: ${err}`, CTX);

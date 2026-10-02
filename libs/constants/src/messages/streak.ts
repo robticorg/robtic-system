@@ -15,7 +15,10 @@ export const STREAK_MESSAGES = {
 
 /** Public level-up announcements from the XP system. */
 export const LEVEL_UP_MESSAGES = {
-    reached: (userId: string, level: number) => `📈 <@${userId}> وصل إلى **المستوى ${level}**! تهانينا 🎉`,
+    /** Message and voice are separate levels, so the announcement names which one went up. */
+    reached: (userId: string, kind: "message" | "voice", level: number) => kind === "voice"
+        ? `🎙️ <@${userId}> وصل إلى **مستوى الصوت ${level}**! تهانينا 🎉`
+        : `📈 <@${userId}> وصل إلى **مستوى الرسائل ${level}**! تهانينا 🎉`,
 } as const;
 
 /** Auto-managed `Streak N` role naming. */

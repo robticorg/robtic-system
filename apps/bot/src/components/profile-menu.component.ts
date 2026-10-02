@@ -7,7 +7,7 @@ import type { BotClient } from "@core/bot-client";
 import { COLORS, INTERACTION_MESSAGES } from "@constants";
 import { PunishmentRepository, NoteRepository, ActivityRepository, UserRepository } from "@database/repositories";
 import type { ComponentHandler } from "@typings/command";
-import { calculateLevel, xpForLevel } from "../services/community/xp";
+import { levelProgress } from "@core/xp";
 import { getStaffActivity, getSupportStats, getActivityLogs } from "@bot/utils/staff-activity";
 import { getStreakSummary } from "@core/streak";
 import { getProfileTab } from "@core/profile";
@@ -50,29 +50,30 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
 
         if (selected === "activity") {
             const record = await ActivityRepository.findOrCreate(targetId, guildId, "unknown");
-            const level = calculateLevel(record.totalXP);
+            const message = levelProgress(record.messageXP ?? 0);
+            const voice = levelProgress(record.voiceXP ?? 0);
             const rank = await ActivityRepository.getRank(targetId, guildId);
-            const progress = record.totalXP - xpForLevel(level);
-            const needed = xpForLevel(level + 1) - xpForLevel(level);
+            const bar = (p: ReturnType<typeof levelProgress>) =>
+                `${"█".repeat(Math.round((p.progress / p.needed) * 10))}${"░".repeat(10 - Math.round((p.progress / p.needed) * 10))} \`${p.progress}/${p.needed}\``;
             const logs = await getActivityLogs(targetId, guildId, 10);
 
             const recentLines = logs.length > 0
                 ? logs.map(l => `\`${l.type}\` **${l.amount >= 0 ? "+" : ""}${l.amount}** ${l.details ? `— ${l.details}` : ""} <t:${Math.floor(l.createdAt.getTime() / 1000)}:R>`).join("\n")
                 : "No recent activity.";
 
+            const since = (at: Date | undefined) => (at ? `<t:${Math.floor(at.getTime() / 1000)}:R>` : "never");
             const decayStatus = record.decay.enabled
-                ? `Active — Last active <t:${Math.floor(record.decay.lastActiveAt.getTime() / 1000)}:R>${record.decay.inactiveDays > 0 ? ` (${record.decay.inactiveDays}d inactive)` : ""}`
+                ? `Active — 💬 last message ${since(record.decay.messageActiveAt ?? record.decay.lastActiveAt)} · 🎙️ last voice ${since(record.decay.voiceActiveAt ?? record.decay.lastActiveAt)}`
                 : "Disabled";
 
             const embed = new EmbedBuilder()
                 .setTitle(`${emoji.status} Activity ${putUser}`)
                 .addFields(
-                    { name: "Level", value: `${level}`, inline: true },
-                    { name: "Total XP", value: `${record.totalXP}`, inline: true },
-                    { name: "Rank", value: `#${rank}`, inline: true },
+                    { name: "💬 Message Level", value: `**${message.level}** · ${record.messageXP ?? 0} XP\n${bar(message)}`, inline: true },
+                    { name: "🎙️ Voice Level", value: `**${voice.level}** · ${record.voiceXP ?? 0} XP\n${bar(voice)}`, inline: true },
+                    { name: "Total XP", value: `${record.totalXP} · Rank #${rank}`, inline: true },
                     { name: "Messages", value: `${record.messageCount}`, inline: true },
                     { name: "Real Messages", value: `${record.realMessageCount}`, inline: true },
-                    { name: "Progress", value: `${"█".repeat(Math.round((progress / needed) * 10))}${"░".repeat(10 - Math.round((progress / needed) * 10))} \`${progress}/${needed}\``, inline: false },
                     { name: "Decay", value: decayStatus, inline: false },
                     { name: "Recent Activity", value: recentLines.slice(0, 1024) },
                 )

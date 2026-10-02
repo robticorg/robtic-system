@@ -10,14 +10,16 @@
  * applied referral code (`referral-code.ts`).
  */
 export interface RewardBonusInputs {
-    /** The member's current level (existing XP/level system). 0 = no bonus. */
-    level?: number;
+    /** The member's current message level. */
+    messageLevel?: number;
+    /** The member's current voice level. */
+    voiceLevel?: number;
     /**
-     * Every level configured on the existing `LevelReward` roles for this guild (`/level-rewards`),
-     * as plain level numbers — order and role ids don't matter here. The level bonus is derived
-     * from these at read time; see `levelBonusBp`. Empty (no roles configured) means no bonus.
+     * Every level-reward role configured in this guild (`/level-rewards`) — each a required message
+     * level, voice level, or both. The level bonus is derived from these at read time; see
+     * `levelBonusBp`. Empty (no roles configured) means no bonus.
      */
-    configuredLevelPoints?: readonly number[];
+    levelRewards?: readonly { messageLevel: number | null; voiceLevel: number | null }[];
     /** The member's best-matching StaffTier score, 0-100. 0 (or absent) = not staff. */
     staffScore?: number;
     /** Current consecutive streak days (existing streak system). */

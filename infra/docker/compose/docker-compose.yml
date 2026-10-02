@@ -9,6 +9,10 @@ services:
     restart: unless-stopped
     env_file:
       - /home/robtic/robtic-system/.env
+    # The bank API (apps/bot/src/services/bank/api). No authentication — anyone who can reach this
+    # port can start a transfer, so keep it closed to the internet at the firewall.
+    ports:
+      - "0.0.0.0:8790:8790"
     depends_on:
       - robtic-minecraft-api
 

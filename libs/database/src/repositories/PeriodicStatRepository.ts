@@ -17,6 +17,12 @@ export class PeriodicStatRepository {
         );
     }
 
+    /** Every member's all-time value for one metric, keyed `guildId:discordId` — one query, for migrations. */
+    static async getAllTimeValues(metric: PeriodicStatMetric): Promise<Map<string, number>> {
+        const rows = await PeriodicStat.find({ period: "alltime", periodKey: "all", metric }).select("guildId discordId value").lean();
+        return new Map(rows.map(r => [`${r.guildId}:${r.discordId}`, r.value]));
+    }
+
     static async getTop(
         guildId: string,
         period: ComboLeaderboardPeriod,
