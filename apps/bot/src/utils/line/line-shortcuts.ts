@@ -13,6 +13,11 @@ export function parseLineShortcuts(input: string): string[] {
     return [...new Set(words)].slice(0, LINE_SHORTCUT_LIMITS.maxWords);
 }
 
+/** Who may post the line with a shortcut word: Administrators, and anyone holding a role set with `/line role`. */
+export function canPostLine(isAdministrator: boolean, memberRoleIds: readonly string[], allowedRoleIds: readonly string[]): boolean {
+    return isAdministrator || memberRoleIds.some(id => allowedRoleIds.includes(id));
+}
+
 /** Whether a whole message is one of the shortcut words (case-insensitive, surrounding spaces ignored). */
 export function matchesLineShortcut(content: string, shortcuts: readonly string[]): boolean {
     if (!shortcuts.length) return false;

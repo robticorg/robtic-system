@@ -174,13 +174,22 @@ export class ServerConfigRepository {
         await ServerConfig.updateOne({ guildId }, { $set: { lineShortcuts: words } }, { upsert: true });
     }
 
-    /** Auto-line channels and shortcut words in one read — the message handler needs both per message. */
-    static async getLineConfig(guildId: string): Promise<{ channels: string[]; shortcuts: string[] }> {
-        const config = await ServerConfig.findOne({ guildId }).select("lineChannelId lineChannelIds lineShortcuts").lean();
-        if (!config) return { channels: [], shortcuts: [] };
+    /** Adds or removes a role allowed to post the line with a shortcut word. */
+    static async setLineRole(guildId: string, roleId: string, allowed: boolean): Promise<void> {
+        await ServerConfig.updateOne(
+            { guildId },
+            allowed ? { $addToSet: { lineRoleIds: roleId } } : { $pull: { lineRoleIds: roleId } },
+            { upsert: true }
+        );
+    }
+
+    /** Auto-line channels, shortcut words and allowed roles in one read — the message handler needs them per message. */
+    static async getLineConfig(guildId: string): Promise<{ channels: string[]; shortcuts: string[]; roleIds: string[] }> {
+        const config = await ServerConfig.findOne({ guildId }).select("lineChannelId lineChannelIds lineShortcuts lineRoleIds").lean();
+        if (!config) return { channels: [], shortcuts: [], roleIds: [] };
         const channels = config.lineChannelIds ?? [];
         const legacy = config.lineChannelId && !channels.includes(config.lineChannelId) ? [config.lineChannelId] : [];
-        return { channels: [...channels, ...legacy], shortcuts: config.lineShortcuts ?? [] };
+        return { channels: [...channels, ...legacy], shortcuts: config.lineShortcuts ?? [], roleIds: config.lineRoleIds ?? [] };
     }
 
     static async getLineChannels(guildId: string): Promise<string[]> {

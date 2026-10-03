@@ -7,8 +7,12 @@ import { ServerConfigRepository } from "@database/repositories";
 import { LINE_SHORTCUT_LIMITS, parseLineShortcuts } from "@bot/utils/line/line-shortcuts";
 
 /**
- * `/line shortcut [words] [clear]` — words that post the line: when someone who can manage messages
- * sends one of them on its own, the bot deletes it and posts the line image (`/setline`) instead.
+ * `/line shortcut [words] [clear]` — words that post the line: when an Administrator, or a member
+ * with a role from `/line role`, sends one of them on its own, the bot deletes it and posts the
+ * line image (`/setline`) instead.
+ *
+ * `/line role [role] [remove]` — the roles allowed to do that, besides Administrators.
+ *
  * Auto-line channels moved to `/autoline`.
  */
 export default {
@@ -16,7 +20,7 @@ export default {
     category: "Configuration",
     data: new SlashCommandBuilder()
         .setName("line")
-        .setDescription("The line image and the words that post it")
+        .setDescription("The line image, the words that post it, and who may use them")
         .addSubcommand(sub =>
             sub.setName("shortcut")
                 .setDescription("Set the words that post the line (no words shows the current ones)")
@@ -27,6 +31,16 @@ export default {
                 )
                 .addBooleanOption(opt =>
                     opt.setName("clear").setDescription("Remove every shortcut word")
+                )
+        )
+        .addSubcommand(sub =>
+            sub.setName("role")
+                .setDescription("Allow a role to post the line (Administrators always can; no role shows the list)")
+                .addRoleOption(opt =>
+                    opt.setName("role").setDescription("The role")
+                )
+                .addBooleanOption(opt =>
+                    opt.setName("remove").setDescription("Take the permission away from this role instead")
                 )
         ),
 
@@ -42,6 +56,31 @@ export default {
         }
 
         const list = (words: string[]) => words.map(w => `\`${w}\``).join(", ");
+        const roles = (ids: string[]) => ids.map(id => `<@&${id}>`).join(", ");
+
+        if (interaction.options.getSubcommand() === "role") {
+            const role = interaction.options.getRole("role");
+            if (!role) {
+                const { roleIds } = await ServerConfigRepository.getLineConfig(guildId);
+                await interaction.editReply({
+                    content: roleIds.length
+                        ? `Administrators and these roles can post the line: ${roles(roleIds)}`
+                        : "Only Administrators can post the line. Allow a role with `/line role role:`.",
+                    allowedMentions: { parse: [] },
+                });
+                return;
+            }
+
+            const remove = interaction.options.getBoolean("remove") ?? false;
+            await ServerConfigRepository.setLineRole(guildId, role.id, !remove);
+            await interaction.editReply({
+                content: remove
+                    ? `<@&${role.id}> can no longer post the line.`
+                    : `<@&${role.id}> can now post the line with a shortcut word.`,
+                allowedMentions: { parse: [] },
+            });
+            return;
+        }
 
         if (interaction.options.getBoolean("clear")) {
             await ServerConfigRepository.setLineShortcuts(guildId, []);
@@ -68,7 +107,7 @@ export default {
 
         await ServerConfigRepository.setLineShortcuts(guildId, words);
         await interaction.editReply({
-            content: `Line shortcuts set: ${list(words)}.\nSending one of them on its own (if you can manage messages) replaces it with the line.`,
+            content: `Line shortcuts set: ${list(words)}.\nAdministrators and roles from \`/line role\` can send one on its own to replace it with the line.`,
         });
     },
 };

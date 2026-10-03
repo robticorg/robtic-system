@@ -35,8 +35,10 @@ export interface IServerConfig extends Document {
     /** @deprecated legacy single-channel field, replaced by lineChannelIds */
     lineChannelId?: string;
     lineChannelIds: string[];
-    /** Words that, sent alone by someone who can manage messages, are replaced by the line (`/line shortcut`). Lowercase. */
+    /** Words that, sent alone by an allowed member, are replaced by the line (`/line shortcut`). Lowercase. */
     lineShortcuts: string[];
+    /** Roles allowed to post the line with a shortcut word, besides Administrators (`/line role`). */
+    lineRoleIds: string[];
     /** Prefix for main-bot text commands in this guild (e.g. "!"). Falls back to DEFAULT_PREFIX when unset. */
     prefix?: string;
     /** Channel where plain chat is auto-deleted, keeping it command-only (see commands-channel-guard.ts). */
@@ -98,6 +100,7 @@ const serverConfigSchema = new Schema<IServerConfig>(
         lineChannelId: { type: String },
         lineChannelIds: { type: [String], default: [] },
         lineShortcuts: { type: [String], default: [] },
+        lineRoleIds: { type: [String], default: [] },
         prefix: { type: String },
         commandsChannelId: { type: String },
         inviteLogChannelId: { type: String },

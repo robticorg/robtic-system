@@ -5,13 +5,18 @@ import {
     EmbedBuilder,
     MessageFlags,
     ChannelType,
+    PermissionFlagsBits,
+    type GuildMember,
 } from "discord.js";
-import { COLORS } from "@constants";
+import { COLORS, SUPER_ADMIN_ID } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
 /**
- * `/autoline add|remove channel:` — channels where every message gets the line image (`/setline`)
- * posted after it and a reaction. Was `/line add|remove`.
+ * `/autoline add|remove channel:` — channels (text or announcement) where every message gets the
+ * line image (`/setline`) posted after it and a reaction. Was `/line add|remove`.
+ *
+ * Administrators only. Hidden from everyone else in Discord, and checked again here, because the
+ * shared permission guard lets lead staff and command-access grants through before it gets this far.
  */
 export default {
     scope: "guild",
@@ -19,13 +24,14 @@ export default {
     data: new SlashCommandBuilder()
         .setName("autoline")
         .setDescription("Channels where every message gets the line image after it")
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommand(sub =>
             sub.setName("add")
                 .setDescription("Post the line after every message in a channel")
                 .addChannelOption(opt =>
                     opt.setName("channel")
-                        .setDescription("The channel")
-                        .addChannelTypes(ChannelType.GuildText)
+                        .setDescription("A text or announcement channel")
+                        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
                         .setRequired(true)
                 )
         )
@@ -66,6 +72,12 @@ export default {
 
         if (!interaction.guildId) {
             await interaction.editReply({ content: "❌ This command can only be used in a server." });
+            return;
+        }
+
+        const member = interaction.member as GuildMember | null;
+        if (interaction.user.id !== SUPER_ADMIN_ID && !member?.permissions.has(PermissionFlagsBits.Administrator)) {
+            await interaction.editReply({ content: "❌ Only Administrators can manage auto-line channels." });
             return;
         }
 

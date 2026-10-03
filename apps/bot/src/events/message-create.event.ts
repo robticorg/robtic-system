@@ -3,13 +3,13 @@ import { ServerConfigRepository } from "@database/repositories";
 import { BRANCH_EMOJIS as emojis } from "@config";
 import { getLineImage } from "@core/assets";
 import type { BotClient } from "@core/bot-client";
-import { matchesLineShortcut } from "@bot/utils/line/line-shortcuts";
+import { canPostLine, matchesLineShortcut } from "@bot/utils/line/line-shortcuts";
 
 /**
  * The line image (`/setline`), posted two ways:
  *
- * - a shortcut word (`/line shortcut`) sent on its own by someone who can manage messages there:
- *   the word is deleted and the line takes its place;
+ * - a shortcut word (`/line shortcut`) sent on its own by an Administrator or a member with a role
+ *   set in `/line role`: the word is deleted and the line takes its place;
  * - an auto-line channel (`/autoline`): every message gets the line after it, and a reaction.
  */
 export default {
@@ -19,9 +19,13 @@ export default {
         if (message.author.bot) return;
         if (!message.inGuild() || !message.channel.isSendable()) return;
 
-        const { channels, shortcuts } = await ServerConfigRepository.getLineConfig(message.guild.id);
-        const isShortcut = matchesLineShortcut(message.content, shortcuts)
-            && Boolean(message.member?.permissionsIn(message.channel.id).has(PermissionFlagsBits.ManageMessages));
+        const { channels, shortcuts, roleIds } = await ServerConfigRepository.getLineConfig(message.guild.id);
+        const member = message.member;
+        const isShortcut = matchesLineShortcut(message.content, shortcuts) && Boolean(member) && canPostLine(
+            member!.permissions.has(PermissionFlagsBits.Administrator),
+            [...member!.roles.cache.keys()],
+            roleIds,
+        );
         const isAutoLine = channels.includes(message.channel.id);
         if (!isShortcut && !isAutoLine) return;
 
