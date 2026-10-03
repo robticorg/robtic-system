@@ -36,6 +36,7 @@ on or off. Everything else is an ordinary command and is always available.
 | [invites](docs/bot/invites.md) | default-on | Invite tracking, join announcements, `/invites` and `/info` |
 | [partner](docs/bot/partner.md) | default-on | Partner servers, each announced with a banner; `/partner edit` and `/partner update` redraw posts |
 | boost | default-on | Thanks each booster in the `/boost channel` (Arabic + English) |
+| music | default-on | Runs separate music bots: `/music create\|list`, `/bot remove` — each locked to one server and voice channel |
 | referral | default-on | Referral codes: `/referral use\|info`, `/referral-config` — the code's bonus (≤ +15%) applies to rewards ([rewards.md](docs/bot/rewards.md)) |
 | [logging](#logging) | default-on | Log-channel routing |
 | [panels](#panels) | default-on | Reusable message panels |

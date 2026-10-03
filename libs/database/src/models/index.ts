@@ -116,6 +116,7 @@ export { RewardInviteCredit, type IRewardInviteCredit } from "./RewardInviteCred
 export { InviteJoin, type IInviteJoin, type InviteJoinSource } from "./InviteJoin";
 export { PartnerServer, type IPartnerServer } from "./PartnerServer";
 export { BranchAsset, type IBranchAsset } from "./BranchAsset";
+export { MusicBot, type IMusicBot } from "./MusicBot";
 export { ReferralCode, type IReferralCode } from "./ReferralCode";
 export { ReferralCodeUse, type IReferralCodeUse } from "./ReferralCodeUse";
 export {

@@ -17,6 +17,7 @@
     "test:invites": "bun --preload ./libs/shared/src/preload.ts scripts/invites-check.ts",
     "test:partner": "bun --preload ./libs/shared/src/preload.ts scripts/partner-check.ts",
     "test:boost": "bun --preload ./libs/shared/src/preload.ts scripts/boost-check.ts",
+    "test:music": "bun --preload ./libs/shared/src/preload.ts scripts/music-check.ts",
     "test:prefix": "bun --preload ./libs/shared/src/preload.ts scripts/prefix-check.ts",
     "test:moderation": "bun --preload ./libs/shared/src/preload.ts scripts/moderation-guard-check.ts",
     "test:robs": "bun --preload ./libs/shared/src/preload.ts scripts/robs-check.ts",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/yt-search": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^8.62.0",
     "@typescript-eslint/parser": "^8.62.0",
     "eslint": "^10.5.0"
@@ -43,6 +45,7 @@
     "bun": ">=1.1.0"
   },
   "dependencies": {
+    "@discordjs/voice": "^0.19.2",
     "@napi-rs/canvas": "^1.0.9",
     "@node-rs/argon2": "^2.1.0",
     "chalk": "^5.6.2",
@@ -51,6 +54,8 @@
     "dotenv": "latest",
     "mongoose": "^9.7.2",
     "node-cron": "^4.5.0",
-    "tesseract.js": "^7.0.0"
+    "opusscript": "^0.1.0",
+    "tesseract.js": "^7.0.0",
+    "yt-search": "^2.13.1"
   }
 }

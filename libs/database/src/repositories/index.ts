@@ -78,5 +78,6 @@ export * from "./RewardInviteCreditRepository";
 export * from "./InviteJoinRepository";
 export * from "./PartnerServerRepository";
 export * from "./BranchAssetRepository";
+export * from "./MusicBotRepository";
 export * from "./ReferralCodeRepository";
 export * from "./ReferralCodeUseRepository";
