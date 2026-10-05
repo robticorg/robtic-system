@@ -37,8 +37,5 @@ export const MODERATION_ACTION_MESSAGES = {
         return lines.join("\n");
     },
 
-    rolesListTitle: (guildName: string) => `🎭 Roles — ${guildName}`,
-    rolesListFooter: (shown: number, total: number) =>
-        shown === total ? `${total} role(s)` : `Showing ${shown} of ${total} role(s) — too many to display in full`,
     rolesListEmpty: "This server has no roles besides @everyone.",
 } as const;

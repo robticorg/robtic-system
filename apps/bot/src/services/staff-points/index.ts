@@ -1,11 +1,8 @@
 import { Logger } from "@logger";
+import { staffApiHeaders, staffApiUrl } from "../staff-api";
 
 /** Every this many real messages, the author earns one staff point. */
 export const MESSAGES_PER_STAFF_POINT = 100;
-
-// The bot runs in a Docker container, where 127.0.0.1 is the container itself — so the default is
-// the host's LAN address. Override with STAFF_POINTS_API_URL (e.g. a Compose service name).
-const DEFAULT_API_URL = "http://192.168.1.146:8788";
 
 /**
  * Sends one staff point to the internal points API when `messageCount` lands on a multiple of
@@ -17,16 +14,10 @@ const DEFAULT_API_URL = "http://192.168.1.146:8788";
 export async function awardMessageMilestone(guildId: string, userId: string, messageCount: number): Promise<void> {
     if (messageCount <= 0 || messageCount % MESSAGES_PER_STAFF_POINT !== 0) return;
 
-    const baseUrl = (process.env.STAFF_POINTS_API_URL || DEFAULT_API_URL).replace(/\/+$/, "");
-    const token = process.env.STAFF_POINTS_API_TOKEN;
-
     try {
-        const res = await fetch(`${baseUrl}/internal/staff/points`, {
+        const res = await fetch(staffApiUrl("/internal/staff/points"), {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
+            headers: staffApiHeaders(),
             body: JSON.stringify({
                 guildId,
                 userId,
