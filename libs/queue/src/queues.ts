@@ -9,15 +9,22 @@ import type { JobPayloads, QueueName } from "./types";
  *   a join and the leave that follows it must apply in order, across every worker replica.
  * - `discord-outbox`: things that must be posted in Discord. Consumed by the Gateway, the only
  *   process with a Discord connection — workers enqueue here instead of talking to Discord.
+ * - `activity`: the message-counter flush. **Global concurrency 1**: one batch at a time, so a
+ *   batch is always finished (or resumed) before the next one is taken.
+ * - `staff-points`: milestone points sent to the external staff API, at a bounded concurrency
+ *   (`EXTERNAL_API_CONCURRENCY`) so a burst can't flood it.
  */
 export const QUEUES = {
     invites: "invites",
     discordOutbox: "discord-outbox",
+    activity: "activity",
+    staffPoints: "staff-points",
 } as const satisfies Record<string, QueueName>;
 
 /** Queues whose jobs must run one at a time, everywhere. */
 export const GLOBAL_CONCURRENCY: Partial<Record<QueueName, number>> = {
     invites: 1,
+    activity: 1,
 };
 
 /**

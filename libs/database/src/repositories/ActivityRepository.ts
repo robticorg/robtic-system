@@ -66,6 +66,40 @@ export class ActivityRepository {
         return above + 1;
     }
 
+    /**
+     * Adds a flush batch's real messages — at most once per batch (`msgFlushBatch` guard), and moves
+     * the message-decay clock forward (`$max`, never backwards). Returns the counter afterwards and
+     * how many messages this batch added; on a repeat of an applied batch, the same numbers again,
+     * so milestones can still be recomputed after a crash.
+     */
+    static async addRealMessagesBatch(
+        discordId: string,
+        guildId: string,
+        username: string,
+        count: number,
+        lastActiveAt: Date,
+        batchId: string,
+    ): Promise<{ applied: boolean; total: number; added: number }> {
+        await ActivityRepository.findOrCreate(discordId, guildId, username);
+        const updated = await ActivityXP.findOneAndUpdate(
+            { discordId, guildId, msgFlushBatch: { $ne: batchId } },
+            {
+                $inc: { realMessageCount: count },
+                $max: { "decay.messageActiveAt": lastActiveAt },
+                $set: { msgFlushBatch: batchId, msgFlushCount: count },
+            },
+            { returnDocument: "after" }
+        );
+        if (updated) return { applied: true, total: updated.realMessageCount, added: count };
+
+        const current = await ActivityXP.findOne({ discordId, guildId });
+        return {
+            applied: false,
+            total: current?.realMessageCount ?? 0,
+            added: current?.msgFlushBatch === batchId ? current.msgFlushCount : 0,
+        };
+    }
+
     /** Counts a real message, and — in the same write — restarts the member's message-decay clock. */
     static async incrementRealMessageCount(discordId: string, guildId: string, username: string): Promise<IActivityXP | null> {
         await ActivityRepository.findOrCreate(discordId, guildId, username);

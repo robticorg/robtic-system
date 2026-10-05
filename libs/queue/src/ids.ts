@@ -9,6 +9,8 @@ export const jobIds = {
     inviteLeave: (guildId: string, memberId: string, leftAt: Date) => `invite-leave_${guildId}_${memberId}_${leftAt.getTime()}`,
     inviteJoinAnnouncement: (guildId: string, memberId: string, joinedAt: string) => `announce-join_${guildId}_${memberId}_${Date.parse(joinedAt)}`,
     inviteLeaveAnnouncement: (guildId: string, memberId: string, leftAt: string) => `announce-leave_${guildId}_${memberId}_${Date.parse(leftAt)}`,
+    /** One per milestone ever — the same hundred messages can't queue a second staff point. */
+    staffMilestone: (guildId: string, memberId: string, milestone: number) => `staff-msg_${guildId}_${memberId}_${milestone}`,
 } as const;
 
 /** A short correlation id for one Discord event / request, carried through APIs, queues and workers. */

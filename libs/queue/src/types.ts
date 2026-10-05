@@ -47,9 +47,23 @@ export type DiscordOutboxJob =
         inviterId: string | null;
     });
 
+/** The periodic message-counter flush (scheduled by the worker, never enqueued by hand). */
+export interface ActivityFlushJob {
+    kind: "message-flush";
+}
+
+/** One staff point for a message milestone, sent to the external staff API. */
+export interface StaffPointJob extends JobMeta {
+    guildId: string;
+    memberId: string;
+    milestone: number;
+}
+
 export interface JobPayloads {
     invites: InviteJob;
     "discord-outbox": DiscordOutboxJob;
+    activity: ActivityFlushJob;
+    "staff-points": StaffPointJob;
 }
 
 export type QueueName = keyof JobPayloads;

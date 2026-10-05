@@ -17,6 +17,33 @@ export class PeriodicStatRepository {
         );
     }
 
+    /**
+     * Adds a batched delta to one period bucket — at most once per flush batch. The upsert is
+     * guarded on `flushBatch`: if this batch was already applied, the guarded filter misses, the
+     * upsert collides with the unique index (E11000), and nothing changes. Returns whether it applied.
+     */
+    static async incrementBatch(
+        guildId: string,
+        period: ComboLeaderboardPeriod,
+        periodKey: string,
+        metric: PeriodicStatMetric,
+        discordId: string,
+        amount: number,
+        batchId: string,
+    ): Promise<boolean> {
+        try {
+            await PeriodicStat.updateOne(
+                { guildId, period, periodKey, metric, discordId, flushBatch: { $ne: batchId } },
+                { $inc: { value: amount }, $set: { flushBatch: batchId } },
+                { upsert: true }
+            );
+            return true;
+        } catch (err) {
+            if ((err as { code?: number }).code === 11000) return false;
+            throw err;
+        }
+    }
+
     /** Every member's all-time value for one metric, keyed `guildId:discordId` — one query, for migrations. */
     static async getAllTimeValues(metric: PeriodicStatMetric): Promise<Map<string, number>> {
         const rows = await PeriodicStat.find({ period: "alltime", periodKey: "all", metric }).select("guildId discordId value").lean();

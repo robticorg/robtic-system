@@ -162,6 +162,52 @@ export class PointsRepository {
         return earned;
     }
 
+    /**
+     * Batched message progress → Points, exactly once per flush batch, crash-safe at every step:
+     *
+     * 1. add the batch to `messageProgress` (guard: `msgFlushBatch`);
+     * 2. pay the whole Points it now covers through `move` with an idempotency key derived from
+     *    the batch — a retry finds the ledger row and pays nothing twice;
+     * 3. take the paid progress back (guard: `msgConvertBatch`).
+     *
+     * A retry after step 2 re-reads the same progress (step 3 hadn't run), computes the same Points,
+     * is refused by the ledger, and finishes step 3. Unlike `addProgress`, two calls can never both
+     * convert the same progress. Returns the Points paid by this call.
+     */
+    static async addMessageProgressBatch(
+        guildId: string,
+        discordId: string,
+        username: string,
+        amount: number,
+        rate: number,
+        batchId: string,
+    ): Promise<number> {
+        await this.findOrCreate(guildId, discordId, username);
+        if (amount > 0) {
+            await Point.updateOne(
+                { guildId, discordId, msgFlushBatch: { $ne: batchId } },
+                { $inc: { messageProgress: amount }, $set: { msgFlushBatch: batchId } },
+            );
+        }
+
+        const current = await Point.findOne({ guildId, discordId });
+        if (!current || current.msgConvertBatch === batchId) return 0;
+
+        const earned = rate > 0 ? Math.floor((current.messageProgress ?? 0) / rate) : 0;
+        if (earned > 0) {
+            await this.move({
+                guildId, discordId, username, amount: earned, source: "message",
+                idempotencyKey: `message-progress_${batchId}_${guildId}_${discordId}`,
+            });
+        }
+
+        const taken = await Point.updateOne(
+            { guildId, discordId, msgConvertBatch: { $ne: batchId } },
+            { $inc: { messageProgress: -earned * rate }, $set: { msgConvertBatch: batchId } },
+        );
+        return taken.modifiedCount > 0 ? earned : 0;
+    }
+
     /** Moves RC without touching Points — the conversion service handles both sides. */
     static async addRc(guildId: string, discordId: string, amount: number): Promise<IPoint> {
         return Point.findOneAndUpdate(

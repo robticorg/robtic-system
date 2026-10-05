@@ -1,4 +1,4 @@
-import type { StaffRoleInfo, StaffRoleType } from "@bot/services/staff-api";
+import type { StaffRoleInfo, StaffRoleType } from "@core/staff-api";
 
 /**
  * The `?roles` panel's rules — classification, filters, sorting, paging and the line format —

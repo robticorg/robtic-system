@@ -13,7 +13,7 @@ import {
     type RoleRow,
 } from "@bot/utils/roles-view/roles-view";
 import { ROLES_BUTTON_ID, ROLES_FILTER_MODAL_ID, ROLES_SEARCH_MODAL_ID, buildRolesFilterModal, buildRolesSearchModal } from "@bot/utils/roles-view/roles-panel";
-import { getStaffRoles } from "@bot/services/staff-api";
+import { getStaffRoles } from "@core/staff-api";
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {

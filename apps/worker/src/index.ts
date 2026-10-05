@@ -4,8 +4,23 @@ import { connectDatabase } from "@database/connection";
 import { processInviteJoin, processInviteLeave } from "@core/invites";
 import { onShutdown } from "@internal-api";
 import { Logger } from "@logger";
-import { GLOBAL_CONCURRENCY, QUEUES, closeQueues, enqueue, getQueue, redisConnection, type InviteJob } from "@queue";
+import {
+    GLOBAL_CONCURRENCY,
+    QUEUES,
+    closeQueues,
+    closeRedis,
+    enqueue,
+    getQueue,
+    jobIds,
+    newRequestId,
+    redisConnection,
+    type ActivityFlushJob,
+    type InviteJob,
+    type StaffPointJob,
+} from "@queue";
 import { processInvitesJob } from "./processors/invites";
+import { defaultActivityDeps, processMessageFlush } from "./processors/activity";
+import { processStaffPointJob } from "./processors/staff-points";
 
 const SERVICE = "worker";
 
@@ -18,6 +33,10 @@ if (!process.env.MONGODB_URI) {
 await connectDatabase(process.env.MONGODB_URI);
 
 const concurrency = Math.max(1, Number(process.env.WORKER_CONCURRENCY) || 10);
+/** Calls to external APIs (the staff API) in flight at once, per worker. */
+const externalConcurrency = Math.max(1, Number(process.env.EXTERNAL_API_CONCURRENCY) || 5);
+/** How often buffered message counts are written to MongoDB. */
+const flushEvery = Math.max(5_000, Number(process.env.ACTIVITY_FLUSH_MS) || 30_000);
 
 /** Queues that must run one job at a time everywhere (e.g. invites: join before leave) — enforced in Redis, so it holds across replicas. */
 for (const [queue, limit] of Object.entries(GLOBAL_CONCURRENCY)) {
@@ -50,7 +69,38 @@ const workers = [
         })),
         { connection: redisConnection(), concurrency },
     ),
+    new Worker<ActivityFlushJob>(
+        QUEUES.activity,
+        logged<ActivityFlushJob>(QUEUES.activity, async () => {
+            const outcome = await processMessageFlush({
+                ...defaultActivityDeps,
+                milestone: (guildId, memberId, milestone) => enqueue(
+                    QUEUES.staffPoints,
+                    "milestone",
+                    { guildId, memberId, milestone, requestId: newRequestId() },
+                    jobIds.staffMilestone(guildId, memberId, milestone),
+                ),
+            });
+            if (outcome) {
+                Logger.info(`Flushed batch ${outcome.batchId}: ${outcome.messages} messages from ${outcome.members} members, ${outcome.pointsPaid} points, ${outcome.milestones} staff milestones`, SERVICE);
+            }
+            return outcome;
+        }),
+        { connection: redisConnection(), concurrency: 1 },
+    ),
+    new Worker<StaffPointJob>(
+        QUEUES.staffPoints,
+        logged<StaffPointJob>(QUEUES.staffPoints, job => processStaffPointJob(job.data)),
+        { connection: redisConnection(), concurrency: externalConcurrency },
+    ),
 ];
+
+/** The flush tick. Upserting the scheduler is idempotent, so every replica can do it on boot. */
+await getQueue(QUEUES.activity).upsertJobScheduler(
+    "message-flush",
+    { every: flushEvery },
+    { name: "flush", data: { kind: "message-flush" }, opts: { attempts: 3, backoff: { type: "exponential", delay: 2_000 } } },
+);
 
 for (const worker of workers) {
     worker.on("error", err => Logger.error(`Worker ${worker.name} error: ${err.message}`, SERVICE));
@@ -59,6 +109,7 @@ for (const worker of workers) {
 // Stop taking jobs and let running ones finish, then close Redis and Mongo.
 onShutdown("workers", () => Promise.all(workers.map(w => w.close())));
 onShutdown("queues", () => closeQueues());
+onShutdown("redis", () => closeRedis());
 onShutdown("mongo", () => mongoose.disconnect());
 
 Logger.success(`Worker consuming ${workers.map(w => w.name).join(", ")} (concurrency ${concurrency})`, SERVICE);

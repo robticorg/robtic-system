@@ -7,7 +7,10 @@ export type {
     InviteLeaveJob,
     InviteJob,
     DiscordOutboxJob,
+    ActivityFlushJob,
+    StaffPointJob,
     JobPayloads,
     QueueName,
 } from "./types";
 export { jobIds, newRequestId } from "./ids";
+export { getRedis, closeRedis, bufferMessage, takeMessageBatch, readMessageBatch, finishMessageBatch } from "./message-buffer";

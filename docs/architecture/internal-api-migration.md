@@ -160,6 +160,34 @@ guildMemberAdd → Gateway: detect the used invite (invite cache)
   (`UnrecoverableError`) and stay in the failed set.
 - Tests: `bun run test:internal` (API, client, queue, worker idempotency/retries, outbox).
 
+## 6. Status — activity: message counter
+
+The per-message MongoDB writes (real-message total, the four `messages` period buckets, message
+progress → Points) and the staff-point call every 100 messages now go through Redis and the worker.
+
+```
+messageCreate → Gateway: HINCRBY act:msg:pending  `day|guild|member` (one Redis round trip)
+activity queue, every ACTIVITY_FLUSH_MS (job scheduler, global concurrency 1)
+              → worker: take the pending hashes atomically as batch <id> (Lua RENAME)
+              → per member: realMessageCount + decay clock, period buckets, points — each write
+                guarded by the batch id, so a retried flush applies nothing twice
+              → each 100-message milestone crossed → staff-points queue (job id per milestone)
+              → drop the batch
+staff-points queue (EXTERNAL_API_CONCURRENCY) → external staff API (type "msg", idempotency key)
+```
+
+- A flush that dies mid-way leaves its batch (and `act:msg:inflight`) in Redis; the next run resumes
+  that batch before taking new messages. Messages that arrive during a flush start the next batch.
+- Days stay separate in the buffer, so a batch spanning midnight or a week/month boundary still
+  lands in the right period buckets.
+- Staff API: 404 (not staff) is final; 5xx/timeouts retry with backoff; other 4xx fail permanently.
+- Without `REDIS_URL`, or if Redis errors on a message, the Gateway writes MongoDB inline exactly as
+  before — nothing goes uncounted.
+- Still inline (they need Discord roles/announcements): message XP and level-ups, combo, streak.
+- Tests: `bun run test:activity` (grouping, milestones, crash-at-every-write + retry, flush resume,
+  staff-API error mapping). The Lua scripts in `libs/queue/src/message-buffer.ts` need a real Redis
+  and are not covered by the in-memory checks.
+
 ### Required configuration
 
 `INTERNAL_API_TOKEN` in `.env` (shared by the Gateway and every internal API — the APIs refuse to

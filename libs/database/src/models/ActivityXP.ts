@@ -17,6 +17,9 @@ export interface IActivityXP extends Document {
     messageCount: number;
     /** Total non-spam, non-short messages ever sent, counted everywhere (not gated by XP channels/cooldown/role). */
     realMessageCount: number;
+    /** Last message-counter flush batch applied to this row, and how many messages it added — the exactly-once guard. */
+    msgFlushBatch: string | null;
+    msgFlushCount: number;
     lastMessageAt: Date;
     lastXPGrant: Date;
     spamCount: number;
@@ -62,6 +65,8 @@ const activityXPSchema = new Schema<IActivityXP>(
         voiceLevel: { type: Number, default: 0 },
         messageCount: { type: Number, default: 0 },
         realMessageCount: { type: Number, default: 0 },
+        msgFlushBatch: { type: String, default: null },
+        msgFlushCount: { type: Number, default: 0 },
         lastMessageAt: { type: Date, default: Date.now },
         lastXPGrant: { type: Date, default: new Date(0) },
         spamCount: { type: Number, default: 0 },

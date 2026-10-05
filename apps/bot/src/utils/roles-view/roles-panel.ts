@@ -12,7 +12,7 @@ import {
 } from "discord.js";
 import { randomBytes } from "node:crypto";
 import { COLORS } from "@constants";
-import { getStaffRoles } from "@bot/services/staff-api";
+import { getStaffRoles } from "@core/staff-api";
 import {
     ROLE_KIND_LABELS,
     applyRoleFilter,

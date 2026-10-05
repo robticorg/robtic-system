@@ -21,6 +21,9 @@ export interface IPoint extends Document {
     rc: number;
     /** Rolling progress toward the next Point from each source. */
     messageProgress: number;
+    /** Last message-counter flush batch added to `messageProgress`, and the last one converted into points. */
+    msgFlushBatch: string | null;
+    msgConvertBatch: string | null;
     comboProgress: number;
     voiceProgress: number;
     createdAt: Date;
@@ -36,6 +39,8 @@ const pointSchema = new Schema<IPoint>(
         lifetimePoints: { type: Number, default: 0 },
         rc: { type: Number, default: 0 },
         messageProgress: { type: Number, default: 0 },
+        msgFlushBatch: { type: String, default: null },
+        msgConvertBatch: { type: String, default: null },
         comboProgress: { type: Number, default: 0 },
         voiceProgress: { type: Number, default: 0 },
     },

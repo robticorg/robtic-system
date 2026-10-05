@@ -2,7 +2,7 @@ import { Logger } from "@logger";
 
 /**
  * The internal staff API (the staff bot on the host): one place for its address and auth, shared
- * by staff points and the `?roles` panel.
+ * by staff points (Gateway inline path and the worker) and the `?roles` panel.
  *
  * The bot runs in a Docker container, where 127.0.0.1 is the container itself — so the default is
  * the host's LAN address. Override with STAFF_POINTS_API_URL (e.g. a Compose service name).
