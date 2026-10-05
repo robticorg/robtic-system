@@ -1,0 +1,17 @@
+import { randomBytes } from "node:crypto";
+
+/**
+ * Deterministic job ids — the same event always produces the same id, so enqueuing it twice
+ * (a gateway replay, a retried handler) keeps one job. `_` separators: BullMQ forbids `:`.
+ */
+export const jobIds = {
+    inviteJoin: (guildId: string, memberId: string, joinedAt: Date) => `invite-join_${guildId}_${memberId}_${joinedAt.getTime()}`,
+    inviteLeave: (guildId: string, memberId: string, leftAt: Date) => `invite-leave_${guildId}_${memberId}_${leftAt.getTime()}`,
+    inviteJoinAnnouncement: (guildId: string, memberId: string, joinedAt: string) => `announce-join_${guildId}_${memberId}_${Date.parse(joinedAt)}`,
+    inviteLeaveAnnouncement: (guildId: string, memberId: string, leftAt: string) => `announce-leave_${guildId}_${memberId}_${Date.parse(leftAt)}`,
+} as const;
+
+/** A short correlation id for one Discord event / request, carried through APIs, queues and workers. */
+export function newRequestId(): string {
+    return randomBytes(6).toString("hex");
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@robtic/internal-api",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "description": "Shared bootstrap for Robtic internal APIs (internal-api/*): routing, internal-token auth, request ids, envelope, health, graceful shutdown. Follows apps/minecraft-api's conventions."
+}

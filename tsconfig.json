@@ -33,9 +33,12 @@
       "@logger": ["libs/logger/src/index.ts"],
       "@logger/*": ["libs/logger/src/*"],
       "@sdk": ["libs/sdk/src/api.ts"],
-      "@sdk/*": ["libs/sdk/src/*"]
+      "@sdk/*": ["libs/sdk/src/*"],
+      "@queue": ["libs/queue/src/index.ts"],
+      "@internal-api": ["libs/internal-api/src/index.ts"],
+      "@internal-client": ["libs/internal-client/src/index.ts"]
     }
   },
-  "include": ["apps", "libs", "scripts"],
+  "include": ["apps", "libs", "internal-api", "scripts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,0 +1,8 @@
+{
+  "name": "@robtic/queue",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "description": "Redis connection, queue names, job types and retry policy shared by the Gateway, internal APIs and workers (BullMQ)."
+}

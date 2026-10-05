@@ -1,6 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type User } from "discord.js";
 import { COLORS, INVITES_CONFIG } from "@constants";
-import { InviteJoinRepository } from "@database/repositories";
+import { invitesBackend } from "../functions/invites-backend";
 import { clampPage, pageCount } from "./invite-format";
 
 const PAGE_SIZE = INVITES_CONFIG.infoPageSize;
@@ -27,13 +27,15 @@ function pageButton(invokerId: string, targetId: string, page: number, direction
  * was offline still shows as Available until their next join or leave is seen.
  */
 export async function buildInfoView(guildId: string, invokerId: string, target: User, requestedPage: number) {
-    const joins = await InviteJoinRepository.countByInviter(guildId, target.id);
+    const page0 = Math.max(0, Math.floor(requestedPage) || 0);
+    let { total: joins, rows } = await invitesBackend.invited(guildId, target.id, page0 * PAGE_SIZE, PAGE_SIZE);
     const page = clampPage(requestedPage, joins, PAGE_SIZE);
     const pages = pageCount(joins, PAGE_SIZE);
-    const rows = await InviteJoinRepository.listByInviter(guildId, target.id, page * PAGE_SIZE, PAGE_SIZE);
+    // Asked past the end (the list shrank): fetch the last real page instead.
+    if (page !== page0) rows = (await invitesBackend.invited(guildId, target.id, page * PAGE_SIZE, PAGE_SIZE)).rows;
 
     const lines = rows.map((row, i) => {
-        const since = `<t:${Math.floor(row.joinedAt.getTime() / 1000)}:R>`;
+        const since = `<t:${Math.floor(Date.parse(row.joinedAt) / 1000)}:R>`;
         const status = row.fake ? "Fake" : row.leftAt ? "Left Server" : "Available";
         return `**${page * PAGE_SIZE + i + 1}.** <@${row.inviteeId}> · ${since} (${status})`;
     });

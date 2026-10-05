@@ -9,12 +9,76 @@ services:
     restart: unless-stopped
     env_file:
       - /home/robtic/robtic-system/.env
+    # Internal services are reached by Compose service name over the private network — never
+    # localhost (that is this container) and never the public domain.
+    environment:
+      REDIS_URL: redis://robtic-redis:6379
+      INVITES_API_URL: http://robtic-invites-api:3005
     # The bank API (apps/bot/src/services/bank/api). No authentication — anyone who can reach this
     # port can start a transfer, so keep it closed to the internet at the firewall.
     ports:
       - "0.0.0.0:8790:8790"
+    networks: [default, internal]
+    # Started, not healthy: the Gateway must never be held back by an internal service. If Redis is
+    # down it processes invite events inline; if the Invites API is down /invites says so.
     depends_on:
-      - robtic-minecraft-api
+      robtic-minecraft-api:
+        condition: service_started
+      robtic-redis:
+        condition: service_started
+      robtic-invites-api:
+        condition: service_started
+
+  # Queues and short-lived state for the internal architecture (BullMQ). Not the database:
+  # MongoDB stays the source of truth. Append-only file so queued jobs survive a restart.
+  # Never published to the host.
+  robtic-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - robtic-redis-data:/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Background worker (apps/worker): consumes the queues, writes MongoDB. No HTTP port.
+  # Scale with `docker compose up -d --scale robtic-worker=N`; queues that need ordering
+  # (invites) enforce a global concurrency in Redis, so extra replicas stay correct.
+  robtic-worker:
+    image: ghcr.io/robticorg/robtic-system:latest
+    command: ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/worker/src/index.ts"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    env_file:
+      - /home/robtic/robtic-system/.env
+    environment:
+      REDIS_URL: redis://robtic-redis:6379
+    networks: [internal]
+    depends_on:
+      robtic-redis:
+        condition: service_healthy
+
+  # Invites internal API (internal-api/invites): invite stats and history for the Gateway.
+  # Internal only — no published port; requires INTERNAL_API_TOKEN.
+  robtic-invites-api:
+    image: ghcr.io/robticorg/robtic-system:latest
+    command: ["bun", "--preload", "./libs/shared/src/preload.ts", "internal-api/invites/src/index.ts"]
+    restart: unless-stopped
+    env_file:
+      - /home/robtic/robtic-system/.env
+    environment:
+      INVITES_API_PORT: "3005"
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:3005/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   # The Minecraft API (apps/minecraft-api, minecraft.api.robtic.org).
   # The only service permitted to reach MongoDB; the bot and every Minecraft server are clients.
@@ -35,3 +99,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+networks:
+  # Private network for the Gateway, internal APIs, workers and Redis.
+  internal:
+    driver: bridge
+
+volumes:
+  robtic-redis-data:

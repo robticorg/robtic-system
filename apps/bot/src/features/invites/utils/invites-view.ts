@@ -1,12 +1,12 @@
 import { EmbedBuilder, type User } from "discord.js";
 import { COLORS } from "@constants";
-import { getInviteStats } from "../functions/get-invite-stats";
+import { invitesBackend } from "../functions/invites-backend";
 import { formatBonusPercent, plural } from "./invite-format";
 
 /** The `/invites` card — also what a bare `invites @user` in a ticket channel replies with. */
-export async function buildInvitesEmbed(guildId: string, guildName: string, viewerId: string, target: User): Promise<EmbedBuilder> {
+export async function buildInvitesEmbed(guildId: string, guildName: string, viewerId: string, target: User, requestId?: string): Promise<EmbedBuilder> {
     const self = target.id === viewerId;
-    const stats = await getInviteStats(guildId, target.id);
+    const stats = await invitesBackend.stats(guildId, target.id, requestId);
 
     return new EmbedBuilder()
         .setColor(COLORS.default)

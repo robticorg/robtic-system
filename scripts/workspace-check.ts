@@ -23,7 +23,7 @@ const read = (relative: string) => readFileSync(join(ROOT, relative), "utf8");
 
 // 1. On disk: every directory under the workspace globs that actually has a package.json.
 const onDisk: string[] = [];
-for (const group of ["apps", "libs"]) {
+for (const group of ["apps", "libs", "internal-api"]) {
     for (const entry of readdirSync(join(ROOT, group))) {
         if (existsSync(join(ROOT, group, entry, "package.json"))) onDisk.push(`${group}/${entry}`);
     }
@@ -33,7 +33,7 @@ console.log(`${onDisk.length} workspaces on disk: ${onDisk.join(", ")}\n`);
 
 // 2. In the lockfile. Keys of the top-level `workspaces` map, minus the root entry ("").
 const lock = read("bun.lock");
-const inLock = [...lock.matchAll(/^ {4}"((?:apps|libs)\/[^"]+)": \{/gm)].map(m => m[1]!).sort();
+const inLock = [...lock.matchAll(/^ {4}"((?:apps|libs|internal-api)\/[^"]+)": \{/gm)].map(m => m[1]!).sort();
 
 check(
     "bun.lock lists exactly the workspaces on disk",
@@ -58,7 +58,7 @@ check("infra/docker/dockerfiles holds a Dockerfile per Bun service", dockerfiles
 
 for (const path of dockerfiles) {
     const body = read(path);
-    const copied = [...body.matchAll(/^COPY ((?:apps|libs)\/[^/]+)\/package\.json /gm)].map(m => m[1]!).sort();
+    const copied = [...body.matchAll(/^COPY ((?:apps|libs|internal-api)\/[^/]+)\/package\.json /gm)].map(m => m[1]!).sort();
 
     const missing = onDisk.filter(w => !copied.includes(w));
     const stale = copied.filter(w => !onDisk.includes(w));
@@ -99,7 +99,7 @@ for (const path of dockerfiles) {
 const rootPkg = JSON.parse(read("package.json")) as { workspaces?: string[] };
 check(
     "package.json workspace globs are the ones checked here",
-    JSON.stringify(rootPkg.workspaces?.slice().sort()) === JSON.stringify(["apps/*", "libs/*"]),
+    JSON.stringify(rootPkg.workspaces?.slice().sort()) === JSON.stringify(["apps/*", "internal-api/*", "libs/*"]),
     (rootPkg.workspaces ?? []).join(", "),
 );
 

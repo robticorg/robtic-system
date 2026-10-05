@@ -2,6 +2,7 @@ import type { Message } from "discord.js";
 import { isFeatureEnabled } from "@core/features";
 import { buildInfoView } from "../utils/info-view";
 import { buildInvitesEmbed } from "../utils/invites-view";
+import { orInvitesUnavailable } from "../utils/service-errors";
 import { isTicketChannel } from "../utils/ticket-channels";
 import type { TicketQuery } from "../utils/invite-format";
 
@@ -19,9 +20,9 @@ export async function answerTicketQuery(message: Message<true>, query: TicketQue
         : message.author;
     if (!target) return;
 
-    const reply = query.kind === "invites"
+    const reply = await orInvitesUnavailable(async () => query.kind === "invites"
         ? { embeds: [await buildInvitesEmbed(guild.id, guild.name, message.author.id, target)] }
-        : await buildInfoView(guild.id, message.author.id, target, 0);
+        : await buildInfoView(guild.id, message.author.id, target, 0));
 
     await message.reply({ ...reply, allowedMentions: { parse: [], repliedUser: false } });
 }

@@ -1,5 +1,8 @@
 import { escapeMarkdown } from "discord.js";
-import { BP_SCALE, INVITES_CONFIG } from "@constants";
+import { BP_SCALE } from "@constants";
+
+/** Moved to the invite domain (`@core/invites`); re-exported for existing callers. */
+export { fakeWindowStart, inviteTotal } from "@core/invites";
 
 /**
  * Every piece of invites text, pure so the exact wording is testable. The mention stays a mention
@@ -7,10 +10,6 @@ import { BP_SCALE, INVITES_CONFIG } from "@constants";
  * would otherwise turn the bold into something else.
  */
 
-/** Invites a member still has credit for: everyone they brought in, minus those who left. */
-export function inviteTotal(counts: { joins: number; leaves: number }): number {
-    return Math.max(0, counts.joins - counts.leaves);
-}
 
 export function plural(count: number, word: string): string {
     return `${count} ${word}${count === 1 ? "" : "s"}`;
@@ -34,14 +33,6 @@ export function unknownJoinMessage(memberId: string): string {
     return `**<@${memberId}>** just joined, but I couldn't tell which invite they used.`;
 }
 
-/**
- * The earliest real join that makes a join at `joinedAt` fake. A member who rejoins within
- * `fakeWindowDays` of their last real join is fake for whoever invited them this time; after the
- * window the join is real again and opens a new one.
- */
-export function fakeWindowStart(joinedAt: Date): Date {
-    return new Date(joinedAt.getTime() - INVITES_CONFIG.fakeWindowDays * 86_400_000);
-}
 
 export function invitedLeaveMessage(memberName: string, inviterName: string): string {
     return `**${escapeMarkdown(memberName)}** has left. They were invited by **${escapeMarkdown(inviterName)}**.`;

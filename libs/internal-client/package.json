@@ -1,0 +1,8 @@
+{
+  "name": "@robtic/internal-client",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "description": "Typed Gateway → internal API clients: base URLs from env, internal token, request ids, timeouts and controlled errors."
+}

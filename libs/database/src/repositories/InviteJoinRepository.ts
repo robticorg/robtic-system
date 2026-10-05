@@ -48,6 +48,20 @@ export class InviteJoinRepository {
         );
     }
 
+    /**
+     * Closes the member's latest open join at `at` and returns how they joined. Repeatable: if this
+     * leave was already applied (a retried job), the join closed at exactly `at` is returned
+     * instead of nothing — so a retry still knows who had invited them.
+     */
+    static async closeLatest(guildId: string, inviteeId: string, at: Date): Promise<{ inviterId: string | null; source: InviteJoinSource } | null> {
+        const closed = await InviteJoin.findOneAndUpdate(
+            { guildId, inviteeId, leftAt: null },
+            { $set: { leftAt: at } },
+            { sort: { joinedAt: -1 } }
+        ) ?? await InviteJoin.findOne({ guildId, inviteeId, leftAt: at });
+        return closed ? { inviterId: closed.inviterId, source: closed.source } : null;
+    }
+
     static async countsFor(guildId: string, inviterId: string, since: Date): Promise<InviterJoinCounts> {
         const [joins, leaves, fakes, recentJoins] = await Promise.all([
             InviteJoin.countDocuments({ guildId, inviterId, ...REAL }),

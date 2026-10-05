@@ -46,7 +46,7 @@ common=(
 # so the deploy would be skipped as "already deployed" and the edit would never ship.
 case "$service" in
     bot)
-        paths=("${common[@]}" infra/docker/dockerfiles/bot.Dockerfile apps/bot libs images)
+        paths=("${common[@]}" infra/docker/dockerfiles/bot.Dockerfile apps/bot apps/worker internal-api libs images)
         ;;
     minecraft-api)
         paths=("${common[@]}" infra/docker/dockerfiles/minecraft-api.Dockerfile apps/minecraft-api libs)

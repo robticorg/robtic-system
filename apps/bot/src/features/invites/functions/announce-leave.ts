@@ -1,23 +1,24 @@
-import type { GuildMember, PartialGuildMember } from "discord.js";
-import type { IInviteJoin } from "@database/models/InviteJoin";
+import type { Guild } from "discord.js";
 import { inviteLogChannel } from "./invite-log-channel";
 import { inviterName } from "./inviter-name";
 import { invitedLeaveMessage, unknownLeaveMessage, vanityLeaveMessage } from "../utils/invite-format";
 
 /**
- * Posts who left and who had invited them, in the same channel as join announcements. `join` is the
- * row the leave just closed; `null` when the member joined before tracking began.
+ * Posts who left and who had invited them, in the same channel as join announcements. `joined` is
+ * how they had joined (from the join the leave closed); `null` when they joined before tracking began.
  */
-export async function announceLeave(member: GuildMember | PartialGuildMember, join: IInviteJoin | null): Promise<void> {
-    const channel = await inviteLogChannel(member.guild);
+export async function announceLeave(
+    guild: Guild,
+    memberName: string,
+    joined: { source: "invite" | "vanity" | "unknown"; inviterId: string | null } | null,
+): Promise<void> {
+    const channel = await inviteLogChannel(guild);
     if (!channel) return;
 
-    const name = member.user?.username ?? member.id;
-
     let content: string;
-    if (join?.source === "vanity") content = vanityLeaveMessage(name);
-    else if (join?.inviterId) content = invitedLeaveMessage(name, await inviterName(member.client, join.inviterId));
-    else content = unknownLeaveMessage(name);
+    if (joined?.source === "vanity") content = vanityLeaveMessage(memberName);
+    else if (joined?.inviterId) content = invitedLeaveMessage(memberName, await inviterName(guild.client, joined.inviterId));
+    else content = unknownLeaveMessage(memberName);
 
     await channel.send({ content, allowedMentions: { parse: [] } });
 }

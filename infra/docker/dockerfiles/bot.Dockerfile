@@ -16,6 +16,11 @@ COPY libs/logger/package.json ./libs/logger/
 COPY libs/cache/package.json ./libs/cache/
 COPY libs/events/package.json ./libs/events/
 COPY libs/shared/package.json ./libs/shared/
+COPY libs/queue/package.json ./libs/queue/
+COPY libs/internal-api/package.json ./libs/internal-api/
+COPY libs/internal-client/package.json ./libs/internal-client/
+COPY apps/worker/package.json ./apps/worker/
+COPY internal-api/invites/package.json ./internal-api/invites/
 RUN bun install --frozen-lockfile
 
 FROM oven/bun:1.3.14
@@ -33,8 +38,12 @@ RUN apt-get update \
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json tsconfig.json ./
-# The bot's own source only; it imports nothing from the other apps.
+# One image, three roles (see docker-compose.yml): the Gateway (apps/bot, the default CMD), the
+# background worker (apps/worker) and the internal APIs (internal-api/*) — same code and libs, a
+# different start command per Compose service, so CI still builds and deploys a single image.
 COPY apps/bot ./apps/bot
+COPY apps/worker ./apps/worker
+COPY internal-api ./internal-api
 COPY libs ./libs
 COPY images ./images
 

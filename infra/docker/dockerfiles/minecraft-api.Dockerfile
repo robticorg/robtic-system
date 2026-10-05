@@ -16,6 +16,11 @@ COPY libs/logger/package.json ./libs/logger/
 COPY libs/cache/package.json ./libs/cache/
 COPY libs/events/package.json ./libs/events/
 COPY libs/shared/package.json ./libs/shared/
+COPY libs/queue/package.json ./libs/queue/
+COPY libs/internal-api/package.json ./libs/internal-api/
+COPY libs/internal-client/package.json ./libs/internal-client/
+COPY apps/worker/package.json ./apps/worker/
+COPY internal-api/invites/package.json ./internal-api/invites/
 RUN bun install --frozen-lockfile
 
 FROM oven/bun:1.3.14

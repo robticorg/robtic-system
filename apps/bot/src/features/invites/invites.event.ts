@@ -3,14 +3,12 @@ import type { EventConfig } from "@typings/event";
 import { INVITES_CONFIG } from "@constants";
 import { handleError, BotError } from "@core/handlers";
 import { Logger } from "@logger";
-import { detectUsedInvite, recordInviteeJoin, recordInviteeLeave } from "@core/rewards";
-import { InviteJoinRepository } from "@database/repositories";
+import { detectUsedInvite } from "@core/rewards";
 import { createGuildQueue } from "@bot/utils/guild-queue";
 import { fetchInviteUses, getInviteUses, setInviteUses, forgetInviteUses } from "./utils/invite-use-cache";
-import { announceJoin } from "./functions/announce-join";
-import { announceLeave } from "./functions/announce-leave";
 import { answerTicketQuery } from "./functions/answer-ticket-query";
-import { fakeWindowStart, parseTicketQuery } from "./utils/invite-format";
+import { submitInviteJoin, submitInviteLeave } from "./functions/submit-invite-event";
+import { parseTicketQuery } from "./utils/invite-format";
 import { createdByTicketBot, forgetTicketChannel, hasTicketName, rememberTicketChannel } from "./utils/ticket-channels";
 
 /**
@@ -27,6 +25,10 @@ import { createdByTicketBot, forgetTicketChannel, hasTicketName, rememberTicketC
  *
  * The first two always run, even while the feature is disabled, so the counts and the reward bonus
  * are right the moment it is turned on; only the announcement honours the feature toggle.
+ *
+ * Since the internal-API refactor the Gateway only *detects*: which invite was used (it holds the
+ * invite cache). The rest — fake check, reward credit, history, announcement — runs in the worker
+ * from the `invites` queue (`submit-invite-event.ts`), or inline when Redis isn't configured.
  *
  * Attribution: on each join the guild's invites are refetched and diffed against the last snapshot
  * (`detectUsedInvite`) — the one invite whose use count went up, the vanity URL included. Joins and
@@ -79,22 +81,8 @@ export default [
                 const used = before && after ? detectUsedInvite(before, after) : null;
                 const joinedAt = member.joinedAt ?? new Date();
 
-                const fake = await InviteJoinRepository.hasRealJoinSince(guildId, member.id, fakeWindowStart(joinedAt));
-                const decision = await recordInviteeJoin(guildId, member.id, used?.vanity ? null : used, joinedAt);
-                const recorded = await InviteJoinRepository.record({
-                    guildId,
-                    inviteeId: member.id,
-                    inviterId: used?.inviterId ?? null,
-                    inviteCode: used?.code ?? null,
-                    source: used?.vanity ? "vanity" : used?.inviterId ? "invite" : "unknown",
-                    joinedAt,
-                    fake,
-                });
-
-                Logger.debug(`Join ${member.id} in ${guildId}: ${used ? `${used.code} by ${used.inviterId}` : "unattributed"}${fake ? " (fake)" : ""}, reward credit ${decision}`, CTX);
-
-                // A replayed join event is already recorded and already announced.
-                if (recorded) await announceJoin(member, used);
+                Logger.debug(`Join ${member.id} in ${guildId}: ${used ? `${used.code} by ${used.inviterId}` : "unattributed"}`, CTX);
+                await submitInviteJoin(member.guild, member.id, used, joinedAt);
             }).catch(err => report(err, "record an invite join"));
         },
     } satisfies EventConfig<Events.GuildMemberAdd>,
@@ -107,11 +95,7 @@ export default [
             const at = new Date();
 
             return enqueue(guildId, async () => {
-                const [, join] = await Promise.all([
-                    recordInviteeLeave(guildId, member.id, at),
-                    InviteJoinRepository.markLeft(guildId, member.id, at),
-                ]);
-                await announceLeave(member, join);
+                await submitInviteLeave(member.guild, member.id, member.user?.username ?? member.id, at);
             }).catch(err => report(err, "record an invitee leaving"));
         },
     } satisfies EventConfig<Events.GuildMemberRemove>,
