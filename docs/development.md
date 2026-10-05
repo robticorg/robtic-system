@@ -26,8 +26,8 @@ All commands run from the repository root (asset paths are cwd-relative):
 ```bash
 bun run dev          # watch mode with Bun preload shim
 bun run typecheck    # tsc --noEmit over apps/ and libs/
-bun run build        # bundle apps/bot to dist/index.js
-bun run start        # run the production bundle
+bun run build        # CI check: bundles the Gateway, worker and Invites API entry points (packages stay external)
+bun run start        # run the Gateway in production mode, from source — exactly what the Docker image runs
 ```
 
 ## Workspaces

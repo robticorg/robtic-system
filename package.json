@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "bun --preload ./libs/shared/src/preload.ts --watch apps/bot/src/index.ts",
-    "build": "bun build ./apps/bot/src/index.ts --outfile ./dist/index.js --target bun",
+    "build": "bun build ./apps/bot/src/index.ts ./apps/worker/src/index.ts ./internal-api/invites/src/index.ts --outdir ./dist --target bun --packages external",
     "typecheck": "tsc --noEmit",
     "register:commands": "bun --preload ./libs/shared/src/preload.ts apps/bot/src/register-commands.ts",
     "test:top": "bun --preload ./libs/shared/src/preload.ts scripts/top-check.ts",
@@ -29,7 +29,7 @@
     "test:auth:wiring": "bun --preload ./libs/shared/src/preload.ts scripts/auth-wiring-check.ts",
     "test:help": "bun --preload ./libs/shared/src/preload.ts scripts/help-check.ts",
     "db:drop-removed-features": "bun --preload ./libs/shared/src/preload.ts scripts/drop-removed-features.ts",
-    "start": "NODE_ENV=production bun dist/index.js",
+    "start": "NODE_ENV=production bun --preload ./libs/shared/src/preload.ts apps/bot/src/index.ts",
     "docker:build": "bash infra/docker/scripts/build.sh",
     "docker:local": "docker compose -f infra/docker/compose/docker-compose.local.yml",
     "docker:prod": "docker compose -f infra/docker/compose/docker-compose.yml"

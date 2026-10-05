@@ -7,70 +7,63 @@ on:
   pull_request:
     types: [opened, closed, reopened, synchronize]
 
+permissions:
+  contents: read
+
 jobs:
   notify:
     runs-on: ubuntu-latest
 
     steps:
+      # Every value that comes from a commit, issue or PR is passed through `env:` and turned into
+      # JSON by jq — never pasted into the script with `${{ }}`. Pasting it made a quote in a commit
+      # message break the script (exit 126), and lets anyone who can push or open an issue/PR run
+      # commands on the runner (GitHub Actions script injection).
       - name: Send Discord notification
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_ACTIVITY }}
+          EVENT_URL: ${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.head_commit.url || github.server_url }}
+          EVENT_TYPE: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message || github.event.pull_request.title || github.event.issue.title }}
         run: |
-          EVENT_URL="${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.head_commit.url || github.server_url }}"
-          EVENT_TYPE="${{ github.event_name }}"
-          REPO="${{ github.repository }}"
-          ACTOR="${{ github.actor }}"
-          BRANCH="${{ github.ref_name }}"
-          COMMIT_MSG="${{ github.event.head_commit.message || github.event.pull_request.title || github.event.issue.title }}"
-          AVATAR="https://github.com/${{ github.actor }}.png"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          if [ -z "$WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK_ACTIVITY is not set — skipping."
+            exit 0
+          fi
 
-          curl -H "Content-Type: application/json" \
-          -d "{
-            \"username\": \"Robtic CI\",
-            \"embeds\": [{
-              \"title\": \"🚀 Robtic Repository Activity\",
-              \"url\": \"$EVENT_URL\",
-              \"description\": \"A new **$EVENT_TYPE** activity occurred in the repository.\",
-              \"color\": 5814783,
+          # Discord caps a field value at 1024 characters.
+          MESSAGE="$(printf '%s' "$COMMIT_MSG" | head -c 1000)"
+          [ -n "$MESSAGE" ] || MESSAGE="—"
 
-              \"author\": {
-                \"name\": \"$ACTOR\",
-                \"icon_url\": \"$AVATAR\",
-                \"url\": \"https://github.com/$ACTOR\"
-              },
+          PAYLOAD=$(jq -n \
+            --arg url "$EVENT_URL" \
+            --arg event "$EVENT_TYPE" \
+            --arg repo "$REPO" \
+            --arg actor "$ACTOR" \
+            --arg branch "$BRANCH" \
+            --arg message "$MESSAGE" \
+            --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            '{
+              username: "Robtic CI",
+              embeds: [{
+                title: "🚀 Robtic Repository Activity",
+                url: $url,
+                description: "A new **\($event)** activity occurred in the repository.",
+                color: 5814783,
+                author: { name: $actor, icon_url: "https://github.com/\($actor).png", url: "https://github.com/\($actor)" },
+                fields: [
+                  { name: "📦 Repository", value: "[\($repo)](https://github.com/\($repo))", inline: true },
+                  { name: "⚡ Event Type", value: $event, inline: true },
+                  { name: "🌿 Branch", value: $branch, inline: true },
+                  { name: "📝 Commit / Message", value: $message, inline: false },
+                  { name: "🔗 Open Event", value: "[View Activity on GitHub](\($url))", inline: false }
+                ],
+                footer: { text: "Robtic CI • GitHub Activity" },
+                timestamp: $timestamp
+              }]
+            }')
 
-              \"fields\": [
-                {
-                  \"name\": \"📦 Repository\",
-                  \"value\": \"[$REPO](https://github.com/$REPO)\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"⚡ Event Type\",
-                  \"value\": \"$EVENT_TYPE\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"🌿 Branch\",
-                  \"value\": \"$BRANCH\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"📝 Commit / Message\",
-                  \"value\": \"$COMMIT_MSG\",
-                  \"inline\": false
-                },
-                {
-                  \"name\": \"🔗 Open Event\",
-                  \"value\": \"[View Activity on GitHub]($EVENT_URL)\",
-                  \"inline\": false
-                }
-              ],
-
-              \"footer\": {
-                \"text\": \"Robtic CI • GitHub Activity\"
-              },
-
-              \"timestamp\": \"$TIMESTAMP\"
-            }]
-          }" \
-          ${{ secrets.DISCORD_WEBHOOK_ACTIVITY }}
+          curl --fail-with-body -sS -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
