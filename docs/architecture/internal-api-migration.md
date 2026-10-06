@@ -236,6 +236,51 @@ messageCreate → Gateway: detect the partner (channel buffer + partner from Red
   work is Discord (reply with auto-delete, DM, role, reward claim button).
 - Tests: `bun run test:combo`.
 
+## 9. Failover
+
+| Failure | What happens |
+|---|---|
+| A worker crashes | Docker restarts it; the other replica (`deploy.replicas: 2`) keeps consuming. Jobs the dead one held are picked up by the other once their 30s lock expires (`maxStalledCount: 3`) — every processor is safe to re-run. |
+| The primary Gateway crashes | Docker restarts it; the restarted container has the same hostname, so it reclaims its own lock at once. |
+| The primary Gateway dies for good, hangs, or loses Redis | Its lock (`gateway:leader`, 15s, renewed every 5s) expires and `robtic-system-standby` logs in. |
+| The leader can't reach Discord for 3 minutes | It logs out and exits; Docker restarts it and the other Gateway can take over. |
+| The primary comes back while the standby leads | It marks `gateway:primary-waiting`; the standby logs out, frees the lock and restarts as the standby. |
+| Deploy / `docker compose stop` | The leader logs out *then* frees the lock, so the other takes over in ~2s and the two are never logged in together. |
+| Redis down | The leader keeps leading; a primary that can't reach Redis at boot starts after 15s (as before failover). A standby never logs in without the lock. |
+
+- Only one Gateway may be logged in: two sessions on one token both receive every event, so every
+  command and reward would run twice. Everything that talks to Discord (main bot, music bots, bank
+  client, outbox, schedulers) starts only after `waitForGatewayLeadership()`.
+- Known window: if the leader is cut off from Redis but **not** from Discord for more than 15s, the
+  standby takes over while the old leader is still logged in; the old one steps down as soon as it
+  reaches Redis again. Both run on the same host and network, so this needs Redis to be reachable
+  by one container and not the other. Stepping down on every Redis blip would instead take the bot
+  offline whenever Redis restarts.
+- The standby publishes no ports: while it leads, the bank API (:8790) is unreachable; it returns
+  with the primary.
+- Healthchecks (`/tmp/gateway-health`, `/tmp/worker-health`) show in `docker ps`. Plain Compose
+  doesn't restart an *unhealthy* container by itself — the in-process watchdog (Discord) and the
+  restart policy (crashes) do that.
+- One VPS is still one point of failure: if the host goes down, every container goes with it.
+- Tests: `bun run test:failover`.
+
+### Split-brain protection (second line, if two Gateways are ever logged in anyway)
+
+1. **Event claims.** Before any listener runs, the Gateway claims the event in Redis
+   (`gateway:event:<id>`, 2 min) for messages, interactions, reactions and member joins. The first
+   Gateway to claim it handles it; the other skips it — so even then nothing is handled twice.
+2. **Action.** A failed claim proves two sessions. The Gateway that doesn't hold the leader lock
+   logs out at once; the lock holder keeps running, logs `SPLIT BRAIN` and DMs the bot owner
+   (at most every 10 minutes).
+3. **Worker watch.** Every job carries `origin` (the Gateway that queued it). Workers flag jobs
+   from two Gateways interleaving (A, B, A … three times within a minute — a handover is A then B)
+   into `gateway:conflict`; the leader checks it every 5s and acts as in 2.
+
+Redis errors never block events (the claim fails open). Both server lists (whitelist, super
+users) are loaded after leadership, so a standby that waited for days doesn't take over with a
+stale whitelist — the guild guard would otherwise leave servers added in the meantime.
+Tests: `bun run test:split-brain`.
+
 ### Required configuration
 
 `INTERNAL_API_TOKEN` in `.env` (shared by the Gateway and every internal API — the APIs refuse to

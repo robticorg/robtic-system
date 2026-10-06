@@ -57,6 +57,13 @@ export function getQueue<N extends QueueName>(name: N): Queue<JobPayloads[N]> {
     return queue as Queue<JobPayloads[N]>;
 }
 
+let jobOrigin: string | null = null;
+
+/** The Gateway stamps its id on every job it queues, so workers can spot two Gateways at once (split brain). */
+export function setJobOrigin(id: string | null): void {
+    jobOrigin = id;
+}
+
 /**
  * Adds a job. `jobId` makes it idempotent at the queue level: adding the same id twice keeps one
  * job, so a retried Discord event can't double-enqueue. Ids may not contain `:` (a BullMQ rule).
@@ -69,7 +76,8 @@ export async function enqueue<N extends QueueName>(
     options: JobsOptions = {},
 ): Promise<void> {
     if (jobId.includes(":")) throw new Error(`Job id may not contain ":" — got ${jobId}`);
-    await getQueue(name).add(jobName as never, data as never, { ...options, jobId });
+    const payload = jobOrigin ? { ...data, origin: jobOrigin } : data;
+    await getQueue(name).add(jobName as never, payload as never, { ...options, jobId });
 }
 
 /** Closes every producer — part of graceful shutdown. */

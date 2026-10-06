@@ -1,19 +1,30 @@
 # Production topology. Contexts are ../../.. — the repository root — resolved from this file.
 
 services:
+  # The Gateway (apps/bot) — the primary. Only one Gateway is logged in to Discord at a time (a
+  # Redis lock, apps/bot/src/services/gateway-leadership); the primary is preferred, and
+  # robtic-system-standby takes over within ~15s if it dies, hangs or loses Discord.
   robtic-system:
     image: ghcr.io/robticorg/robtic-system:latest
     build:
       context: ../../..
       dockerfile: infra/docker/dockerfiles/bot.Dockerfile
     restart: unless-stopped
+    stop_grace_period: 30s
     env_file:
       - /home/robtic/robtic-system/.env
     # Internal services are reached by Compose service name over the private network — never
     # localhost (that is this container) and never the public domain.
     environment:
+      GATEWAY_ROLE: primary
       REDIS_URL: redis://robtic-redis:6379
       INVITES_API_URL: http://robtic-invites-api:3005
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/gateway-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     # The bank API (apps/bot/src/services/bank/api). No authentication — anyone who can reach this
     # port can start a transfer, so keep it closed to the internet at the firewall.
     ports:
@@ -28,6 +39,31 @@ services:
         condition: service_started
       robtic-invites-api:
         condition: service_started
+
+  # Standby Gateway: same image, waits (not logged in) while the primary leads, takes over when the
+  # primary's lock expires, and hands back once the primary is up again. No published ports: while
+  # it leads, the bank API (:8790) is unreachable from outside — it returns with the primary.
+  robtic-system-standby:
+    image: ghcr.io/robticorg/robtic-system:latest
+    restart: unless-stopped
+    stop_grace_period: 30s
+    env_file:
+      - /home/robtic/robtic-system/.env
+    environment:
+      GATEWAY_ROLE: standby
+      REDIS_URL: redis://robtic-redis:6379
+      INVITES_API_URL: http://robtic-invites-api:3005
+    networks: [default, internal]
+    # Unlike the primary it needs Redis: without the lock it must never log in.
+    depends_on:
+      robtic-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/gateway-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 
   # Queues and short-lived state for the internal architecture (BullMQ). Not the database:
   # MongoDB stays the source of truth. Append-only file so queued jobs survive a restart.
@@ -46,12 +82,15 @@ services:
       retries: 5
 
   # Background worker (apps/worker): consumes the queues, writes MongoDB. No HTTP port.
-  # Scale with `docker compose up -d --scale robtic-worker=N`; queues that need ordering
-  # (invites) enforce a global concurrency in Redis, so extra replicas stay correct.
+  # Two replicas: if one dies, the other keeps consuming and picks up its unfinished jobs once their
+  # locks expire (30s). Queues that need ordering (invites, activity, combo) enforce a global
+  # concurrency in Redis, so extra replicas stay correct. More: `--scale robtic-worker=N`.
   robtic-worker:
     image: ghcr.io/robticorg/robtic-system:latest
     command: ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/worker/src/index.ts"]
     restart: unless-stopped
+    deploy:
+      replicas: 2
     stop_grace_period: 30s
     env_file:
       - /home/robtic/robtic-system/.env
@@ -61,6 +100,12 @@ services:
     depends_on:
       robtic-redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/worker-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   # Invites internal API (internal-api/invites): invite stats and history for the Gateway.
   # Internal only — no published port; requires INTERNAL_API_TOKEN.

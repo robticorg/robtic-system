@@ -8,8 +8,16 @@ import { migrateLevelSplit } from "@core/xp";
 import { client, worker} from "./services/bank";
 import { startBankApi } from "./services/bank/api";
 import { PSM } from "tesseract.js";
+import { waitForGatewayLeadership } from "./services/gateway-leadership";
 
 await connectDatabase(process.env.MONGODB_URI!);
+
+// Failover: with a standby container, only one Gateway may be logged in to Discord at a time.
+// Returns at once without Redis (a single Gateway, as before).
+await waitForGatewayLeadership();
+
+// After leadership, not before: a standby can wait for days, and a server whitelist cached at its
+// boot would miss every `/addserver` since — and the guild guard would leave those servers.
 await Promise.all([SuperUserRepository.preload(), AllowedGuildRepository.preload()]);
 
 // Separate message and voice levels: splits any record still on the old combined level. A no-op

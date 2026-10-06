@@ -29,7 +29,7 @@ export class AllowedGuildRepository {
      * The seed is an upsert per id rather than a "collection is empty" check: that way an id added
      * to the seed list later still lands, and an id an operator deliberately removed stays removed
      * only until the next boot — which is why the seed list is for permanent, known-good servers
-     * and `/addserver` is for everything else.
+     * and `!guild <id> add` is for everything else.
      */
     static async preload(): Promise<void> {
         if (SEED_ALLOWED_GUILD_IDS.length > 0) {

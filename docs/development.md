@@ -17,7 +17,8 @@ Non-production runs read the token from `TestBot` instead of `MainBotToken` (see
 
 The bot leaves any server that is not on the whitelist. A fresh database is seeded with the
 permanent Robtic servers (`libs/constants/src/allowed-guilds.ts`); add your test server with
-`!addserver <serverid>` from one that is already allowed, before inviting the bot to it.
+`!guild <serverid> add` (bot owner or super user; the server's own prefix) from one that is already
+allowed, before inviting the bot to it. `!guild <serverid> remove` takes it off.
 
 ## Commands
 

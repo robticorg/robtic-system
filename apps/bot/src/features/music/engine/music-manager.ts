@@ -68,6 +68,11 @@ export async function stopMusicBot(botId: string): Promise<void> {
     await instance.destroy().catch(err => Logger.warn(`Stopping music bot ${botId}: ${err}`, CTX));
 }
 
+/** Logs every music bot out — before this process hands the Gateway over to another one. */
+export async function stopAllMusicBots(): Promise<void> {
+    await Promise.all([...running.keys()].map(stopMusicBot));
+}
+
 /** On startup: logs in every saved music bot and makes sure each has its voice-channel permissions. */
 export async function startAllMusicBots(mainClient: Client): Promise<void> {
     const records = await MusicBotRepository.listAll();

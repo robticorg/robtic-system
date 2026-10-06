@@ -77,7 +77,7 @@ export default {
         if (!(await AllowedGuildRepository.isAllowed(guildId))) {
             await interaction.editReply({
                 embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(
-                    `❌ \`${guildId}\` is not on the server allowlist, so the bot would leave it. Run \`/addserver\` there first.`
+                    `❌ \`${guildId}\` is not on the server allowlist, so the bot would leave it. Run \`!guild ${guildId} add\` first.`
                 )],
             });
             return;

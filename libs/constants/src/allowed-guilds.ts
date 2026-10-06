@@ -1,7 +1,7 @@
 /**
  * Guild ids inserted into the whitelist on first boot if they aren't already there.
  *
- * The whitelist itself lives in MongoDB and is managed with `/addserver`; this list exists only so
+ * The whitelist itself lives in MongoDB and is managed with `!guild <id> add|remove`; this list exists only so
  * a fresh database — or a restore into one — comes up with the permanent Robtic servers already
  * authorised, instead of the bot leaving all of them before anyone can run a command.
  */

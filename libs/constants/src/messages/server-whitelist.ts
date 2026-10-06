@@ -1,5 +1,6 @@
-/** Replies from `/addserver` and `/removeserver`, which manage the guild whitelist the guard enforces. */
+/** Replies from `<prefix>guild <id> add|remove`, which manages the guild whitelist the guard enforces. */
 export const SERVER_WHITELIST_MESSAGES = {
+    usage: (prefix: string) => `Usage: \`${prefix}guild <server id> add\` or \`${prefix}guild <server id> remove\``,
     invalidId: (value: string) => `\`${value}\` is not a valid server id. Paste the 17–20 digit id from Discord's "Copy Server ID".`,
     added: (guildId: string, name?: string) =>
         `✅ Added **${name ?? guildId}** (\`${guildId}\`) to the server whitelist. The bot may now be invited to it and will stay.`,
