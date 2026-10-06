@@ -3,9 +3,14 @@ import { Logger } from "@logger";
 import type { BotClient } from "@core/bot-client";
 import { isAllowedGuild } from "./allowed-guilds";
 import { sendGuardLog } from "./send-guard-log";
+import { registerGuildCommands } from "./register-guild-commands";
 
 async function leaveIfUnauthorized(client: BotClient, guild: Guild, reason: "left" | "blocked"): Promise<void> {
-    if (await isAllowedGuild(guild.id)) return;
+    if (await isAllowedGuild(guild.id)) {
+        // Just invited to a whitelisted server: its slash commands, now rather than at the next deploy.
+        if (reason === "blocked") await registerGuildCommands(client, guild.id).catch(() => null);
+        return;
+    }
 
     Logger.warn(
         reason === "blocked"

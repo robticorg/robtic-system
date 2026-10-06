@@ -1,6 +1,7 @@
 import type { MessageCommandConfig } from "@typings/message-command";
 import { SERVER_WHITELIST_MESSAGES, SNOWFLAKE_REGEX, SUPER_ADMIN_ID } from "@constants";
 import { AllowedGuildRepository, SuperUserRepository } from "@database/repositories";
+import { registerGuildCommands, unregisterGuildCommands } from "@bot/guards/register-guild-commands";
 
 /**
  * `<prefix>guild <server id> add` / `<prefix>guild <server id> remove` — the server whitelist the
@@ -51,12 +52,15 @@ export default {
             reply = (await AllowedGuildRepository.add(guildId, message.author.id, name))
                 ? SERVER_WHITELIST_MESSAGES.added(guildId, name)
                 : SERVER_WHITELIST_MESSAGES.alreadyAdded(guildId);
+            // Already in the server (or re-adding one): its slash commands now. Not in it yet: on join.
+            const registered = await registerGuildCommands(client, guildId).catch(() => "failed" as const);
+            reply += `\n${SERVER_WHITELIST_MESSAGES.commands[registered]}`;
         } else if (guildId === message.guildId) {
             reply = SERVER_WHITELIST_MESSAGES.cannotRemoveCurrent;
         } else {
-            reply = (await AllowedGuildRepository.remove(guildId))
-                ? SERVER_WHITELIST_MESSAGES.removed(guildId)
-                : SERVER_WHITELIST_MESSAGES.notListed(guildId);
+            const removed = await AllowedGuildRepository.remove(guildId);
+            if (removed) await unregisterGuildCommands(client, guildId).catch(() => null);
+            reply = removed ? SERVER_WHITELIST_MESSAGES.removed(guildId) : SERVER_WHITELIST_MESSAGES.notListed(guildId);
         }
 
         await message.reply({ content: reply, allowedMentions: { repliedUser: false } });

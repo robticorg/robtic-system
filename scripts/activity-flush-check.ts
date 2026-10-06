@@ -12,7 +12,8 @@ import {
     type MemberBatch,
     type MessageCounterStore,
 } from "@core/activity";
-import { StaffApiRejected, crossedMilestones } from "@core/staff-api";
+import { StaffApiRejected, crossedMilestones, isStaffMessagePointsEnabled, STAFF_MESSAGE_POINTS_FEATURE } from "@core/staff-api";
+import { GuildFeatureRepository } from "@database/repositories";
 import { jobIds } from "@queue";
 import { newBatchId, processMessageFlush } from "../apps/worker/src/processors/activity";
 import { processStaffPointJob } from "../apps/worker/src/processors/staff-points";
@@ -211,6 +212,22 @@ await (async () => {
 })();
 
 // ── Staff-points processor ────────────────────────────────────────────────────────────────────
+// Per-server `/feature` choices, in memory: G2 turned staff points off.
+const G2 = "456789012345678901";
+(GuildFeatureRepository as unknown as { getOverrides: (g: string) => Promise<Map<string, boolean>> }).getOverrides = async g =>
+    new Map(g === G2 ? [[STAFF_MESSAGE_POINTS_FEATURE, false]] : []);
+
+await (async () => {
+    check("switch: on by default (no choice made)", await isStaffMessagePointsEnabled(G));
+    check("switch: off where the server disabled it", !(await isStaffMessagePointsEnabled(G2)));
+
+    let sent = 0;
+    const off = await processStaffPointJob({ guildId: G2, memberId: U, milestone: 100, requestId: "r" }, async () => { sent++; return "sent"; });
+    check("switch: a queued point for a disabled server is dropped, not sent", off === "disabled" && sent === 0);
+    const on = await processStaffPointJob({ guildId: G, memberId: U, milestone: 100, requestId: "r" }, async () => { sent++; return "sent"; });
+    check("switch: enabled server still gets its point", on === "sent" && sent === 1);
+})();
+
 await (async () => {
     const job = { guildId: G, memberId: U, milestone: 300, requestId: "r" };
     const sent: unknown[] = [];

@@ -8,5 +8,12 @@ export const SERVER_WHITELIST_MESSAGES = {
     removed: (guildId: string) =>
         `✅ Removed \`${guildId}\` from the server whitelist. The bot will leave it the next time it starts or is invited back.`,
     notListed: (guildId: string) => `\`${guildId}\` is not on the server whitelist.`,
+    /** What happened to the server's slash commands after `add`. */
+    commands: {
+        published: "⚡ Slash commands registered there — they show up right away.",
+        "not-joined": "⚡ Slash commands will be registered as soon as the bot joins it.",
+        failed: "⚠️ Couldn't register its slash commands now — they'll be registered at the next restart or deploy.",
+        "dev-mode": "ℹ️ COMMAND_GUILD_ID is set (development), so slash commands stay in that one server.",
+    },
     cannotRemoveCurrent: "This is the server you're running the command in — remove it from somewhere else, or the bot will leave mid-command.",
 } as const;

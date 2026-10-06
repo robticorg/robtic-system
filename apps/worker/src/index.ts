@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { connectDatabase } from "@database/connection";
 import { processInviteJoin, processInviteLeave } from "@core/invites";
 import { applyMessageXp } from "@core/xp";
+import { isStaffMessagePointsEnabled } from "@core/staff-api";
 import { applyComboMessage } from "@core/combo";
 import { COMBO_CONFIG } from "@constants";
 import { onShutdown } from "@internal-api";
@@ -109,12 +110,15 @@ const workers = [
         logged<ActivityFlushJob>(QUEUES.activity, async () => {
             const outcome = await processMessageFlush({
                 ...defaultActivityDeps,
-                milestone: (guildId, memberId, milestone) => enqueue(
-                    QUEUES.staffPoints,
-                    "milestone",
-                    { guildId, memberId, milestone, requestId: newRequestId() },
-                    jobIds.staffMilestone(guildId, memberId, milestone),
-                ),
+                milestone: async (guildId, memberId, milestone) => {
+                    if (!(await isStaffMessagePointsEnabled(guildId))) return; // turned off in that server
+                    await enqueue(
+                        QUEUES.staffPoints,
+                        "milestone",
+                        { guildId, memberId, milestone, requestId: newRequestId() },
+                        jobIds.staffMilestone(guildId, memberId, milestone),
+                    );
+                },
             });
             if (outcome) {
                 Logger.info(`Flushed batch ${outcome.batchId}: ${outcome.messages} messages from ${outcome.members} members, ${outcome.pointsPaid} points, ${outcome.milestones} staff milestones`, SERVICE);

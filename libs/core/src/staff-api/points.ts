@@ -1,8 +1,23 @@
+import { GuildFeatureRepository } from "@database/repositories";
 import { Logger } from "@logger";
 import { staffApiHeaders, staffApiUrl } from "./client";
 
 /** Every this many real messages, the author earns one staff point. */
 export const MESSAGES_PER_STAFF_POINT = 100;
+
+/** The per-server switch: `/feature disable staff-points`. */
+export const STAFF_MESSAGE_POINTS_FEATURE = "staff-points";
+
+/**
+ * Whether this server gives staff points for messages — on unless the server turned it off. Reads
+ * the server's `/feature` choice directly (not through the manifest registry) because the worker,
+ * which sends these points, doesn't load feature manifests. Cached 60s, so a change reaches the
+ * worker within a minute.
+ */
+export async function isStaffMessagePointsEnabled(guildId: string): Promise<boolean> {
+    const overrides = await GuildFeatureRepository.getOverrides(guildId);
+    return overrides.get(STAFF_MESSAGE_POINTS_FEATURE) ?? true;
+}
 
 /**
  * The milestones crossed when a member's real-message count went from `total - added` to `total`.
@@ -58,7 +73,9 @@ export async function sendMessageMilestone(guildId: string, userId: string, mess
  * throws, logs instead, exactly like the pre-queue behavior.
  */
 export async function awardMessageMilestone(guildId: string, userId: string, messageCount: number): Promise<void> {
-    for (const milestone of crossedMilestones(messageCount, 1)) {
+    const milestones = crossedMilestones(messageCount, 1);
+    if (!milestones.length || !(await isStaffMessagePointsEnabled(guildId).catch(() => true))) return;
+    for (const milestone of milestones) {
         try {
             const result = await sendMessageMilestone(guildId, userId, milestone);
             Logger.debug(`[staff-points] ${userId} in ${guildId} at ${milestone} messages: ${result}`, "staff-api");

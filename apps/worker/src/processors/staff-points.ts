@@ -1,5 +1,5 @@
 import { UnrecoverableError } from "bullmq";
-import { StaffApiRejected, sendMessageMilestone } from "@core/staff-api";
+import { StaffApiRejected, isStaffMessagePointsEnabled, sendMessageMilestone } from "@core/staff-api";
 import type { StaffPointJob } from "@queue";
 
 /**
@@ -13,9 +13,12 @@ const SNOWFLAKE = /^\d{17,20}$/;
 export async function processStaffPointJob(
     job: StaffPointJob,
     send: typeof sendMessageMilestone = sendMessageMilestone,
-): Promise<"sent" | "not-staff"> {
+    enabled: (guildId: string) => Promise<boolean> = isStaffMessagePointsEnabled,
+): Promise<"sent" | "not-staff" | "disabled"> {
     if (!SNOWFLAKE.test(job.guildId) || !SNOWFLAKE.test(job.memberId)) throw new UnrecoverableError("invalid guild or member id");
     if (!Number.isInteger(job.milestone) || job.milestone <= 0) throw new UnrecoverableError("invalid milestone");
+    // Checked when sending, so a server that turns it off also stops points already queued.
+    if (!(await enabled(job.guildId))) return "disabled";
 
     try {
         return await send(job.guildId, job.memberId, job.milestone);
