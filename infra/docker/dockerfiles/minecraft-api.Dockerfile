@@ -20,6 +20,7 @@ COPY libs/queue/package.json ./libs/queue/
 COPY libs/internal-api/package.json ./libs/internal-api/
 COPY libs/internal-client/package.json ./libs/internal-client/
 COPY apps/worker/package.json ./apps/worker/
+COPY apps/music/package.json ./apps/music/
 COPY internal-api/invites/package.json ./internal-api/invites/
 RUN bun install --frozen-lockfile
 

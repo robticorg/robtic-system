@@ -16,7 +16,7 @@ import {
     type GatewayRole,
     type Leadership,
 } from "@queue";
-import { stopAllMusicBots } from "@bot/features/music/engine/music-manager";
+import { stopAllMusicBots } from "@core/music";
 import { client as bankClient } from "../bank";
 
 const CTX = "gateway";

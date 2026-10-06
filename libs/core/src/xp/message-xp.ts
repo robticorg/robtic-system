@@ -55,12 +55,19 @@ export type MessageXpOutcome =
 export async function applyMessageXp(input: MessageXpInput, store: MessageXpStore = repositoryMessageXpStore): Promise<MessageXpOutcome> {
     const jobKey = `xp-${input.messageId}`;
     const { record, prev } = await store.addXpOnce(input, jobKey);
-    if (!record || !prev) return { status: "superseded" };
+    if (!record) return { status: "superseded" };
 
     for (const period of COMBO_LEADERBOARD_PERIODS) {
         const periodKey = periodKeyFor(period, input.at);
         await store.addPeriod(input, "messageXp", period, periodKey, jobKey);
         await store.addPeriod(input, "xp", period, periodKey, jobKey);
+    }
+
+    // A newer gain replaced this one's snapshot (a late retry): the XP is in, so finish the guarded
+    // writes; the level-up decision belongs to the newer gain, which saw this XP.
+    if (!prev) {
+        await store.logOnce(`${jobKey}-gain`, input, "xp_gain", input.xp);
+        return { status: "superseded" };
     }
 
     const newLevel = calculateLevel(record.messageXP);

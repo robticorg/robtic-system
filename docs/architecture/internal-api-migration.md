@@ -207,7 +207,7 @@ messageCreate → Gateway: support channel? excluded channel? allowed role? mean
   The Redis `SET NX` lets exactly one through.
 - Without `REDIS_URL`, or if claiming the cooldown or queueing fails, `grantXP` runs inline as before
   (a claimed cooldown is released first when nothing was queued).
-- Voice XP is unchanged (inline, one-minute tick).
+- Voice XP moved next (§8b).
 - Tests: `bun run test:xp`.
 
 ## 8. Status — activity: combo
@@ -235,6 +235,45 @@ messageCreate → Gateway: detect the partner (channel buffer + partner from Red
 - Streak stays inline on purpose: it writes at most once per member per day, and nearly all of its
   work is Discord (reply with auto-delete, DM, role, reward claim button).
 - Tests: `bun run test:combo`.
+
+## 8b. Status — activity: voice XP
+
+```
+every minute → Gateway: for each guild, who is in voice and eligible (AFK, AFK channel, alone
+               rules — it has the voice states); roll each member's XP; sessions stay here
+             → voice queue: one job per guild per minute (job id voice_<guild>_<tick>)
+             → worker (@core/xp applyVoiceXp), per member: voice XP + levels-before snapshot,
+               xp / voiceXp / voiceTime stats, logs, voice Points — all keyed by the tick
+             → discord-outbox: voice level-up (level roles, then announcement)
+```
+
+- Own exactly-once guard (`voiceXpJobs`, last 20 ticks; `voiceXpJobPrev`), separate from message XP
+  so a voice tick and a chat retry never interfere. Levels only rise (`$max`).
+- A retry that arrives after newer ticks (or, for chat, newer gains) still finishes its own guarded
+  writes (stats, log, Points); only the level-up decision is left to the newer one, which saw its XP.
+- Without `REDIS_URL`, or if queueing fails, the tick grants inline as before (same rolled XP).
+- Tests: `bun run test:voice`.
+
+## 8c. Music app
+
+```
+/music create (modal) → Gateway → POST /bots          ─┐
+/music list           → Gateway → GET /guilds/:id/bots ├─ music app (apps/music, robtic-music :3006)
+/bot remove           → Gateway → DELETE …/bots/:botId ─┘   runs every music bot, MongoDB
+```
+
+- The music bots (each its own Discord client), their engine (`libs/core/src/music/engine`) and
+  the create/list/remove logic (`@core/music` service) live in the music app, so music keeps
+  playing through Gateway restarts and failovers.
+- The Gateway keeps what needs the main bot: the create modal, the invite link, and the
+  voice-channel permissions (on create, when a music bot joins, and for every bot on start).
+- The token travels only over the private network (with `x-internal-token`), is encrypted before
+  it is stored, and is never returned.
+- **One replica only** — two music apps would log every music bot in twice.
+- Without `MUSIC_API_URL` the bots run inside the Gateway, as before (local development). Music
+  app down → the commands say "temporarily unavailable"; running bots are unaffected by Gateway
+  changes.
+- Tests: `bun run test:music-api`.
 
 ## 9. Failover
 

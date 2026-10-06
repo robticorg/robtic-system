@@ -3,7 +3,7 @@ import { Worker, type Job, type WorkerOptions } from "bullmq";
 import mongoose from "mongoose";
 import { connectDatabase } from "@database/connection";
 import { processInviteJoin, processInviteLeave } from "@core/invites";
-import { applyMessageXp } from "@core/xp";
+import { applyMessageXp, applyVoiceXp } from "@core/xp";
 import { isStaffMessagePointsEnabled } from "@core/staff-api";
 import { applyComboMessage } from "@core/combo";
 import { COMBO_CONFIG } from "@constants";
@@ -27,12 +27,14 @@ import {
     type InviteJob,
     type MessageXpJob,
     type StaffPointJob,
+    type VoiceTickJob,
 } from "@queue";
 import { processInvitesJob } from "./processors/invites";
 import { defaultActivityDeps, processMessageFlush } from "./processors/activity";
 import { processStaffPointJob } from "./processors/staff-points";
 import { processXpJob } from "./processors/xp";
 import { processComboJob } from "./processors/combo";
+import { processVoiceJob } from "./processors/voice";
 
 const SERVICE = "worker";
 
@@ -148,6 +150,14 @@ const workers = [
         })),
         // One at a time everywhere (global concurrency) — a pair's messages must apply in order.
         { ...WORKER_OPTIONS, concurrency: 1 },
+    ),
+    new Worker<VoiceTickJob>(
+        QUEUES.voice,
+        logged<VoiceTickJob>(QUEUES.voice, job => processVoiceJob(job.data, {
+            apply: applyVoiceXp,
+            outbox: (outbox, jobId) => enqueue(QUEUES.discordOutbox, outbox.kind, outbox, jobId),
+        })),
+        { ...WORKER_OPTIONS, concurrency },
     ),
 ];
 

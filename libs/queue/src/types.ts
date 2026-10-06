@@ -110,6 +110,18 @@ export interface ComboMessageJob extends JobMeta {
     characterCount: number;
 }
 
+/**
+ * One guild's voice tick: every member the Gateway found eligible this minute (it owns the voice
+ * states, AFK and alone rules), with the XP already rolled so a retry grants the same amounts.
+ */
+export interface VoiceTickJob extends JobMeta {
+    kind: "voice-tick";
+    guildId: string;
+    /** The tick's time (ms) — one per guild per minute, the job's and every write's key. */
+    tickAt: number;
+    members: Array<{ memberId: string; username: string; xp: number; seconds: number }>;
+}
+
 export interface JobPayloads {
     invites: InviteJob;
     "discord-outbox": DiscordOutboxJob;
@@ -117,6 +129,7 @@ export interface JobPayloads {
     "staff-points": StaffPointJob;
     xp: MessageXpJob;
     combo: ComboMessageJob;
+    voice: VoiceTickJob;
 }
 
 export type QueueName = keyof JobPayloads;

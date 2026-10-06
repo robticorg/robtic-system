@@ -79,6 +79,47 @@ export class ActivityRepository {
         return { applied: false, record, prev: record?.xpJobs.at(-1) === jobKey ? record.xpJobPrev : null };
     }
 
+    /**
+     * Queued voice XP for one tick, applied exactly once per `jobKey` — `addMessageXpOnce`'s twin,
+     * with its own guard (`voiceXpJobs`, last 20) and levels-before snapshot (`voiceXpJobPrev`).
+     * Like `addVoiceXP` it never touches the message counters.
+     */
+    static async addVoiceXpOnce(
+        discordId: string,
+        guildId: string,
+        username: string,
+        amount: number,
+        at: Date,
+        jobKey: string,
+    ): Promise<{ applied: boolean; record: IActivityXP | null; prev: { level: number; messageLevel: number; voiceLevel: number } | null }> {
+        await ActivityRepository.findOrCreate(discordId, guildId, username);
+        const later = (field: string) => ({ $max: [{ $ifNull: [`$${field}`, at] }, at] });
+
+        const applied = await ActivityXP.findOneAndUpdate(
+            { discordId, guildId, voiceXpJobs: { $ne: jobKey } },
+            [{
+                $set: {
+                    voiceXpJobPrev: {
+                        level: { $ifNull: ["$level", 0] },
+                        messageLevel: { $ifNull: ["$messageLevel", 0] },
+                        voiceLevel: { $ifNull: ["$voiceLevel", 0] },
+                    },
+                    voiceXpJobs: { $slice: [{ $concatArrays: [{ $ifNull: ["$voiceXpJobs", []] }, [jobKey]] }, -20] },
+                    totalXP: { $add: [{ $ifNull: ["$totalXP", 0] }, amount] },
+                    voiceXP: { $add: [{ $ifNull: ["$voiceXP", 0] }, amount] },
+                    "decay.lastActiveAt": later("decay.lastActiveAt"),
+                    "decay.voiceActiveAt": later("decay.voiceActiveAt"),
+                    "decay.inactiveDays": 0,
+                },
+            }],
+            { returnDocument: "after", updatePipeline: true },
+        );
+        if (applied) return { applied: true, record: applied, prev: applied.voiceXpJobPrev };
+
+        const record = await ActivityXP.findOne({ discordId, guildId });
+        return { applied: false, record, prev: record?.voiceXpJobs?.at(-1) === jobKey ? record.voiceXpJobPrev : null };
+    }
+
     /** Raises levels, never lowers them — safe when two gains for one member finish out of order. */
     static async raiseLevels(
         discordId: string,

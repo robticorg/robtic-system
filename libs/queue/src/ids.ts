@@ -15,6 +15,7 @@ export const jobIds = {
     messageXp: (guildId: string, messageId: string) => `xp_${guildId}_${messageId}`,
     xpGainLog: (guildId: string, messageId: string) => `xp-log_${guildId}_${messageId}`,
     comboMessage: (guildId: string, messageId: string) => `combo_${guildId}_${messageId}`,
+    voiceTick: (guildId: string, tickAt: number) => `voice_${guildId}_${tickAt}`,
     /** One announcement per level reached — a retry, or two gains racing, can't announce it twice. */
     levelUp: (guildId: string, memberId: string, kind: "message" | "voice", level: number) => `level-up_${guildId}_${memberId}_${kind}_${level}`,
 } as const;

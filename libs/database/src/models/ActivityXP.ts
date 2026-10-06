@@ -24,6 +24,9 @@ export interface IActivityXP extends Document {
     xpJobs: string[];
     /** The levels just before the newest of `xpJobs`. */
     xpJobPrev: { level: number; messageLevel: number; voiceLevel: number } | null;
+    /** The same guard for queued voice XP (one key per voice tick), kept apart so voice and chat retries never mix. */
+    voiceXpJobs: string[];
+    voiceXpJobPrev: { level: number; messageLevel: number; voiceLevel: number } | null;
     lastMessageAt: Date;
     lastXPGrant: Date;
     spamCount: number;
@@ -73,6 +76,8 @@ const activityXPSchema = new Schema<IActivityXP>(
         msgFlushCount: { type: Number, default: 0 },
         xpJobs: { type: [String], default: [] },
         xpJobPrev: { type: Schema.Types.Mixed, default: null },
+        voiceXpJobs: { type: [String], default: [] },
+        voiceXpJobPrev: { type: Schema.Types.Mixed, default: null },
         lastMessageAt: { type: Date, default: Date.now },
         lastXPGrant: { type: Date, default: new Date(0) },
         spamCount: { type: Number, default: 0 },

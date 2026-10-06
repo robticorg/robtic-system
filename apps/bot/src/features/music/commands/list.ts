@@ -2,24 +2,30 @@ import { EmbedBuilder, MessageFlags } from "discord.js";
 import type { FeatureSubcommandHandler } from "@typings/feature";
 import { MUSIC_CONFIG } from "@constants";
 import { musicBotInviteUrl } from "@core/music";
-import { MusicBotRepository } from "@database/repositories";
-import { getMusicBot } from "../engine/music-manager";
+import { InternalApiError, unavailableMessage } from "@internal-client";
+import { musicBackend } from "../utils/music-backend";
 
 /** `/music list` — this server's music bots, their channels, and whether each is running. */
 export const list: FeatureSubcommandHandler = async (interaction, _client) => {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const bots = await MusicBotRepository.listByGuild(interaction.guildId!);
+    let bots;
+    try {
+        bots = await musicBackend.list(interaction.guildId!);
+    } catch (err) {
+        if (err instanceof InternalApiError) return void await interaction.editReply({ content: unavailableMessage("music") });
+        throw err;
+    }
+
     if (!bots.length) {
         await interaction.editReply({ content: "No music bots yet. Add one with `/music create`." });
         return;
     }
 
     const lines = bots.map((bot, i) => {
-        const instance = getMusicBot(bot.botId);
-        const status = !instance?.online
+        const status = bot.status === "offline"
             ? "🔴 offline"
-            : instance.inGuild
+            : bot.status === "online"
                 ? "🟢 online"
                 : `🟡 not in the server — [invite it](${musicBotInviteUrl(bot.applicationId, bot.guildId)})`;
         return `**${i + 1}. ${bot.name}** · <@${bot.botId}> · <#${bot.voiceChannelId}> · ${status}`;

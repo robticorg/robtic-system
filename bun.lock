@@ -40,6 +40,9 @@
         "@robtic/sdk": "workspace:*",
       },
     },
+    "apps/music": {
+      "name": "@robtic/music",
+    },
     "apps/worker": {
       "name": "@robtic/worker",
     },
@@ -246,6 +249,8 @@
     "@robtic/logger": ["@robtic/logger@workspace:libs/logger"],
 
     "@robtic/minecraft-api": ["@robtic/minecraft-api@workspace:apps/minecraft-api"],
+
+    "@robtic/music": ["@robtic/music@workspace:apps/music"],
 
     "@robtic/queue": ["@robtic/queue@workspace:libs/queue"],
 

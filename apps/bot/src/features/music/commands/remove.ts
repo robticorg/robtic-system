@@ -1,8 +1,9 @@
 import { MessageFlags, type AutocompleteInteraction } from "discord.js";
 import type { FeatureSubcommandHandler } from "@typings/feature";
 import { MusicBotRepository } from "@database/repositories";
+import { InternalApiError, unavailableMessage } from "@internal-client";
 import { Logger } from "@logger";
-import { getMusicBot, stopMusicBot } from "../engine/music-manager";
+import { musicBackend } from "../utils/music-backend";
 
 /**
  * `/bot remove bot:` — the music bot leaves the server, goes offline, loses its voice-channel
@@ -12,21 +13,25 @@ export const remove: FeatureSubcommandHandler = async (interaction, _client) => 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const guild = interaction.guild!;
 
-    const record = await MusicBotRepository.delete(guild.id, interaction.options.getString("bot", true));
+    const botId = interaction.options.getString("bot", true);
+    let record;
+    try {
+        record = await musicBackend.remove(guild.id, botId);
+    } catch (err) {
+        if (err instanceof InternalApiError) return void await interaction.editReply({ content: unavailableMessage("music") });
+        throw err;
+    }
     if (!record) {
         await interaction.editReply({ content: "No such music bot on this server — pick one from the list." });
         return;
     }
 
-    await getMusicBot(record.botId)?.leaveGuild();
-    await stopMusicBot(record.botId);
-
     const channel = guild.channels.cache.get(record.voiceChannelId);
     if (channel && "permissionOverwrites" in channel) {
-        await channel.permissionOverwrites.delete(record.botId, "Music bot removed").catch(() => null);
+        await channel.permissionOverwrites.delete(botId, "Music bot removed").catch(() => null);
     }
 
-    Logger.info(`Music bot ${record.name} (${record.botId}) removed from ${guild.id} by ${interaction.user.id}`, "music");
+    Logger.info(`Music bot ${record.name} (${botId}) removed from ${guild.id} by ${interaction.user.id}`, "music");
     await interaction.editReply({ content: `**${record.name}** was removed: it left the server and its token was deleted.` });
 };
 

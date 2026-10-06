@@ -16,6 +16,7 @@ import type { JobPayloads, QueueName } from "./types";
  * - `xp`: one job per message that earned chat XP (at most one per member per cooldown).
  * - `combo`: one job per conversational message. **Global concurrency 1**: a pair's heat and
  *   score build on its previous message, so messages apply in the order they were sent.
+ * - `voice`: one job per guild per voice tick (every minute) with all its eligible members.
  */
 export const QUEUES = {
     invites: "invites",
@@ -24,6 +25,7 @@ export const QUEUES = {
     staffPoints: "staff-points",
     xp: "xp",
     combo: "combo",
+    voice: "voice",
 } as const satisfies Record<string, QueueName>;
 
 /** Queues whose jobs must run one at a time, everywhere. */

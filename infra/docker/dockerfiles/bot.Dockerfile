@@ -20,6 +20,7 @@ COPY libs/queue/package.json ./libs/queue/
 COPY libs/internal-api/package.json ./libs/internal-api/
 COPY libs/internal-client/package.json ./libs/internal-client/
 COPY apps/worker/package.json ./apps/worker/
+COPY apps/music/package.json ./apps/music/
 COPY internal-api/invites/package.json ./internal-api/invites/
 RUN bun install --frozen-lockfile
 
@@ -38,11 +39,13 @@ RUN apt-get update \
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json tsconfig.json ./
-# One image, three roles (see docker-compose.yml): the Gateway (apps/bot, the default CMD), the
-# background worker (apps/worker) and the internal APIs (internal-api/*) — same code and libs, a
-# different start command per Compose service, so CI still builds and deploys a single image.
+# One image, several roles (see docker-compose.yml): the Gateway (apps/bot, the default CMD), the
+# background worker (apps/worker), the music app (apps/music) and the internal APIs
+# (internal-api/*) — same code and libs, a different start command per Compose service, so CI
+# still builds and deploys a single image.
 COPY apps/bot ./apps/bot
 COPY apps/worker ./apps/worker
+COPY apps/music ./apps/music
 COPY internal-api ./internal-api
 COPY libs ./libs
 COPY images ./images

@@ -3,17 +3,28 @@ import type { EventConfig } from "@typings/event";
 import { handleError, BotError } from "@core/handlers";
 import { MusicBotRepository } from "@database/repositories";
 import { Logger } from "@logger";
-import { grantVoicePermissions, startAllMusicBots } from "./engine/music-manager";
+import { startAllMusicBots } from "@core/music";
+import { musicRunsLocally } from "./utils/music-backend";
+import { grantVoicePermissions } from "./utils/voice-permissions";
 
 const CTX = "main/music";
 
 export default [
-    /** Every saved music bot comes back online with the main bot. */
+    /**
+     * On start: make sure every music bot has its voice-channel permissions (only the main bot can
+     * set them). Locally (no music app) this process also runs the bots themselves.
+     */
     {
         name: Events.ClientReady,
         once: true,
         execute: client => {
-            startAllMusicBots(client).catch(err => handleError(new BotError(`Failed to start music bots: ${err}`, "EVENT"), CTX));
+            void (async () => {
+                if (musicRunsLocally()) await startAllMusicBots();
+                for (const record of await MusicBotRepository.listAll()) {
+                    const guild = client.guilds.cache.get(record.guildId);
+                    if (guild) await grantVoicePermissions(guild, record);
+                }
+            })().catch(err => handleError(new BotError(`Failed to start music bots: ${err}`, "EVENT"), CTX));
         },
     } satisfies EventConfig<Events.ClientReady>,
 

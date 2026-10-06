@@ -11,6 +11,7 @@ export type {
     StaffPointJob,
     MessageXpJob,
     ComboMessageJob,
+    VoiceTickJob,
     JobPayloads,
     QueueName,
 } from "./types";

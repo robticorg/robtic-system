@@ -19,6 +19,7 @@ services:
       GATEWAY_ROLE: primary
       REDIS_URL: redis://robtic-redis:6379
       INVITES_API_URL: http://robtic-invites-api:3005
+      MUSIC_API_URL: http://robtic-music:3006
     healthcheck:
       test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/gateway-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
       interval: 30s
@@ -39,6 +40,8 @@ services:
         condition: service_started
       robtic-invites-api:
         condition: service_started
+      robtic-music:
+        condition: service_started
 
   # Standby Gateway: same image, waits (not logged in) while the primary leads, takes over when the
   # primary's lock expires, and hands back once the primary is up again. No published ports: while
@@ -53,6 +56,7 @@ services:
       GATEWAY_ROLE: standby
       REDIS_URL: redis://robtic-redis:6379
       INVITES_API_URL: http://robtic-invites-api:3005
+      MUSIC_API_URL: http://robtic-music:3006
     networks: [default, internal]
     # Unlike the primary it needs Redis: without the lock it must never log in.
     depends_on:
@@ -102,6 +106,27 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/worker-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Music app (apps/music): runs every music bot — each its own Discord client — apart from the
+  # Gateway, so music keeps playing through Gateway restarts and failovers. The Gateway creates,
+  # lists and removes bots through its internal API (:3006, private network, INTERNAL_API_TOKEN).
+  # Exactly ONE replica: two would log every music bot in twice.
+  robtic-music:
+    image: ghcr.io/robticorg/robtic-system:latest
+    command: ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/music/src/index.ts"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    env_file:
+      - /home/robtic/robtic-system/.env
+    environment:
+      MUSIC_API_PORT: "3006"
+    networks: [default, internal]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:3006/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3

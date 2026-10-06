@@ -1,0 +1,10 @@
+{
+  "name": "@robtic/music",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "description": "Music app: runs every music bot (each its own Discord client) and serves the internal API the Gateway uses to create, list and remove them.",
+  "scripts": {
+    "start": "bun --preload ../../libs/shared/src/preload.ts src/index.ts"
+  }
+}

@@ -1,6 +1,11 @@
 import type { Guild } from "discord.js";
 import { ActivityRepository, PeriodicStatRepository } from "@database/repositories";
 import { randomXP, applyXpGain } from "@bot/services/community/xp";
+
+/** One tick's XP for an eligible member: the chat range, scaled by the voice multiplier. */
+export function rollVoiceXp(multiplier: number): number {
+    return Math.max(1, Math.round(randomXP() * multiplier));
+}
 import { awardVoicePoint } from "@core/points";
 import { publishMetric } from "@core/metrics";
 import { Logger } from "@logger";
@@ -22,12 +27,9 @@ export async function grantVoiceXp(
     guild: Guild,
     discordId: string,
     username: string,
-    multiplier: number,
+    xp: number,
     activeMinutes: number,
 ): Promise<number> {
-    const base = randomXP();
-    const xp = Math.max(1, Math.round(base * multiplier));
-
     const record = await ActivityRepository.findOrCreate(discordId, guild.id, username);
     const updated = await ActivityRepository.addVoiceXP(discordId, guild.id, xp);
 

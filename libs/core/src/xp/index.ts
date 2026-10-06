@@ -21,3 +21,4 @@ export {
     type MessageXpOutcome,
     type Levels,
 } from "./message-xp";
+export { applyVoiceXp, repositoryVoiceXpStore, type VoiceXpInput, type VoiceXpStore, type VoiceXpOutcome } from "./voice-xp";
