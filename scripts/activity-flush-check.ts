@@ -30,7 +30,7 @@ const V = "345678901234567890";
 /** In-memory twin of the guarded repository writes. */
 function memoryStore(rate = 10) {
     const activity = new Map<string, { count: number; batch: string | null; batchCount: number }>();
-    const periods = new Map<string, { value: number; batch: string | null }>();
+    const periods = new Map<string, { value: number; batches: string[] }>();
     const points = new Map<string, { progress: number; balance: number; flush: string | null; convert: string | null }>();
     const ledger = new Set<string>();
     let failAt = -1;
@@ -52,10 +52,10 @@ function memoryStore(rate = 10) {
         async addPeriod(m, period, periodKey, amount, batchId) {
             maybeFail();
             const key = `${m.guildId}|${m.discordId}|${period}|${periodKey}`;
-            const doc = periods.get(key) ?? { value: 0, batch: null };
+            const doc = periods.get(key) ?? { value: 0, batches: [] };
             periods.set(key, doc);
-            if (doc.batch === batchId) return false;
-            doc.value += amount; doc.batch = batchId;
+            if (doc.batches.includes(batchId)) return false;
+            doc.value += amount; doc.batches = [...doc.batches, batchId].slice(-10);
             return true;
         },
         async addProgress(m, r, batchId) {

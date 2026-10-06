@@ -2,6 +2,9 @@ import { Worker, type Job } from "bullmq";
 import mongoose from "mongoose";
 import { connectDatabase } from "@database/connection";
 import { processInviteJoin, processInviteLeave } from "@core/invites";
+import { applyMessageXp } from "@core/xp";
+import { applyComboMessage } from "@core/combo";
+import { COMBO_CONFIG } from "@constants";
 import { onShutdown } from "@internal-api";
 import { Logger } from "@logger";
 import {
@@ -14,13 +17,18 @@ import {
     jobIds,
     newRequestId,
     redisConnection,
+    setComboPartners,
     type ActivityFlushJob,
+    type ComboMessageJob,
     type InviteJob,
+    type MessageXpJob,
     type StaffPointJob,
 } from "@queue";
 import { processInvitesJob } from "./processors/invites";
 import { defaultActivityDeps, processMessageFlush } from "./processors/activity";
 import { processStaffPointJob } from "./processors/staff-points";
+import { processXpJob } from "./processors/xp";
+import { processComboJob } from "./processors/combo";
 
 const SERVICE = "worker";
 
@@ -92,6 +100,23 @@ const workers = [
         QUEUES.staffPoints,
         logged<StaffPointJob>(QUEUES.staffPoints, job => processStaffPointJob(job.data)),
         { connection: redisConnection(), concurrency: externalConcurrency },
+    ),
+    new Worker<MessageXpJob>(
+        QUEUES.xp,
+        logged<MessageXpJob>(QUEUES.xp, job => processXpJob(job.data, {
+            apply: applyMessageXp,
+            outbox: (outbox, jobId) => enqueue(QUEUES.discordOutbox, outbox.kind, outbox, jobId),
+        })),
+        { connection: redisConnection(), concurrency },
+    ),
+    new Worker<ComboMessageJob>(
+        QUEUES.combo,
+        logged<ComboMessageJob>(QUEUES.combo, job => processComboJob(job.data, {
+            apply: applyComboMessage,
+            cachePartners: (guildId, a, b, score) => setComboPartners(guildId, a, b, score, COMBO_CONFIG.expireMs),
+        })),
+        // One at a time everywhere (global concurrency) — a pair's messages must apply in order.
+        { connection: redisConnection(), concurrency: 1 },
     ),
 ];
 

@@ -5,7 +5,7 @@ import { ComboSettingsRepository, ComboRepository, ComboUserStatsRepository } fr
 import { getUserHighestCombo } from "@core/combo";
 import { getUserComboRank } from "../functions/combo";
 import { heatStatusLabel } from "../functions/heat";
-import { getFavoritePartner } from "../functions/favorite-partner";
+import { getFavoritePartner } from "@core/combo";
 import { getHistoryForUser } from "../functions/history";
 import { getLeaderboard } from "../functions/leaderboard";
 import { getServerRecords } from "../functions/records";

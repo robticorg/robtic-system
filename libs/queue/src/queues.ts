@@ -13,18 +13,24 @@ import type { JobPayloads, QueueName } from "./types";
  *   batch is always finished (or resumed) before the next one is taken.
  * - `staff-points`: milestone points sent to the external staff API, at a bounded concurrency
  *   (`EXTERNAL_API_CONCURRENCY`) so a burst can't flood it.
+ * - `xp`: one job per message that earned chat XP (at most one per member per cooldown).
+ * - `combo`: one job per conversational message. **Global concurrency 1**: a pair's heat and
+ *   score build on its previous message, so messages apply in the order they were sent.
  */
 export const QUEUES = {
     invites: "invites",
     discordOutbox: "discord-outbox",
     activity: "activity",
     staffPoints: "staff-points",
+    xp: "xp",
+    combo: "combo",
 } as const satisfies Record<string, QueueName>;
 
 /** Queues whose jobs must run one at a time, everywhere. */
 export const GLOBAL_CONCURRENCY: Partial<Record<QueueName, number>> = {
     invites: 1,
     activity: 1,
+    combo: 1,
 };
 
 /**

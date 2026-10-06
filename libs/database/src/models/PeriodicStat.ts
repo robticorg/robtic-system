@@ -28,8 +28,8 @@ export interface IPeriodicStat extends Document {
     metric: PeriodicStatMetric;
     discordId: string;
     value: number;
-    /** Last activity flush batch applied to this row — the exactly-once guard for batched increments. */
-    flushBatch: string | null;
+    /** The last batch ids (flushes, queued XP) applied to this row — the exactly-once guard for batched increments. */
+    appliedBatches: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -42,7 +42,7 @@ const periodicStatSchema = new Schema<IPeriodicStat>(
         metric: { type: String, enum: ["xp", "messageXp", "messages", "voiceTime", "voiceXp"] satisfies PeriodicStatMetric[], required: true },
         discordId: { type: String, required: true },
         value: { type: Number, required: true, default: 0 },
-        flushBatch: { type: String, default: null },
+        appliedBatches: { type: [String], default: [] },
     },
     { timestamps: true }
 );

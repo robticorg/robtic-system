@@ -9,8 +9,12 @@ export type {
     DiscordOutboxJob,
     ActivityFlushJob,
     StaffPointJob,
+    MessageXpJob,
+    ComboMessageJob,
     JobPayloads,
     QueueName,
 } from "./types";
 export { jobIds, newRequestId } from "./ids";
 export { getRedis, closeRedis, bufferMessage, takeMessageBatch, readMessageBatch, finishMessageBatch } from "./message-buffer";
+export { claimCooldown, releaseCooldown } from "./cooldown";
+export { setComboPartners, getComboPartner } from "./combo-partners";

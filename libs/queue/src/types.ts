@@ -45,6 +45,25 @@ export type DiscordOutboxJob =
         memberName: string;
         source: "invite" | "vanity" | "unknown";
         inviterId: string | null;
+    })
+    /** A message/voice level went up: give the level roles now earned, then announce it. */
+    | (JobMeta & {
+        kind: "level-up";
+        guildId: string;
+        memberId: string;
+        xpKind: "message" | "voice";
+        level: number;
+        levels: { messageLevel: number; voiceLevel: number };
+    })
+    /** One XP gain, for the `xp_gain` activity-log channel. */
+    | (JobMeta & {
+        kind: "xp-gain-log";
+        guildId: string;
+        memberId: string;
+        username: string;
+        xp: number;
+        leveledUp: boolean;
+        level: number;
     });
 
 /** The periodic message-counter flush (scheduled by the worker, never enqueued by hand). */
@@ -59,11 +78,45 @@ export interface StaffPointJob extends JobMeta {
     milestone: number;
 }
 
+/**
+ * Chat XP for one message. The Gateway already decided it counts (role, channel, cooldown, not
+ * spam) and rolled the amount, so a retry grants exactly the same XP.
+ */
+export interface MessageXpJob extends JobMeta {
+    kind: "message-xp";
+    guildId: string;
+    memberId: string;
+    username: string;
+    messageId: string;
+    xp: number;
+    at: string;
+}
+
+/**
+ * One conversational message for the combo system. The Gateway detected the partner and measured
+ * the message (the content itself never goes into Redis).
+ */
+export interface ComboMessageJob extends JobMeta {
+    kind: "combo-message";
+    guildId: string;
+    authorId: string;
+    partnerId: string;
+    username: string;
+    messageId: string;
+    confidence: number;
+    at: string;
+    countable: boolean;
+    wordCount: number;
+    characterCount: number;
+}
+
 export interface JobPayloads {
     invites: InviteJob;
     "discord-outbox": DiscordOutboxJob;
     activity: ActivityFlushJob;
     "staff-points": StaffPointJob;
+    xp: MessageXpJob;
+    combo: ComboMessageJob;
 }
 
 export type QueueName = keyof JobPayloads;

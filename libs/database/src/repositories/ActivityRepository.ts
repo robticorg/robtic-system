@@ -31,6 +31,64 @@ export class ActivityRepository {
     }
 
     /**
+     * Queued chat XP, applied exactly once per `jobKey` (the row remembers its last 20 job keys, so
+     * even a retry that arrives after newer gains is refused). The update is one pipeline, so the levels
+     * *before* this gain are snapshotted in the same write (`xpJobPrev`): a retry after a crash
+     * still knows whether this gain was a level-up. Times only move forward (`$max`), so a late
+     * retry can't rewind a clock.
+     *
+     * Returns the row after the gain and the levels before it — or `prev: null` when a newer job has
+     * already replaced this one's snapshot (nothing left to decide for this job).
+     */
+    static async addMessageXpOnce(
+        discordId: string,
+        guildId: string,
+        username: string,
+        amount: number,
+        at: Date,
+        jobKey: string,
+    ): Promise<{ applied: boolean; record: IActivityXP | null; prev: { level: number; messageLevel: number; voiceLevel: number } | null }> {
+        await ActivityRepository.findOrCreate(discordId, guildId, username);
+        const later = (field: string) => ({ $max: [{ $ifNull: [`$${field}`, at] }, at] });
+
+        const applied = await ActivityXP.findOneAndUpdate(
+            { discordId, guildId, xpJobs: { $ne: jobKey } },
+            [{
+                $set: {
+                    xpJobPrev: {
+                        level: { $ifNull: ["$level", 0] },
+                        messageLevel: { $ifNull: ["$messageLevel", 0] },
+                        voiceLevel: { $ifNull: ["$voiceLevel", 0] },
+                    },
+                    xpJobs: { $slice: [{ $concatArrays: [{ $ifNull: ["$xpJobs", []] }, [jobKey]] }, -20] },
+                    totalXP: { $add: [{ $ifNull: ["$totalXP", 0] }, amount] },
+                    messageXP: { $add: [{ $ifNull: ["$messageXP", 0] }, amount] },
+                    messageCount: { $add: [{ $ifNull: ["$messageCount", 0] }, 1] },
+                    lastMessageAt: later("lastMessageAt"),
+                    lastXPGrant: later("lastXPGrant"),
+                    "decay.lastActiveAt": later("decay.lastActiveAt"),
+                    "decay.messageActiveAt": later("decay.messageActiveAt"),
+                    "decay.inactiveDays": 0,
+                },
+            }],
+            { returnDocument: "after", updatePipeline: true },
+        );
+        if (applied) return { applied: true, record: applied, prev: applied.xpJobPrev };
+
+        const record = await ActivityXP.findOne({ discordId, guildId });
+        return { applied: false, record, prev: record?.xpJobs.at(-1) === jobKey ? record.xpJobPrev : null };
+    }
+
+    /** Raises levels, never lowers them — safe when two gains for one member finish out of order. */
+    static async raiseLevels(
+        discordId: string,
+        guildId: string,
+        levels: Partial<Pick<IActivityXP, "level" | "messageLevel" | "voiceLevel">>,
+    ): Promise<void> {
+        await ActivityXP.updateOne({ discordId, guildId }, { $max: levels });
+    }
+
+    /**
      * Voice XP: raises `voiceXP` (and the combined `totalXP`), never message XP.
      *
      * Deliberately not addXP: that one bumps messageCount and lastMessageAt, which would make a

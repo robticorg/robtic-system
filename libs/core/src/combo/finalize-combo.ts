@@ -1,18 +1,21 @@
 import type { ICombo } from "@database/models";
 import { ComboRepository, ComboUserStatsRepository } from "@database/repositories";
 import { Logger } from "@logger";
-import { checkFinalRecords } from "../records";
-import { recordEndedCombo } from "../history";
-import { recordFavoritePartnerScore } from "../leaderboard";
-import { rollConversationStreak } from "../conversation-streak";
+import { checkFinalRecords } from "./records";
+import { recordEndedCombo } from "./record-ended-combo";
+import { recordFavoritePartnerScore } from "./record-favorite-partner-score";
+import { rollConversationStreak } from "./conversation-streak";
 
-const CTX = "main:combo";
+const CTX = "combo";
 
 /**
  * Archives an ended conversation: rolls the conversation streak forward, writes history, updates
  * both participants' aggregate stats, and checks server records/leaderboard entries that only
- * finalize at combo-end. Idempotent — safe to call from both the lazy per-message path and the
- * periodic scheduler without double-processing (guarded by pair.status).
+ * finalize at combo-end.
+ *
+ * Runs from two processes — the worker (a message finds its pair stale) and the Gateway's
+ * scheduler sweep — so ending is a conditional write: only the call that actually flips the pair
+ * from active to ended archives it. The other one does nothing.
  */
 export async function finalizeCombo(pair: ICombo): Promise<void> {
     if (pair.status === "ended") return;
@@ -26,9 +29,8 @@ export async function finalizeCombo(pair: ICombo): Promise<void> {
         : { streakCurrent: pair.streakCurrent, streakBest: pair.streakBest, dateKey: pair.lastStreakDateKey };
     const { streakCurrent, streakBest, dateKey } = roll;
 
-    await ComboRepository.endWithStreak(pair.guildId, userAId, userBId, streakCurrent, streakBest, dateKey);
-
-    if (pair.messages === 0) return;
+    const ended = await ComboRepository.endWithStreak(pair.guildId, userAId, userBId, streakCurrent, streakBest, dateKey);
+    if (!ended || pair.messages === 0) return;
 
     try {
         await recordEndedCombo(pair, now);

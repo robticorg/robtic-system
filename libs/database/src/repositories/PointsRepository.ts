@@ -36,6 +36,9 @@ const PROGRESS_FIELD: Record<ProgressKind, keyof IPoint & string> = {
     voice: "voiceProgress",
 };
 
+
+/** Keys each wallet remembers for `addProgressOnce` — far more than a job's retry window can produce. */
+const RECENT_PROGRESS_KEYS = 50;
 export class PointsRepository {
     static async findOrCreate(guildId: string, discordId: string, username: string): Promise<IPoint> {
         return Point.findOneAndUpdate(
@@ -132,6 +135,60 @@ export class PointsRepository {
      * The remainder is carried rather than dropped (`progress -= earned * rate`), so nothing is
      * lost at the boundary and a member who is one message short keeps that message.
      */
+    /**
+     * `addProgress` for queued work: exactly once per `key`, even across retries and out-of-order
+     * jobs. (1) the progress is added unless `key` is among the recent keys; (2) the conversion is
+     * claimed by a conditional decrement that records `{key, earned}`; (3) the Points are paid
+     * through the ledger with an idempotency key. A crash anywhere is finished by the retry: it
+     * finds the recorded conversion and re-pays it, which the ledger turns into a no-op if (3)
+     * already happened. Returns the Points paid for `key`.
+     */
+    static async addProgressOnce(
+        guildId: string,
+        discordId: string,
+        username: string,
+        kind: ProgressKind,
+        amount: number,
+        rate: number,
+        key: string,
+    ): Promise<number> {
+        if (rate <= 0 || amount <= 0) return 0;
+        const field = PROGRESS_FIELD[kind];
+        await this.findOrCreate(guildId, discordId, username);
+
+        await Point.updateOne(
+            { guildId, discordId, progressKeys: { $ne: key } },
+            { $inc: { [field]: amount }, $push: { progressKeys: { $each: [key], $slice: -RECENT_PROGRESS_KEYS } } },
+        );
+
+        const converted = async () => {
+            const row = await Point.findOne({ guildId, discordId }).lean();
+            return { row, earned: row?.progressConversions?.find(c => c.key === key)?.earned };
+        };
+
+        let { row, earned } = await converted();
+        if (earned === undefined) {
+            const progress = (row?.[field] as number | undefined) ?? 0;
+            const due = Math.floor(progress / rate);
+            if (due <= 0) return 0;
+
+            const claimed = await Point.updateOne(
+                { guildId, discordId, "progressConversions.key": { $ne: key }, [field]: { $gte: due * rate } },
+                {
+                    $inc: { [field]: -due * rate },
+                    $push: { progressConversions: { $each: [{ key, earned: due }], $slice: -RECENT_PROGRESS_KEYS } },
+                },
+            );
+            if (claimed.modifiedCount > 0) earned = due;
+            else ({ earned } = await converted());
+            if (earned === undefined) return 0;
+        }
+        if (earned <= 0) return 0;
+
+        await this.move({ guildId, discordId, username, amount: earned, source: kind, idempotencyKey: `${kind}-progress_${key}` });
+        return earned;
+    }
+
     static async addProgress(
         guildId: string,
         discordId: string,

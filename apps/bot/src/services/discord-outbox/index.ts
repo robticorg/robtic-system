@@ -5,6 +5,8 @@ import { Logger } from "@logger";
 import { QUEUES, isRedisConfigured, redisConnection, type DiscordOutboxJob } from "@queue";
 import { announceJoin } from "@bot/features/invites/functions/announce-join";
 import { announceLeave } from "@bot/features/invites/functions/announce-leave";
+import { announceLevelUp, grantLevelRewards } from "@bot/services/community/xp";
+import { logToChannel, xpGainEmbed } from "@bot/utils/community/activity-log";
 
 const CTX = "discord-outbox";
 
@@ -12,6 +14,9 @@ export interface OutboxDeps {
     guild: (guildId: string) => Guild | undefined;
     announceJoin: typeof announceJoin;
     announceLeave: typeof announceLeave;
+    grantLevelRewards: typeof grantLevelRewards;
+    announceLevelUp: typeof announceLevelUp;
+    logXpGain: (username: string, memberId: string, xp: number, leveledUp: boolean, level: number) => Promise<void>;
 }
 
 /**
@@ -30,6 +35,13 @@ export async function processOutboxJob(job: DiscordOutboxJob, deps: OutboxDeps):
         case "invite-leave-announcement":
             await deps.announceLeave(guild, job.memberName, { source: job.source, inviterId: job.inviterId });
             return "sent";
+        case "level-up":
+            await deps.grantLevelRewards(job.memberId, job.guildId, job.levels, guild);
+            await deps.announceLevelUp(guild, job.memberId, job.xpKind, job.level);
+            return "sent";
+        case "xp-gain-log":
+            await deps.logXpGain(job.username, job.memberId, job.xp, job.leveledUp, job.level);
+            return "sent";
     }
 }
 
@@ -47,6 +59,10 @@ export function startDiscordOutbox(client: Client): void {
                 guild: id => client.guilds.cache.get(id),
                 announceJoin,
                 announceLeave,
+                grantLevelRewards,
+                announceLevelUp,
+                logXpGain: (username, memberId, xp, leveledUp, level) =>
+                    logToChannel(client, "xp_gain", xpGainEmbed(username, memberId, xp, leveledUp, level)),
             });
             Logger.debug(`queue=${QUEUES.discordOutbox} job=${job.name} jobId=${job.id} requestId=${job.data.requestId} guildId=${job.data.guildId} ${result}`, CTX);
         },

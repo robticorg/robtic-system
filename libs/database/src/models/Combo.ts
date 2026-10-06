@@ -30,6 +30,8 @@ export interface ICombo extends Document {
     streakCurrent: number;
     streakBest: number;
     lastStreakDateKey: string;
+    /** The last messages applied to this pair (newest last) — the exactly-once guard for queued combo messages. */
+    appliedMessages: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -56,6 +58,7 @@ const comboSchema = new Schema<ICombo>(
         streakCurrent: { type: Number, default: 0 },
         streakBest: { type: Number, default: 0 },
         lastStreakDateKey: { type: String, default: "" },
+        appliedMessages: { type: [String], default: [] },
     },
     { timestamps: true }
 );

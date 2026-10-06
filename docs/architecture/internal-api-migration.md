@@ -183,10 +183,58 @@ staff-points queue (EXTERNAL_API_CONCURRENCY) → external staff API (type "msg"
 - Staff API: 404 (not staff) is final; 5xx/timeouts retry with backoff; other 4xx fail permanently.
 - Without `REDIS_URL`, or if Redis errors on a message, the Gateway writes MongoDB inline exactly as
   before — nothing goes uncounted.
-- Still inline (they need Discord roles/announcements): message XP and level-ups, combo, streak.
+- Message XP and combo moved next (§7, §8). Streak stays inline (§8).
 - Tests: `bun run test:activity` (grouping, milestones, crash-at-every-write + retry, flush resume,
   staff-API error mapping). The Lua scripts in `libs/queue/src/message-buffer.ts` need a real Redis
   and are not covered by the in-memory checks.
+
+## 7. Status — activity: message XP
+
+```
+messageCreate → Gateway: support channel? excluded channel? allowed role? meaningful?
+              → SET xp:cd:<guild>:<member> NX PX 60000 (the cooldown, atomic across processes)
+              → roll the XP, xp queue (job id per message)
+              → worker: XP + levels-before snapshot in one guarded write, period stats,
+                xp_gain / level_up logs (unique keys), levels only raised
+              → discord-outbox: level-up (level roles, then announcement) and the XP log embed
+```
+
+- Exactly once: the member's row keeps its last 20 XP job keys and each period bucket its last 10
+  batch ids, so a retry is refused even if newer gains landed first. The snapshot of the levels
+  before the gain is written with it, so a retried job still knows it was a level-up; the
+  announcement's job id is per level, so it's never posted twice.
+- The old cooldown read `lastXPGrant` and then wrote it, so two quick messages could both earn XP.
+  The Redis `SET NX` lets exactly one through.
+- Without `REDIS_URL`, or if claiming the cooldown or queueing fails, `grantXP` runs inline as before
+  (a claimed cooldown is released first when nothing was queued).
+- Voice XP is unchanged (inline, one-minute tick).
+- Tests: `bun run test:xp`.
+
+## 8. Status — activity: combo
+
+```
+messageCreate → Gateway: detect the partner (channel buffer + partner from Redis), measure the message
+              → combo queue (job id per message, global concurrency 1 — messages apply in order)
+              → worker (@core/combo): stale pair? archive once + restart; score, heat, duration;
+                combo Points (addProgressOnce); live records; partner → Redis
+```
+
+- The combo domain moved from `apps/bot/src/features/combo/functions` to `libs/core/src/combo`
+  (heat, staleness, finalize, records, history, favorite partner, score range, apply). The bot's
+  old module indexes re-export it; the scheduler sweep (expiry, heat decay, snapshots, champion
+  role) stays in the Gateway and uses the same code.
+- Two processes now touch combos, so the shared writes became conditional:
+  - ending a pair only succeeds while it is active — exactly one of the worker and the scheduler
+    archives a conversation;
+  - records are raised by MongoDB (`$lt` filter), never saved from a cached copy, so a stale cache
+    can't overwrite a higher record; the cache only skips hopeless writes and expires after 30s;
+  - a pair remembers its last 20 message ids; combo Points go through `addProgressOnce` (recent
+    keys + recorded conversions + ledger idempotency key).
+- Score-range changes reach the worker within its 60s cache TTL.
+- Without `REDIS_URL`, or if queueing fails, the same `applyComboMessage` runs in the Gateway.
+- Streak stays inline on purpose: it writes at most once per member per day, and nearly all of its
+  work is Discord (reply with auto-delete, DM, role, reward claim button).
+- Tests: `bun run test:combo`.
 
 ### Required configuration
 

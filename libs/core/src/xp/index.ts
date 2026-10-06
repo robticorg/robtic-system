@@ -13,3 +13,11 @@ export {
 } from "./level-split";
 export { decayRateBp, decayLossForKind } from "./decay";
 export { migrateLevelSplit } from "./migrate-level-split";
+export {
+    applyMessageXp,
+    repositoryMessageXpStore,
+    type MessageXpInput,
+    type MessageXpStore,
+    type MessageXpOutcome,
+    type Levels,
+} from "./message-xp";

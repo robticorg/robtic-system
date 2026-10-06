@@ -4,7 +4,7 @@ import { Logger } from "@logger";
 import { analyzeSupportMessage } from "@core/ai";
 import { normalizeElongated } from "@utils";
 import { COMMUNITY_MESSAGES, SUPPORT_SCORING } from "@constants";
-import { grantXP, isExcludedChannel, hasAllowedRole } from "../../services/community/xp";
+import { grantMessageXp, isExcludedChannel, hasAllowedRole } from "../../services/community/xp";
 import { isSupportChannel, createSession, recordResponse, autoClaimSession } from "../../services/community/support";
 import { SupportSessionRepository } from "@database/repositories/SupportSessionRepository";
 import { ActivityRepository } from "@database/repositories/ActivityRepository";
@@ -27,7 +27,7 @@ import { handleSessionResolution } from "../../utils/community/handle-session-re
 export default {
     name: Events.MessageCreate,
     async execute(message: Message, client: BotClient) {
-        if (message.author.bot || !message.guild || !message.member) return;
+        if (message.author.bot || !message.inGuild() || !message.guild || !message.member) return;
 
         const guildId = message.guild.id;
         const channelId = message.channel.id;
@@ -215,8 +215,10 @@ export default {
             const hasRole = await hasAllowedRole(guildId, member);
             Logger.debug(`[activity] hasAllowedRole=${hasRole} for ${username}`, client.botName);
             if (hasRole) {
-                const result = await grantXP(member.id, guildId, username, message.guild, content);
-                if (result) {
+                const result = await grantMessageXp(message, content);
+                if (result === "queued") {
+                    Logger.debug(`[activity] Queued message XP for ${username}`, client.botName);
+                } else if (result) {
                     Logger.debug(`[activity] Granted ${result.xp} XP to ${username} (levelUp=${result.leveledUp}, level=${result.newLevel})`, client.botName);
                     await logToChannel(client, "xp_gain", xpGainEmbed(
                         username, member.id, result.xp, result.leveledUp, result.newLevel,

@@ -26,6 +26,9 @@ export interface IPoint extends Document {
     msgConvertBatch: string | null;
     comboProgress: number;
     voiceProgress: number;
+    /** Recent queued-progress keys already added, and the ones already converted (with the Points they paid) — the exactly-once guards of `addProgressOnce`. */
+    progressKeys: string[];
+    progressConversions: Array<{ key: string; earned: number }>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -43,6 +46,8 @@ const pointSchema = new Schema<IPoint>(
         msgConvertBatch: { type: String, default: null },
         comboProgress: { type: Number, default: 0 },
         voiceProgress: { type: Number, default: 0 },
+        progressKeys: { type: [String], default: [] },
+        progressConversions: { type: [{ _id: false, key: String, earned: Number }], default: [] },
     },
     { timestamps: true }
 );

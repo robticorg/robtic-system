@@ -2,6 +2,9 @@ import { PeriodicStat, type IPeriodicStat, type PeriodicStatMetric } from "@data
 import { COMBO_LEADERBOARD_PERIODS, type ComboLeaderboardPeriod } from "@constants";
 import { periodKeyFor } from "@utils";
 
+
+/** Batch ids each bucket remembers — far more than can arrive within a job's retry window. */
+const RECENT_BATCHES = 10;
 export class PeriodicStatRepository {
     /** Adds `amount` to every period bucket (daily/weekly/monthly/alltime) for one user's metric in one call. */
     static async incrementAllPeriods(guildId: string, metric: PeriodicStatMetric, discordId: string, amount: number, now = new Date()): Promise<void> {
@@ -18,9 +21,10 @@ export class PeriodicStatRepository {
     }
 
     /**
-     * Adds a batched delta to one period bucket — at most once per flush batch. The upsert is
-     * guarded on `flushBatch`: if this batch was already applied, the guarded filter misses, the
-     * upsert collides with the unique index (E11000), and nothing changes. Returns whether it applied.
+     * Adds a batched delta to one period bucket — at most once per batch id. The bucket remembers
+     * its last few batch ids (`appliedBatches`), so a retry is refused even after newer batches
+     * landed: the guarded filter misses, the upsert collides with the unique index (E11000), and
+     * nothing changes. Returns whether it applied.
      */
     static async incrementBatch(
         guildId: string,
@@ -33,8 +37,8 @@ export class PeriodicStatRepository {
     ): Promise<boolean> {
         try {
             await PeriodicStat.updateOne(
-                { guildId, period, periodKey, metric, discordId, flushBatch: { $ne: batchId } },
-                { $inc: { value: amount }, $set: { flushBatch: batchId } },
+                { guildId, period, periodKey, metric, discordId, appliedBatches: { $ne: batchId } },
+                { $inc: { value: amount }, $push: { appliedBatches: { $each: [batchId], $slice: -RECENT_BATCHES } } },
                 { upsert: true }
             );
             return true;

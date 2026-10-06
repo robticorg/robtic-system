@@ -1,8 +1,8 @@
 import { ComboLeaderboardRepository, ComboUserStatsRepository, type ComboLeaderboardUpsert } from "@database/repositories";
 import { COMBO_LEADERBOARD_PERIODS } from "@constants";
 import { periodKeyFor } from "@utils";
-import { favoritePartnerWeight } from "@core/combo/favorite-partner-weight";
-import { getFavoritePartner } from "../favorite-partner";
+import { favoritePartnerWeight } from "./favorite-partner-weight";
+import { getFavoritePartner } from "./favorite-partner";
 
 /** Refreshes the Favorite Partner leaderboard entries for both participants of a just-ended conversation. */
 export async function recordFavoritePartnerScore(guildId: string, userAId: string, userBId: string): Promise<void> {

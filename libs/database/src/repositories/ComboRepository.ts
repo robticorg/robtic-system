@@ -48,7 +48,12 @@ export class ComboRepository {
         );
     }
 
-    /** Atomically applies a qualifying message to an already-active pair (avoids lost-update races on concurrent messages). */
+    /**
+     * Atomically applies a qualifying message to an already-active pair (avoids lost-update races
+     * on concurrent messages) — at most once per `messageId`: the pair remembers its last 20
+     * message ids, so a retried job returns null instead of counting the message again. Times
+     * only move forward, so a message applied late can't rewind the pair's clocks.
+     */
     static async applyMessage(
         guildId: string,
         userAId: string,
@@ -60,14 +65,17 @@ export class ComboRepository {
         wordCount: number,
         characterCount: number,
         now: Date,
+        messageId: string,
     ): Promise<ICombo | null> {
         const [userLowId, userHighId] = pairKey(userAId, userBId);
         const senderTimestampField = senderId === userLowId ? "lastMessageAtLow" : "lastMessageAtHigh";
+        const later = (field: string) => ({ $max: [{ $ifNull: [`$${field}`, now] }, now] });
         return Combo.findOneAndUpdate(
-            { guildId, userLowId, userHighId },
+            { guildId, userLowId, userHighId, appliedMessages: { $ne: messageId } },
             [
                 {
                     $set: {
+                        appliedMessages: { $slice: [{ $concatArrays: [{ $ifNull: ["$appliedMessages", []] }, [messageId]] }, -20] },
                         currentScore: { $add: ["$currentScore", scoreGain] },
                         messages: { $add: ["$messages", 1] },
                         totalDurationMs: { $add: ["$totalDurationMs", durationDeltaMs] },
@@ -75,8 +83,8 @@ export class ComboRepository {
                         totalCharacters: { $add: [{ $ifNull: ["$totalCharacters", 0] }, characterCount] },
                         heat,
                         lastMessageBy: senderId,
-                        lastMessageAt: now,
-                        [senderTimestampField]: now,
+                        lastMessageAt: later("lastMessageAt"),
+                        [senderTimestampField]: later(senderTimestampField),
                         status: "active",
                     },
                 },
@@ -96,7 +104,11 @@ export class ComboRepository {
         await Combo.updateOne({ guildId, userLowId, userHighId }, { $set: { heat } });
     }
 
-    /** Marks a pair ended and persists its (possibly updated) conversation-streak fields in one write. */
+    /**
+     * Marks a pair ended and persists its (possibly updated) conversation-streak fields in one
+     * write — only if it is still active. Returns whether this call ended it, so when the Gateway's
+     * scheduler and a worker both see a stale pair, exactly one of them archives the conversation.
+     */
     static async endWithStreak(
         guildId: string,
         userAId: string,
@@ -104,12 +116,13 @@ export class ComboRepository {
         streakCurrent: number,
         streakBest: number,
         streakDateKey: string,
-    ): Promise<void> {
+    ): Promise<boolean> {
         const [userLowId, userHighId] = pairKey(userAId, userBId);
-        await Combo.updateOne(
-            { guildId, userLowId, userHighId },
+        const result = await Combo.updateOne(
+            { guildId, userLowId, userHighId, status: "active" },
             { $set: { status: "ended", streakCurrent, streakBest, lastStreakDateKey: streakDateKey } }
         );
+        return result.modifiedCount > 0;
     }
 
     static async findAllActive(guildId: string): Promise<ICombo[]> {

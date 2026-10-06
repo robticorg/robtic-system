@@ -1,8 +1,7 @@
 import type { Guild } from "discord.js";
 import type { ICombo } from "@database/models";
 import { ComboRepository } from "@database/repositories";
-import { isStale } from "./is-stale";
-import { finalizeCombo } from "./finalize-combo";
+import { finalizeCombo, isStale } from "@core/combo";
 
 export async function finalizeExpiredCombos(guild: Guild): Promise<ICombo[]> {
     const now = Date.now();

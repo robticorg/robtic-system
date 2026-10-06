@@ -10,6 +10,17 @@ import { isOnXPCooldown } from "./is-on-xp-cooldown";
 
 const CTX = "community:xp";
 
+/** True when the analyzer is confident the message isn't meaningful — no XP for it. */
+export function skippedByAi(content: string, username: string): boolean {
+    const analysis = analyzeActivity(content);
+    if (analysis.meaningful || analysis.confidence < AI_MEANINGFUL_SKIP_CONFIDENCE) return false;
+    Logger.debug(
+        `${username} XP skipped by AI: not meaningful (conf=${analysis.confidence.toFixed(2)}, fallback=${analysis.fallback}, reason=${analysis.reason ?? "none"})`,
+        CTX,
+    );
+    return true;
+}
+
 export async function grantXP(
     discordId: string,
     guildId: string,
@@ -17,16 +28,7 @@ export async function grantXP(
     guild: Guild,
     messageContent?: string,
 ): Promise<{ xp: number; leveledUp: boolean; newLevel: number } | null> {
-    if (messageContent) {
-        const analysis = await analyzeActivity(messageContent);
-        if (!analysis.meaningful && analysis.confidence >= AI_MEANINGFUL_SKIP_CONFIDENCE) {
-            Logger.debug(
-                `${username} XP skipped by AI: not meaningful (conf=${analysis.confidence.toFixed(2)}, fallback=${analysis.fallback}, reason=${analysis.reason ?? "none"})`,
-                CTX,
-            );
-            return null;
-        }
-    }
+    if (messageContent && skippedByAi(messageContent, username)) return null;
 
     const record = await ActivityRepository.findOrCreate(discordId, guildId, username);
 

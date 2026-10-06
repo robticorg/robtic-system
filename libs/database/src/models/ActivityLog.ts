@@ -20,6 +20,8 @@ export interface IActivityLog extends Document {
     type: ActivityLogType;
     amount: number;
     details: string;
+    /** Set by writers that may retry (queued jobs): one entry per key, ever. */
+    key?: string;
     createdAt: Date;
 }
 
@@ -30,6 +32,7 @@ const activityLogSchema = new Schema<IActivityLog>(
         type: { type: String, required: true, index: true },
         amount: { type: Number, default: 0 },
         details: { type: String, default: "" },
+        key: { type: String, unique: true, sparse: true },
     },
     { timestamps: true }
 );
