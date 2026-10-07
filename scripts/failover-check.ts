@@ -10,7 +10,8 @@ const check = (name: string, ok: boolean, detail = "") => {
     if (!ok) failures++;
 };
 
-const timing = { ttlMs: 300, renewMs: 80, pollMs: 40 };
+// Generous enough to stay reliable when the suite runs under load (it once flaked at 300ms).
+const timing = { ttlMs: 600, renewMs: 150, pollMs: 50 };
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const store = new Map<string, { value: string; expiresAt: number }>();

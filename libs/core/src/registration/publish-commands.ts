@@ -9,23 +9,21 @@ import { putCommandRoute } from "./put-command-route";
 /**
  * Publishes the slash commands.
  *
- * Production (no COMMAND_GUILD_ID): to **every whitelisted server**, as guild commands — they show
- * up instantly (global ones take up to an hour) and never in a server the bot isn't allowed in.
- * The admin guild (`!admin-guild`) also gets the `scope: "admin"` commands. Old global copies are
- * cleared so they don't show twice. A whitelisted server the bot hasn't joined yet is skipped; it
- * is registered when the bot joins (`publishGuildCommands`), and `!guild <id> add` registers a
- * server right away.
+ * Production (no COMMAND_GUILD_ID): **on the bot itself** (global commands), so every server the
+ * bot is added to already has them — nothing to register per server. The admin guild
+ * (`!admin-guild`) additionally gets the `scope: "admin"` commands as guild commands.
  *
- * Development (COMMAND_GUILD_ID set): everything to that one guild, as before.
+ * Guild-level copies left on whitelisted servers (from when commands were registered per server)
+ * are cleared on every publish: Discord shows guild and global commands side by side, so a stale
+ * guild copy would put every command in the picker twice — the old one with its old options.
+ *
+ * Development (COMMAND_GUILD_ID set): everything to that one guild (instant), global cleared.
  *
  * Needs only a REST client and the application id, not a gateway session, so the same code runs
  * at bot startup and from `apps/bot/src/register-commands.ts` in the deploy workflow.
  *
- * With no admin guild configured the admin payload is not published anywhere. That is
- * deliberate rather than a fallback to COMMAND_GUILD_ID: admin commands stay fully usable by
- * prefix, because the prefix router resolves against the loaded command collection and never
- * against Discord's registry, so skipping costs nothing and never leaks `/whitelist` into every
- * server the bot joins.
+ * With no admin guild configured the admin payload is not published anywhere — admin commands stay
+ * usable by prefix, and `/whitelist` never leaks into every server the bot joins.
  *
  * Returns false when any route failed to publish.
  */
@@ -45,30 +43,14 @@ export async function publishCommands(
     const commandGuildId = process.env.COMMAND_GUILD_ID?.trim() || undefined;
     const adminGuildId = await getAdminGuildId();
 
-    if (adminGuildId && adminGuildId === commandGuildId) {
-        const ok = await putCommandRoute(
-            rest,
-            Routes.applicationGuildCommands(applicationId, adminGuildId),
-            [...main, ...admin],
-            `guild ${adminGuildId}`,
-            botName,
-        );
-        return (await pruneGlobalCommands(rest, applicationId, commandGuildId, botName)) && ok;
-    }
+    if (commandGuildId) return publishToDevGuild(rest, applicationId, main, admin, commandGuildId, adminGuildId, botName);
 
-    if (!commandGuildId) return publishToWhitelist(rest, applicationId, main, admin, adminGuildId, botName);
-
-    let ok = await putCommandRoute(rest, Routes.applicationGuildCommands(applicationId, commandGuildId), main, `guild ${commandGuildId} (instant)`, botName);
-    ok = (await pruneGlobalCommands(rest, applicationId, commandGuildId, botName)) && ok;
+    let ok = await putCommandRoute(rest, Routes.applicationCommands(applicationId), main, "the bot (global)", botName);
+    ok = (await clearGuildCopies(rest, applicationId, adminGuildId, botName)) && ok;
 
     if (!admin.length) return ok;
-
     if (!adminGuildId) {
-        Logger.warn(
-            `${admin.length} admin-scope command(s) not registered — no admin guild is set. ` +
-            `Run \`!admin-guild set <id>\` in the server that should host them. They remain usable by prefix.`,
-            botName,
-        );
+        warnNoAdminGuild(admin.length, botName);
         return ok;
     }
 
@@ -81,99 +63,80 @@ export async function publishCommands(
     )) && ok;
 }
 
-/** Every whitelisted server (plus the admin guild) gets its commands; global copies are cleared. */
-async function publishToWhitelist(
+/** Development: one guild gets everything instantly; the global registry is emptied so nothing shows twice. */
+async function publishToDevGuild(
     rest: REST,
     applicationId: string,
     main: object[],
     admin: object[],
+    commandGuildId: string,
     adminGuildId: string | null,
     botName: BotName,
 ): Promise<boolean> {
-    const guildIds = new Set((await AllowedGuildRepository.list()).map(g => g.guildId));
-    if (adminGuildId) guildIds.add(adminGuildId);
+    const sameGuild = adminGuildId === commandGuildId;
+    let ok = await putCommandRoute(
+        rest,
+        Routes.applicationGuildCommands(applicationId, commandGuildId),
+        sameGuild ? [...main, ...admin] : main,
+        `guild ${commandGuildId} (instant)`,
+        botName,
+    );
+    ok = (await pruneGlobalCommands(rest, applicationId, botName)) && ok;
 
-    let ok = true;
-    let published = 0;
-    for (const guildId of guildIds) {
-        const payload = guildId === adminGuildId ? [...main, ...admin] : main;
-        const result = await putGuildCommands(rest, applicationId, guildId, payload, botName);
-        if (result === "published") published++;
-        if (result === "failed") ok = false;
+    if (sameGuild || !admin.length) return ok;
+    if (!adminGuildId) {
+        warnNoAdminGuild(admin.length, botName);
+        return ok;
     }
-    Logger.info(`Slash commands published to ${published}/${guildIds.size} whitelisted server(s)`, botName);
 
-    return (await pruneGlobalCommands(rest, applicationId, "whitelist", botName)) && ok;
+    return (await putCommandRoute(
+        rest,
+        Routes.applicationGuildCommands(applicationId, adminGuildId),
+        admin,
+        `admin guild ${adminGuildId}`,
+        botName,
+    )) && ok;
 }
 
-/** Discord's "Missing Access": the bot isn't in that server (yet). Not a failure — it registers on join. */
+function warnNoAdminGuild(count: number, botName: BotName): void {
+    Logger.warn(
+        `${count} admin-scope command(s) not registered — no admin guild is set. ` +
+        `Run \`!admin-guild set <id>\` in the server that should host them. They remain usable by prefix.`,
+        botName,
+    );
+}
+
+/** Discord's "Missing Access": the bot isn't in that server — so it has no guild commands there either. */
 const MISSING_ACCESS = 50001;
 
-async function putGuildCommands(
-    rest: REST,
-    applicationId: string,
-    guildId: string,
-    payload: object[],
-    botName: BotName,
-): Promise<"published" | "not-joined" | "failed"> {
-    try {
-        await rest.put(Routes.applicationGuildCommands(applicationId, guildId), { body: payload });
-        Logger.success(`Registered ${payload.length} commands to guild ${guildId}`, botName);
-        return "published";
-    } catch (error) {
-        if ((error as { code?: number }).code === MISSING_ACCESS) {
-            Logger.debug(`Not in whitelisted guild ${guildId} yet — its commands register when the bot joins`, botName);
-            return "not-joined";
+/**
+ * Empties the guild-level command list of every whitelisted server except the admin guild (whose
+ * guild list holds the admin commands, rewritten right after). Servers the bot isn't in are skipped.
+ */
+async function clearGuildCopies(rest: REST, applicationId: string, adminGuildId: string | null, botName: BotName): Promise<boolean> {
+    const guildIds = (await AllowedGuildRepository.list()).map(g => g.guildId).filter(id => id !== adminGuildId);
+
+    let ok = true;
+    for (const guildId of guildIds) {
+        try {
+            await rest.put(Routes.applicationGuildCommands(applicationId, guildId), { body: [] });
+        } catch (error) {
+            if ((error as { code?: number }).code === MISSING_ACCESS) continue;
+            Logger.warn(`Could not clear old guild commands in ${guildId}: ${(error as Error).message}`, botName);
+            ok = false;
         }
-        return (await putCommandRoute(rest, Routes.applicationGuildCommands(applicationId, guildId), payload, `guild ${guildId}`, botName))
-            ? "published"
-            : "failed";
     }
+    return ok;
 }
 
 /**
- * Publishes the commands to one whitelisted server — right after `!guild <id> add`, or when the bot
- * joins one. A no-op in development (COMMAND_GUILD_ID), where only that guild has commands.
- */
-export async function publishGuildCommands(
-    rest: REST,
-    applicationId: string,
-    commands: Collection<string, CommandConfig>,
-    botName: BotName,
-    guildId: string,
-): Promise<"published" | "not-joined" | "failed" | "dev-mode"> {
-    if (process.env.COMMAND_GUILD_ID?.trim()) return "dev-mode";
-    const { main, admin } = buildCommandPayload(commands, botName);
-    const payload = guildId === (await getAdminGuildId()) ? [...main, ...admin] : main;
-    return putGuildCommands(rest, applicationId, guildId, payload, botName);
-}
-
-/** Removes every slash command from one server — after `!guild <id> remove`. */
-export async function clearGuildCommands(rest: REST, applicationId: string, botName: BotName, guildId: string): Promise<void> {
-    if (process.env.COMMAND_GUILD_ID?.trim()) return;
-    await putGuildCommands(rest, applicationId, guildId, [], botName);
-}
-
-/**
- * Clears globally-registered commands while a command guild is configured.
+ * Clears globally-registered commands while a development command guild is configured.
  *
- * Guild and global commands are separate registries and Discord shows **both** in the picker.
- * A bot that once ran without COMMAND_GUILD_ID leaves its global copies behind forever, so the
- * test server ends up with two identical `/shortcut` entries: one current, one frozen at
- * whatever the options looked like the day it was published. Picking the stale one sends the
- * bot an interaction missing options its handler requires — `Required option "trigger" not
- * found`, from a command that is demonstrably correct in source.
- *
- * Production registers per whitelisted guild too, so the global registry is always emptied.
+ * Guild and global commands are separate registries and Discord shows **both** in the picker, so
+ * a bot that once ran globally would show every command twice in the test server — one current,
+ * one frozen at whatever its options were the day it was published.
  */
-async function pruneGlobalCommands(
-    rest: REST,
-    applicationId: string,
-    commandGuildId: string | undefined,
-    botName: BotName,
-): Promise<boolean> {
-    if (!commandGuildId) return true;
-
+async function pruneGlobalCommands(rest: REST, applicationId: string, botName: BotName): Promise<boolean> {
     const existing = await rest
         .get(Routes.applicationCommands(applicationId))
         .catch(() => null) as unknown[] | null;
@@ -181,8 +144,8 @@ async function pruneGlobalCommands(
     if (!existing?.length) return true;
 
     Logger.warn(
-        `Removing ${existing.length} stale global command(s) — commands are registered per guild, so ` +
-        "the global copies would only show twice in the picker.",
+        `Removing ${existing.length} stale global command(s) — COMMAND_GUILD_ID is set, so the dev ` +
+        "guild's registrations are authoritative and the global copies would show twice.",
         botName,
     );
 
