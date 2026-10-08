@@ -2,6 +2,7 @@ import { ApiError } from "@sdk";
 import { requireSnowflake, type InternalRoute } from "@internal-api";
 import {
     createMusicBot,
+    ensureAllMusicBots,
     listMusicBots,
     removeMusicBot,
     type CreateMusicBotInput,
@@ -20,9 +21,11 @@ export interface MusicService {
     create(input: CreateMusicBotInput): Promise<CreateMusicBotResult>;
     list(guildId: string): Promise<MusicBotView[]>;
     remove(guildId: string, botId: string): Promise<{ name: string; voiceChannelId: string } | null>;
+    /** Restarts every bot that is offline; online ones are left playing. */
+    ensureAll(): Promise<{ restarted: number; alreadyOnline: number; failed: number }>;
 }
 
-export const musicService: MusicService = { create: createMusicBot, list: listMusicBots, remove: removeMusicBot };
+export const musicService: MusicService = { create: createMusicBot, list: listMusicBots, remove: removeMusicBot, ensureAll: ensureAllMusicBots };
 
 function requireText(value: unknown, field: string, max: number): string {
     if (typeof value !== "string" || !value.trim() || value.length > max) throw ApiError.validation({ [field]: `must be text up to ${max} characters` });
@@ -47,6 +50,11 @@ export function musicRoutes(service: MusicService = musicService): InternalRoute
             method: "POST",
             path: /^\/bots$/,
             handler: async ({ body }) => service.create(parseCreate(body)),
+        },
+        {
+            method: "POST",
+            path: /^\/bots\/ensure$/,
+            handler: async () => service.ensureAll(),
         },
         {
             method: "GET",

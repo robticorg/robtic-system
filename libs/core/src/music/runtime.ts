@@ -58,6 +58,26 @@ export async function stopAllMusicBots(): Promise<void> {
     await Promise.all([...running.keys()].map(stopMusicBot));
 }
 
+/**
+ * Brings back every saved music bot that isn't online — never touches one that is, so whatever it
+ * is playing keeps playing. The Gateway asks for this each time it starts.
+ */
+export async function ensureAllMusicBots(): Promise<{ restarted: number; alreadyOnline: number; failed: number }> {
+    const records = await MusicBotRepository.listAll();
+    let restarted = 0, alreadyOnline = 0, failed = 0;
+    for (const record of records) {
+        if (running.get(record.botId)?.online) { alreadyOnline++; continue; }
+        const result = await startMusicBot(record);
+        if (result.ok) restarted++;
+        else {
+            failed++;
+            Logger.warn(`Music bot ${record.name} (${record.botId}) didn't restart: ${result.problem}`, CTX);
+        }
+    }
+    if (restarted || failed) Logger.info(`Music bots: ${restarted} restarted, ${alreadyOnline} already online, ${failed} failed`, CTX);
+    return { restarted, alreadyOnline, failed };
+}
+
 /** On startup: logs in every saved music bot. Returns the ones that started. */
 export async function startAllMusicBots(): Promise<IMusicBot[]> {
     const records = await MusicBotRepository.listAll();

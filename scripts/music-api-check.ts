@@ -30,6 +30,7 @@ await (async () => {
     const service: MusicService = {
         create: async input => { created.push(input); return { ok: true, bot: view, username: "tunes" }; },
         list: async () => [view],
+        ensureAll: async () => ({ restarted: 1, alreadyOnline: 2, failed: 0 }),
         remove: async (_g, botId) => (botId === MUSIC_BOT ? { name: "Tunes", voiceChannelId: CH } : null),
     };
     const handle = createInternalHandler("music", musicRoutes(service), INTERNAL);
@@ -55,6 +56,9 @@ await (async () => {
     check("DELETE removes and returns what the Gateway needs to clean up", (await json(r5)).data.voiceChannelId === CH);
     const r6 = await call(`/guilds/${G}/bots/${MAIN}`, { method: "DELETE" });
     check("DELETE an unknown bot → null (the command says so)", (await json(r6)).data === null);
+
+    const rEnsure = await call("/bots/ensure", { method: "POST", body: "{}" });
+    check("POST /bots/ensure restarts offline bots through the service", rEnsure.status === 200 && (await json(rEnsure)).data.restarted === 1);
 
     const r7 = await call(`/guilds/${G}/bots`, {}, null);
     check("no internal token → 401", r7.status === 401);

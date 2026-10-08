@@ -7,6 +7,15 @@ export const musicApi = {
     create: (input: CreateMusicBotInput, requestId?: string) =>
         callInternalApi<CreateMusicBotResult>("music", "MUSIC_API_URL", "/bots", { method: "POST", body: input, requestId, timeoutMs: 30_000 }),
 
+    /** Restarts every music bot that is offline (online ones keep playing). Logs bots in, so it can take a while. */
+    ensureAll: (requestId?: string) =>
+        callInternalApi<{ restarted: number; alreadyOnline: number; failed: number }>("music", "MUSIC_API_URL", "/bots/ensure", {
+            method: "POST",
+            body: {},
+            requestId,
+            timeoutMs: 120_000,
+        }),
+
     list: (guildId: string, requestId?: string) =>
         callInternalApi<MusicBotView[]>("music", "MUSIC_API_URL", `/guilds/${guildId}/bots`, { requestId }),
 
