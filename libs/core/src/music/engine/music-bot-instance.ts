@@ -189,6 +189,7 @@ export class MusicBotInstance {
         });
         this.voiceConnection = connection;
         connection.subscribe(this.player);
+        connection.on("error", e => this.warn("voice connection", e));
         connection.on(VoiceConnectionStatus.Disconnected, async () => {
             try {
                 await Promise.race([

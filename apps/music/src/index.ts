@@ -22,6 +22,12 @@ if (!process.env.MONGODB_URI) {
 
 await connectDatabase(process.env.MONGODB_URI);
 
+// Every music bot shares this process: one bot's stray error (a broken ffmpeg pipe, a voice
+// socket hiccup) must never crash it and take all of them offline. The Gateway gets the same
+// handlers from DiscordErrorHandler; this app has no main client, so it installs its own.
+process.on("uncaughtException", err => Logger.error(`[UncaughtException] ${err}`, SERVICE));
+process.on("unhandledRejection", err => Logger.error(`[UnhandledRejection] ${err}`, SERVICE));
+
 // Log out every music bot first on shutdown (registered before the API's own steps).
 onShutdown("music bots", () => stopAllMusicBots());
 

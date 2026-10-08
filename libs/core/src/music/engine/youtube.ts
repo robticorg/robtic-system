@@ -122,6 +122,13 @@ export async function getAudio(track: Track): Promise<AudioSource> {
 
     const raw = await spawnReadable(ytArgs(track.url, "bestaudio/best"));
     const ff = spawn("ffmpeg", ["-hide_banner", "-loglevel", "error", "-i", "pipe:0", "-vn", "-f", "s16le", "-ar", "48000", "-ac", "2", "pipe:1"], { stdio: ["pipe", "pipe", "pipe"] });
+    // Skipping or stopping kills both processes, which breaks the pipes (EPIPE): swallow those
+    // instead of letting them surface as uncaught errors.
+    const ignore = () => {};
+    ff.on("error", e => Logger.warn(`ffmpeg failed: ${e.message}`, CTX));
+    ff.stdin!.on("error", ignore);
+    ff.stdout!.on("error", ignore);
+    raw.stream.on("error", ignore);
     raw.stream.pipe(ff.stdin!);
     raw.proc.on("close", () => ff.stdin!.end());
     ff.stderr!.on("data", d => Logger.warn(`[ffmpeg] ${d.toString().trim()}`, CTX));
