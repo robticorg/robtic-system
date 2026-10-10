@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { ApplicationCommandOptionType } from "discord.js";
 import { commandPaths, splitCommandPath } from "@bot/utils/prefix/command-paths";
 import { splitFirstWord } from "@bot/utils/prefix/split-first-word";
+import { buildPrefixInteraction } from "@bot/utils/prefix/build-prefix-interaction";
 import type { CommandConfig } from "@typings/command";
 import type { CommandJSON, OptionJSON } from "@typings/prefix";
 
@@ -179,6 +180,21 @@ if (points) {
 
     const { name, subPath } = splitCommandPath("points balance");
     check("shortcut splits into command + subcommand", name === "points" && subPath === "balance", `${name} / ${subPath}`);
+}
+
+// 8. `/profile` grew subcommands (`view`, `config`), but `!profile` must still show a profile.
+const profile = loaded.find(entry => entry.json.name === "profile");
+check("profile command is loaded", Boolean(profile));
+if (profile) {
+    const message = { author: { id: "1" }, member: null, guild: null, guildId: "1", channel: null } as any;
+    const subOf = async (args: string) => {
+        const { interaction, error } = await buildPrefixInteraction(message, {} as any, profile.config, args, "!");
+        return error ?? interaction!.options.getSubcommand(false);
+    };
+    for (const [args, want] of [["", "view"], ["view", "view"], ["config", "config"]] as const) {
+        const got = await subOf(args);
+        check(`\`!profile ${args}\` runs \`${want}\``, got === want, String(got));
+    }
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

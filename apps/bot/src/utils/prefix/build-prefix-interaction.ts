@@ -33,12 +33,14 @@ export async function buildPrefixInteraction(
 
     if (schema.some(isSubOrGroup)) {
         const [word, tail] = splitFirstWord(rest);
-        const matched = schema.find(o => isSubOrGroup(o) && o.name === word.toLowerCase());
+        const named = schema.find(o => isSubOrGroup(o) && o.name === word.toLowerCase());
+        // No subcommand named: fall back to the command's default one, and keep the word as its first argument.
+        const matched = named ?? schema.find(o => o.type === ApplicationCommandOptionType.Subcommand && o.name === command.prefixDefaultSubcommand);
         if (!matched) {
             const names = schema.filter(isSubOrGroup).map(o => o.name).join(", ");
             return { error: PREFIX_MESSAGES.unknownSubcommand(names) };
         }
-        rest = tail;
+        if (named) rest = tail;
 
         if (matched.type === ApplicationCommandOptionType.SubcommandGroup) {
             subcommandGroup = matched.name;

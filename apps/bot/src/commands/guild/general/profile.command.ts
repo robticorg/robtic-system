@@ -20,6 +20,8 @@ import { formatVoiceDuration } from "@bot/features/voice/utils/format-duration";
 import { getProfileBadges } from "@core/profile";
 import { getUserLang, t } from "@bot/utils/lang";
 import { BRANCH_EMOJIS as emoji } from "@config";
+import { hasGuildBotAdmin, isGuildOperator } from "@bot/utils/access";
+import { buildBotProfileModal } from "@bot/utils/bot-profile/bot-profile-form";
 
 export default {
     scope: "guild",
@@ -27,12 +29,24 @@ export default {
     category: "Profile",
     data: new SlashCommandBuilder()
         .setName("profile")
-        .setDescription("View a user's profile and information")
-        .addUserOption(opt =>
-            opt.setName("user").setDescription("The user to view (defaults to yourself)").setRequired(false)
-        ),
+        .setDescription("View a user's profile, or set the bot's profile in this server")
+        .addSubcommand(sub => sub
+            .setName("view")
+            .setDescription("View a user's profile and information")
+            .addUserOption(opt =>
+                opt.setName("user").setDescription("The user to view (defaults to yourself)").setRequired(false)
+            ))
+        .addSubcommand(sub => sub
+            .setName("config")
+            .setDescription("Set the bot's logo, banner, nickname and bio in this server (admins)")),
+
+    // `!profile` and `!profile @user` keep working as `view`; `config` opens a form, slash only.
+    prefixDefaultSubcommand: "view",
+    modalOnlySubcommands: ["config"],
 
     async run(interaction: ChatInputCommandInteraction) {
+        if (interaction.options.getSubcommand() === "config") return runConfig(interaction);
+
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const target = interaction.options.getUser("user") ?? interaction.user;
@@ -190,6 +204,16 @@ export default {
         await interaction.editReply({ embeds: [embed], components: [row] });
     },
 };
+
+async function runConfig(interaction: ChatInputCommandInteraction) {
+    const member = interaction.member as GuildMember | null;
+    if (!interaction.guild || !member || !(isGuildOperator(member) || await hasGuildBotAdmin(member))) {
+        await interaction.reply({ content: "❌ Only server admins can change the bot's profile.", flags: MessageFlags.Ephemeral });
+        return;
+    }
+    const me = interaction.guild.members.me ?? await interaction.guild.members.fetchMe();
+    await interaction.showModal(buildBotProfileModal(me.nickname));
+}
 
 function buildLevelBar(level: number): string {
     const total = 20;

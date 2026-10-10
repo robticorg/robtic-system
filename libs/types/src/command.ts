@@ -39,6 +39,11 @@ export interface CommandConfig {
      * the prefix stand-in does not have — a crash rather than an explanation.
      */
     modalOnlySubcommands?: readonly string[];
+    /**
+     * The subcommand a prefix text command runs when its first word names none — so a command that
+     * grew subcommands (`/profile view`) still answers its old text form (`!profile @user`).
+     */
+    prefixDefaultSubcommand?: string;
     /** Key of the feature that owns this command. Set by the feature dispatcher; drives the per-guild activation gate. */
     feature?: string;
     run: (interaction: any, client: BotClient) => Promise<void>;
