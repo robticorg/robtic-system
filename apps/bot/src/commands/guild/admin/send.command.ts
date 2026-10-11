@@ -1,68 +1,54 @@
 import {
     SlashCommandBuilder,
+    ChannelSelectMenuBuilder,
     ChannelType,
-    ChatInputCommandInteraction,
+    CheckboxBuilder,
+    LabelBuilder,
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    ActionRowBuilder
+    type ChatInputCommandInteraction,
 } from "discord.js";
-import { Send } from "@database/models";
 
+import { SEND_FIELDS, SEND_MODAL_ID } from "@bot/utils/send/send-form";
+
+/** `/send` — a form: the channel, the message, and whether to send it as Components V2. Sent as the bot. */
 export default {
     scope: "guild",
     access: "admin",
     category: "Utility",
     data: new SlashCommandBuilder()
         .setName("send")
-        .setDescription("Send an embed message to a channel")
-        .addChannelOption(option =>
-            option
-                .setName("channel")
-                .setDescription("Select the target channel")
-                .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
-                .setRequired(true)
-        ),
+        .setDescription("Send a message as the bot to any channel"),
 
     modalOnly: true,
 
     async run(interaction: ChatInputCommandInteraction) {
-
-        const channel = interaction.options.getChannel("channel");
-
-        const modal = new ModalBuilder()
-            .setCustomId(`create-embed`)
-            .setTitle("Create Embed");
-
-        const titleInput = new TextInputBuilder()
-            .setCustomId("embed-title")
-            .setLabel("Embed Title")
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true)
-            .setMaxLength(60);
-
-        const descInput = new TextInputBuilder()
-            .setCustomId("embed-desc")
-            .setLabel("Embed Description")
-            .setStyle(TextInputStyle.Paragraph)
-            .setRequired(true)
-            .setMaxLength(2000);
-
-        modal.addComponents(
-            new ActionRowBuilder<TextInputBuilder>().addComponents(titleInput),
-            new ActionRowBuilder<TextInputBuilder>().addComponents(descInput)
-        );
-
-        await interaction.showModal(modal);
-
-        await Send.create({
-            channel: channel?.id,
-            user: interaction.user.id
-        });
-
-        setTimeout(async () => {
-            const doc = await Send.findOne({ user: interaction.user.id, channel: channel?.id });
-            if (doc) await Send.deleteOne({ _id: doc._id });
-        }, 180000);
-    }
+        await interaction.showModal(new ModalBuilder()
+            .setCustomId(SEND_MODAL_ID)
+            .setTitle("Send a Message")
+            .addLabelComponents(
+                new LabelBuilder()
+                    .setLabel("Channel")
+                    .setDescription("Where to send it")
+                    .setChannelSelectMenuComponent(new ChannelSelectMenuBuilder()
+                        .setCustomId(SEND_FIELDS.channel)
+                        .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+                        .setMinValues(1)
+                        .setMaxValues(1)
+                        .setRequired(true)),
+                new LabelBuilder()
+                    .setLabel("Message")
+                    .setDescription("Markdown works. Up to 2000 characters, or 4000 as Components V2")
+                    .setTextInputComponent(new TextInputBuilder()
+                        .setCustomId(SEND_FIELDS.message)
+                        .setStyle(TextInputStyle.Paragraph)
+                        .setRequired(true)
+                        .setMaxLength(4000)),
+                new LabelBuilder()
+                    .setLabel("Send as Components V2")
+                    .setDescription("Shows the message inside a card instead of as plain text")
+                    .setCheckboxComponent(new CheckboxBuilder().setCustomId(SEND_FIELDS.componentsV2).setDefault(false)),
+            ));
+    },
 };

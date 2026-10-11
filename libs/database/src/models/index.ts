@@ -115,6 +115,7 @@ export { RewardBoosterState, type IRewardBoosterState } from "./RewardBoosterSta
 export { RewardInviteCredit, type IRewardInviteCredit } from "./RewardInviteCredit";
 export { InviteJoin, type IInviteJoin, type InviteJoinSource } from "./InviteJoin";
 export { PartnerServer, type IPartnerServer } from "./PartnerServer";
+export { InfoPanel, INFO_PANEL_TYPES, INFO_BUTTON_STYLES, type IInfoPanel, type IInfoOption, type InfoPanelType, type InfoButtonStyle } from "./InfoPanel";
 export { BranchAsset, type IBranchAsset } from "./BranchAsset";
 export { MusicBot, type IMusicBot } from "./MusicBot";
 export { ReferralCode, type IReferralCode } from "./ReferralCode";
