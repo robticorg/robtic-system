@@ -1,13 +1,32 @@
-import type { Guild, TextChannel } from "discord.js";
+import { AttachmentBuilder, type Guild, type TextChannel } from "discord.js";
 import { XPSettingsRepository } from "@database/repositories";
 import { LEVEL_UP_MESSAGES } from "@constants";
 import type { XpKind } from "@core/xp";
 import { Logger } from "@logger";
+import { renderLevelCard } from "./render-level-card";
 
 const CTX = "main:xp";
 
+/** The level-up card for this member, or `null` when it can't be drawn — the text is posted instead. */
+async function buildLevelCard(guild: Guild, userId: string, kind: XpKind, level: number): Promise<AttachmentBuilder | null> {
+    try {
+        const member = guild.members.cache.get(userId) ?? await guild.members.fetch(userId);
+        const avatar = await fetch(member.displayAvatarURL({ extension: "png", size: 256 }))
+            .then(async response => (response.ok ? Buffer.from(await response.arrayBuffer()) : null))
+            .catch(() => null);
+
+        const card = await renderLevelCard({ avatar, name: member.displayName, kind, level });
+        return new AttachmentBuilder(card, { name: "level-up.jpg" });
+    } catch (err) {
+        Logger.warn(`Could not draw the level-up card for ${userId} in ${guild.id}: ${err}`, CTX);
+        return null;
+    }
+}
+
 /**
- * Posts a level-up to the configured channel.
+ * Posts a level-up to the configured channel: the level-up card (`images/level.png` with the
+ * member's avatar, name, level type and level) and a mention so they are notified. If the card
+ * can't be drawn, the text announcement is posted as before.
  *
  * Silent when no channel is set — unlike streaks, which fall back to replying in place, an XP
  * level-up has no single channel it "belongs" to and announcing it wherever the member happened to
@@ -25,8 +44,11 @@ export async function announceLevelUp(guild: Guild, userId: string, kind: XpKind
         return;
     }
 
+    const card = await buildLevelCard(guild, userId, kind, level);
+
     await (channel as TextChannel).send({
-        content: LEVEL_UP_MESSAGES.reached(userId, kind, level),
+        content: card ? `<@${userId}>` : LEVEL_UP_MESSAGES.reached(userId, kind, level),
+        files: card ? [card] : [],
         allowedMentions: { users: [userId] },
     }).catch(err => {
         Logger.warn(`Could not post level-up announcement in ${settings.levelUpChannelId}: ${err}`, CTX);

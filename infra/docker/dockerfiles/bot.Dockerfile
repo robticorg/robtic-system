@@ -20,7 +20,6 @@ COPY libs/queue/package.json ./libs/queue/
 COPY libs/internal-api/package.json ./libs/internal-api/
 COPY libs/internal-client/package.json ./libs/internal-client/
 COPY apps/worker/package.json ./apps/worker/
-COPY apps/music/package.json ./apps/music/
 COPY internal-api/invites/package.json ./internal-api/invites/
 RUN bun install --frozen-lockfile
 
@@ -31,8 +30,10 @@ ENV NODE_ENV=production
 
 # Music bots: yt-dlp streams YouTube audio (and solves its JS challenges with Bun); ffmpeg is the
 # fallback when a video has no native Opus track. Baked in, so nothing downloads at runtime.
+# Fonts: the base image has none, and the level-up card needs one for names its own font
+# (images/fonts/Orbitron.ttf) can't draw — Arabic above all.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg ca-certificates curl \
+    && apt-get install -y --no-install-recommends ffmpeg ca-certificates curl fonts-noto-core \
     && curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o /usr/local/bin/yt-dlp \
     && chmod +x /usr/local/bin/yt-dlp \
     && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
@@ -40,12 +41,11 @@ RUN apt-get update \
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json tsconfig.json ./
 # One image, several roles (see docker-compose.yml): the Gateway (apps/bot, the default CMD), the
-# background worker (apps/worker), the music app (apps/music) and the internal APIs
+# background worker (apps/worker) and the internal APIs
 # (internal-api/*) — same code and libs, a different start command per Compose service, so CI
 # still builds and deploys a single image.
 COPY apps/bot ./apps/bot
 COPY apps/worker ./apps/worker
-COPY apps/music ./apps/music
 COPY internal-api ./internal-api
 COPY libs ./libs
 COPY images ./images
