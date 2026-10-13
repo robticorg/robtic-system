@@ -131,6 +131,36 @@ export class ServerConfigRepository {
         return config?.boostChannelId ?? null;
     }
 
+    /** `/tag setup`: the tag role and its optional log channel, written together — `null` clears one. */
+    static async setTagSetup(guildId: string, roleId: string | null, logChannelId: string | null): Promise<void> {
+        const set: Record<string, string> = {};
+        const unset: Record<string, 1> = {};
+        if (roleId) set.tagRoleId = roleId; else unset.tagRoleId = 1;
+        if (logChannelId) set.tagLogChannelId = logChannelId; else unset.tagLogChannelId = 1;
+
+        await ServerConfig.updateOne(
+            { guildId },
+            {
+                ...(Object.keys(set).length ? { $set: set } : {}),
+                ...(Object.keys(unset).length ? { $unset: unset } : {}),
+            },
+            { upsert: true }
+        );
+    }
+
+    static async getTagSetup(guildId: string): Promise<{ roleId: string; logChannelId: string | null } | null> {
+        const config = await ServerConfig.findOne({ guildId });
+        return config?.tagRoleId ? { roleId: config.tagRoleId, logChannelId: config.tagLogChannelId ?? null } : null;
+    }
+
+    /** Every server that has a tag role set up. */
+    static async listTagSetups(): Promise<Array<{ guildId: string; roleId: string; logChannelId: string | null }>> {
+        const configs = await ServerConfig
+            .find({ tagRoleId: { $exists: true, $ne: null } }, { guildId: 1, tagRoleId: 1, tagLogChannelId: 1 })
+            .lean();
+        return configs.flatMap(c => (c.tagRoleId ? [{ guildId: c.guildId, roleId: c.tagRoleId, logChannelId: c.tagLogChannelId ?? null }] : []));
+    }
+
     static async setPartnerChannel(guildId: string, channelId: string): Promise<void> {
         await ServerConfig.updateOne({ guildId }, { $set: { partnerChannelId: channelId } }, { upsert: true });
     }

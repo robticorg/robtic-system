@@ -36,6 +36,7 @@ on or off. Everything else is an ordinary command and is always available.
 | [invites](docs/bot/invites.md) | default-on | Invite tracking, join announcements, `/invites` and `/info` |
 | [partner](docs/bot/partner.md) | default-on | Partner servers, each announced with a banner; `/partner edit` and `/partner update` redraw posts |
 | boost | default-on | Thanks each booster in the `/boost channel` (Arabic + English) |
+| tag | default-on | Server-tag role: a member wearing the server tag of any whitelisted server gets the `/tag setup` role of every whitelisted server they are in; `log:` (optional) logs each change |
 | music | default-on | Runs separate music bots: `/music create\|list`, `/bot remove` — each locked to one server and voice channel |
 | referral | default-on | Referral codes: `/referral use\|info`, `/referral-config` — the code's bonus (≤ +15%) applies to rewards ([rewards.md](docs/bot/rewards.md)) |
 | [logging](#logging) | default-on | Log-channel routing |
@@ -87,12 +88,11 @@ Three things decide who may run a command, and they answer different questions.
 |---|---|
 | `global` | Data is shared across every server |
 | `guild` | Data belongs to one server |
-| `admin` | Bot-owner only, published to one designated server |
+| `admin` | Bot-owner only |
 
-Admin-scoped commands are registered only to the guild set with `!admin-guild set <id>`. If none is
-set they are published nowhere — but still work by prefix, because the prefix router resolves
-against what was loaded from disk rather than against Discord's registry. That is what makes
-`!admin-guild` able to bootstrap itself.
+Every command, whatever its scope, is registered on the bot itself (global commands) — nothing is
+registered on a guild. Admin-scoped commands therefore show in every server's picker, but only
+super users can run them.
 
 ### Access — who inside a server
 
@@ -163,7 +163,7 @@ The same command is reachable four ways.
 
 ### Slash commands
 
-The primary surface. Registered to one route (or two, when an admin guild is set).
+The primary surface. Registered on the bot itself (global), so every server it joins has them.
 
 ### Prefix commands
 
@@ -552,11 +552,10 @@ Grouped by what they do, not by category — see the [category table](#command-c
 
 ### Bot operator
 
-`scope: admin` — bot owner and whitelisted super users only, published to the admin guild.
+`scope: admin` — bot owner and whitelisted super users only.
 
 | Command | |
 |---|---|
-| `!admin-guild set · show · clear` | Where admin commands are published |
 | `/whitelist add · remove · list` | Super users, who bypass every permission check |
 | `/addserver` · `/removeserver` | The server allowlist |
 | `/system status · reload` | Live status panel; reload commands and components |

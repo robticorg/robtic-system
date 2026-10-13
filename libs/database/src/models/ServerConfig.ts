@@ -49,6 +49,10 @@ export interface IServerConfig extends Document {
     partnerChannelId?: string;
     /** Where the boost thank-you is posted (`/boost channel`). */
     boostChannelId?: string;
+    /** Given to every member wearing the server tag of any whitelisted server (`/tag setup`). */
+    tagRoleId?: string;
+    /** Where tag-role changes are logged (`/tag setup log:`). Optional. */
+    tagLogChannelId?: string;
     /** Given to every partner representative (`/partner role`). */
     partnerRoleId?: string;
     /** Roles allowed into the Activity's guild admin panel (besides owner/Administrator). */
@@ -106,6 +110,8 @@ const serverConfigSchema = new Schema<IServerConfig>(
         inviteLogChannelId: { type: String },
         partnerChannelId: { type: String },
         boostChannelId: { type: String },
+        tagRoleId: { type: String },
+        tagLogChannelId: { type: String },
         partnerRoleId: { type: String },
         adminPanelRoles: { type: [String], default: [] },
         botAdminRoles: { type: [String], default: [] },
