@@ -7,8 +7,8 @@ import { decryptToken, musicTokenKey } from "./token-crypto";
 const CTX = "music";
 
 /**
- * The music bots running in **this process** — the music app (`apps/music`), or the Gateway when
- * no music app is configured. Each is its own Discord client, so exactly one process may run them.
+ * The music bots running in this process — the Gateway. Each is its own Discord client, so exactly
+ * one process may run them: they start after `waitForGatewayLeadership()` and stop on a handover.
  */
 const running = new Map<string, MusicBotInstance>();
 
@@ -60,7 +60,7 @@ export async function stopAllMusicBots(): Promise<void> {
 
 /**
  * Brings back every saved music bot that isn't online — never touches one that is, so whatever it
- * is playing keeps playing. The Gateway asks for this each time it starts.
+ * is playing keeps playing. The Gateway runs this each time it starts.
  */
 export async function ensureAllMusicBots(): Promise<{ restarted: number; alreadyOnline: number; failed: number }> {
     const records = await MusicBotRepository.listAll();
@@ -78,15 +78,3 @@ export async function ensureAllMusicBots(): Promise<{ restarted: number; already
     return { restarted, alreadyOnline, failed };
 }
 
-/** On startup: logs in every saved music bot. Returns the ones that started. */
-export async function startAllMusicBots(): Promise<IMusicBot[]> {
-    const records = await MusicBotRepository.listAll();
-    const started: IMusicBot[] = [];
-    for (const record of records) {
-        const result = await startMusicBot(record);
-        if (result.ok) started.push(record);
-        else Logger.warn(`Music bot ${record.name} (${record.botId}) didn't start: ${result.problem}`, CTX);
-    }
-    if (records.length) Logger.info(`Started ${started.length}/${records.length} music bots`, CTX);
-    return started;
-}

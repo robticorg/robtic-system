@@ -3,31 +3,22 @@ import type { EventConfig } from "@typings/event";
 import { handleError, BotError } from "@core/handlers";
 import { MusicBotRepository } from "@database/repositories";
 import { Logger } from "@logger";
-import { startAllMusicBots } from "@core/music";
-import { musicApi } from "@internal-client";
-import { musicRunsLocally } from "./utils/music-backend";
+import { ensureAllMusicBots } from "@core/music";
 import { grantVoicePermissions } from "./utils/voice-permissions";
 
 const CTX = "main/music";
 
 export default [
     /**
-     * On start: make sure every music bot has its voice-channel permissions (only the main bot can
-     * set them), and restart any music bot that is offline. With the music app, bots already online
-     * keep playing — a Gateway restart never stops them. Locally (no music app) this process runs
-     * the bots itself.
+     * On start: every saved music bot comes back online with the main bot (one already online is
+     * left playing), then each gets its voice-channel permissions — only the main bot can set them.
      */
     {
         name: Events.ClientReady,
         once: true,
         execute: client => {
             void (async () => {
-                if (musicRunsLocally()) await startAllMusicBots();
-                else {
-                    await musicApi
-                        .ensureAll()
-                        .catch(err => Logger.warn(`Couldn't ask the music app to restart offline music bots: ${err}`, "music"));
-                }
+                await ensureAllMusicBots();
                 for (const record of await MusicBotRepository.listAll()) {
                     const guild = client.guilds.cache.get(record.guildId);
                     if (guild) await grantVoicePermissions(guild, record);

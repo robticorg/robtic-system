@@ -254,26 +254,18 @@ every minute → Gateway: for each guild, who is in voice and eligible (AFK, AFK
 - Without `REDIS_URL`, or if queueing fails, the tick grants inline as before (same rolled XP).
 - Tests: `bun run test:voice`.
 
-## 8c. Music app
+## 8c. Music bots
 
-```
-/music create (modal) → Gateway → POST /bots          ─┐
-/music list           → Gateway → GET /guilds/:id/bots ├─ music app (apps/music, robtic-music :3006)
-/bot remove           → Gateway → DELETE …/bots/:botId ─┘   runs every music bot, MongoDB
-```
+The music bots run inside the Gateway (`apps/bot`), not as a separate app — there is no music
+service or `MUSIC_API_URL`.
 
-- The music bots (each its own Discord client), their engine (`libs/core/src/music/engine`) and
-  the create/list/remove logic (`@core/music` service) live in the music app, so music keeps
-  playing through Gateway restarts and failovers.
-- The Gateway keeps what needs the main bot: the create modal, the invite link, and the
-  voice-channel permissions (on create, when a music bot joins, and for every bot on start).
-- The token travels only over the private network (with `x-internal-token`), is encrypted before
-  it is stored, and is never returned.
-- **One replica only** — two music apps would log every music bot in twice.
-- Without `MUSIC_API_URL` the bots run inside the Gateway, as before (local development). Music
-  app down → the commands say "temporarily unavailable"; running bots are unaffected by Gateway
-  changes.
-- Tests: `bun run test:music-api`.
+- Each music bot is its own Discord client. The engine (`libs/core/src/music/engine`) and the
+  create/list/remove logic (`@core/music` service) are called directly by `/music create`,
+  `/music list` and `/bot remove`.
+- Every saved bot is started when the main bot becomes ready, and logged out with it — on
+  shutdown and on a failover handover — so music stops while the Gateway restarts.
+- The token is encrypted before it is stored and is never shown again.
+- Tests: `bun run test:music`.
 
 ## 9. Failover
 

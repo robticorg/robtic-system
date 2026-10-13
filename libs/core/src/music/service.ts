@@ -7,9 +7,9 @@ import { getRunningMusicBot, startMusicBot, stopMusicBot } from "./runtime";
 import { encryptToken, musicTokenKey } from "./token-crypto";
 
 /**
- * Music bots as a service: what the music app's API does (and the Gateway, when there is no music
- * app). Discord-side setup that needs the *main* bot — the invite link shown to staff, the
- * voice-channel permissions — stays with the Gateway.
+ * Music bots as a service: create, list and remove, run inside the Gateway. Discord-side setup that
+ * needs the *main* bot — the invite link shown to staff, the voice-channel permissions — stays in
+ * `apps/bot`.
  *
  * Problems a user can fix come back as `{ ok: false, problem }` with the sentence to show them.
  */
@@ -63,7 +63,7 @@ export function musicBotView(record: IMusicBot): MusicBotView {
  */
 export async function createMusicBot(input: CreateMusicBotInput, deps: MusicServiceDeps = defaultDeps): Promise<CreateMusicBotResult> {
     const key = musicTokenKey();
-    if (!key) return { ok: false, problem: "Music bots aren't set up yet: `MUSIC_TOKEN_KEY` is missing from the music service's environment." };
+    if (!key) return { ok: false, problem: "Music bots aren't set up yet: `MUSIC_TOKEN_KEY` is missing from the bot's environment." };
 
     if (await MusicBotRepository.countByGuild(input.guildId) >= MUSIC_CONFIG.maxBotsPerGuild) {
         return { ok: false, problem: `This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one with \`/bot remove\` first.` };

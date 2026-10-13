@@ -1,15 +1,13 @@
 import { ChannelType, MessageFlags, type ModalSubmitInteraction } from "discord.js";
 import type { ComponentHandler } from "@typings/command";
-import { musicBotInviteUrl } from "@core/music";
-import { InternalApiError, unavailableMessage } from "@internal-client";
+import { createMusicBot, musicBotInviteUrl } from "@core/music";
 import { MUSIC_CREATE_MODAL_ID, MUSIC_FIELDS } from "../utils/create-form";
-import { musicBackend } from "../utils/music-backend";
 import { grantVoicePermissions } from "../utils/voice-permissions";
 
 /**
- * `/music create` submitted. The music service (the music app's API, or this process locally)
- * checks the token, saves it encrypted and logs the bot in — a bot that can't start is never
- * saved. What needs the main bot stays here: the invite link and the voice-channel permissions.
+ * `/music create` submitted. The music service (`@core/music`) checks the token, saves it
+ * encrypted and logs the bot in — a bot that can't start is never saved. What needs the main bot
+ * stays here: the invite link and the voice-channel permissions.
  */
 export const musicCreateModalHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: MUSIC_CREATE_MODAL_ID,
@@ -22,20 +20,14 @@ export const musicCreateModalHandler: ComponentHandler<ModalSubmitInteraction> =
         const channel = interaction.fields.getSelectedChannels(MUSIC_FIELDS.channel, true, [ChannelType.GuildVoice]).first();
         if (!channel) return void await fail("Pick a voice channel.");
 
-        let result;
-        try {
-            result = await musicBackend.create({
-                guildId: guild.id,
-                token: interaction.fields.getTextInputValue(MUSIC_FIELDS.token),
-                name: interaction.fields.getTextInputValue(MUSIC_FIELDS.name),
-                voiceChannelId: channel.id,
-                createdBy: interaction.user.id,
-                mainBotId: interaction.client.user.id,
-            });
-        } catch (err) {
-            if (err instanceof InternalApiError) return void await fail(unavailableMessage("music"));
-            throw err;
-        }
+        const result = await createMusicBot({
+            guildId: guild.id,
+            token: interaction.fields.getTextInputValue(MUSIC_FIELDS.token),
+            name: interaction.fields.getTextInputValue(MUSIC_FIELDS.name),
+            voiceChannelId: channel.id,
+            createdBy: interaction.user.id,
+            mainBotId: interaction.client.user.id,
+        });
         if (!result.ok) return void await fail(result.problem);
 
         const { bot } = result;

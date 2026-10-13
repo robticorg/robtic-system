@@ -1,9 +1,8 @@
 import { MessageFlags, type AutocompleteInteraction } from "discord.js";
 import type { FeatureSubcommandHandler } from "@typings/feature";
+import { removeMusicBot } from "@core/music";
 import { MusicBotRepository } from "@database/repositories";
-import { InternalApiError, unavailableMessage } from "@internal-client";
 import { Logger } from "@logger";
-import { musicBackend } from "../utils/music-backend";
 
 /**
  * `/bot remove bot:` — the music bot leaves the server, goes offline, loses its voice-channel
@@ -14,13 +13,7 @@ export const remove: FeatureSubcommandHandler = async (interaction, _client) => 
     const guild = interaction.guild!;
 
     const botId = interaction.options.getString("bot", true);
-    let record;
-    try {
-        record = await musicBackend.remove(guild.id, botId);
-    } catch (err) {
-        if (err instanceof InternalApiError) return void await interaction.editReply({ content: unavailableMessage("music") });
-        throw err;
-    }
+    const record = await removeMusicBot(guild.id, botId);
     if (!record) {
         await interaction.editReply({ content: "No such music bot on this server — pick one from the list." });
         return;

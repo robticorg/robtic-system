@@ -1,9 +1,10 @@
-/** Verifies music-bot token encryption, token checks, the invite link, the create form and the manifest — no database, no gateway. */
+/** Verifies music-bot token encryption, token checks, the invite link, the create form, the manifest and the create service — no database, no gateway. */
 import { randomBytes } from "node:crypto";
 import { ChannelType, ComponentType } from "discord.js";
 import { generateDependencyReport } from "@discordjs/voice";
 import { MUSIC_CONFIG } from "@constants";
-import { decryptToken, encryptToken, inspectBotToken, looksLikeBotToken, musicBotInviteUrl, musicTokenKey } from "@core/music";
+import { createMusicBot, decryptToken, encryptToken, inspectBotToken, looksLikeBotToken, musicBotInviteUrl, musicTokenKey, type CreateMusicBotInput } from "@core/music";
+import { MusicBotRepository } from "@database/repositories";
 import { buildMusicCreateModal, MUSIC_CREATE_MODAL_ID } from "@bot/features/music/utils/create-form";
 import { musicFeature } from "@bot/features/music/music";
 
@@ -96,6 +97,65 @@ await (async () => {
     console.log(report.split("\n").filter(l => /opus|sodium|crypto|davey|ffmpeg|aes|chacha/i.test(l)).map(l => `      ${l}`).join("\n"));
     check("an Opus encoder is available (opusscript)", /opusscript: \d/.test(report));
     check("DAVE (Discord's voice E2EE) is available", /davey: \d/i.test(report), "required for voice since 2026");
+}
+
+// Service: create — stubbed repository, token inspector and bot starter.
+{
+    const G = "123456789012345678";
+    const CH = "234567890123456789";
+    const ADMIN = "345678901234567890";
+    const MAIN = "456789012345678901";
+    const MUSIC_BOT = "567890123456789012";
+    const TOKEN_KEY = randomBytes(32).toString("hex");
+    const TOKEN = `${"A".repeat(24)}.${"B".repeat(6)}.${"C".repeat(27)}`;
+
+    const previousKey = process.env.MUSIC_TOKEN_KEY;
+    process.env.MUSIC_TOKEN_KEY = TOKEN_KEY;
+    const rows: Array<Record<string, unknown>> = [];
+    const repo = MusicBotRepository as unknown as Record<string, unknown>;
+    repo.countByGuild = async () => rows.length;
+    repo.create = async (entry: Record<string, unknown>) => {
+        if (rows.some(r => r.botId === entry.botId)) return null;
+        rows.push(entry);
+        return entry;
+    };
+    repo.delete = async (_g: string, botId: string) => {
+        const i = rows.findIndex(r => r.botId === botId);
+        return i >= 0 ? rows.splice(i, 1)[0] : null;
+    };
+
+    const input: CreateMusicBotInput = { guildId: G, token: TOKEN, name: " Tunes ", voiceChannelId: CH, createdBy: ADMIN, mainBotId: MAIN };
+    const account = { botId: MUSIC_BOT, applicationId: MUSIC_BOT, username: "tunes" };
+    const deps = (over: Partial<Parameters<typeof createMusicBot>[1]> = {}) => ({
+        inspect: async () => account,
+        start: async () => ({ ok: true as const }),
+        ...over,
+    });
+
+    const bad = await createMusicBot({ ...input, token: "not-a-token" }, deps());
+    check("create: a malformed token is refused before calling Discord", !bad.ok && bad.problem.includes("doesn't look like"));
+
+    const rejected = await createMusicBot(input, deps({ inspect: async () => null }));
+    check("create: a token Discord rejects is refused", !rejected.ok && rejected.problem.includes("didn't accept"));
+
+    const own = await createMusicBot(input, deps({ inspect: async () => ({ ...account, botId: MAIN }) }));
+    check("create: the main bot's own token is refused", !own.ok && own.problem.includes("my own token"));
+
+    const failed = await createMusicBot(input, deps({ start: async () => ({ ok: false as const, problem: "token reset" }) }));
+    check("create: a bot that can't log in is not kept", !failed.ok && failed.problem.includes("wasn't added") && rows.length === 0);
+
+    const okResult = await createMusicBot(input, deps());
+    check("create: success returns the bot (status from the runtime)", okResult.ok && okResult.bot.botId === MUSIC_BOT && okResult.bot.name === "Tunes");
+    const stored = rows[0]?.encryptedToken as string | undefined;
+    check("create: the token is stored encrypted, and decrypts back", !!stored && !stored.includes(TOKEN) && decryptToken(stored, Buffer.from(TOKEN_KEY, "hex")) === TOKEN);
+
+    const dup = await createMusicBot(input, deps());
+    check("create: the same bot twice is refused", !dup.ok && dup.problem.includes("already a music bot"));
+
+    delete process.env.MUSIC_TOKEN_KEY;
+    const noKey = await createMusicBot(input, deps());
+    check("create: without MUSIC_TOKEN_KEY nothing is created", !noKey.ok && noKey.problem.includes("MUSIC_TOKEN_KEY"));
+    if (previousKey !== undefined) process.env.MUSIC_TOKEN_KEY = previousKey;
 }
 
 if (failures > 0) {

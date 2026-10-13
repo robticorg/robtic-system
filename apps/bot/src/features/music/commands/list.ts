@@ -1,21 +1,13 @@
 import { EmbedBuilder, MessageFlags } from "discord.js";
 import type { FeatureSubcommandHandler } from "@typings/feature";
 import { MUSIC_CONFIG } from "@constants";
-import { musicBotInviteUrl } from "@core/music";
-import { InternalApiError, unavailableMessage } from "@internal-client";
-import { musicBackend } from "../utils/music-backend";
+import { listMusicBots, musicBotInviteUrl } from "@core/music";
 
 /** `/music list` — this server's music bots, their channels, and whether each is running. */
 export const list: FeatureSubcommandHandler = async (interaction, _client) => {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    let bots;
-    try {
-        bots = await musicBackend.list(interaction.guildId!);
-    } catch (err) {
-        if (err instanceof InternalApiError) return void await interaction.editReply({ content: unavailableMessage("music") });
-        throw err;
-    }
+    const bots = await listMusicBots(interaction.guildId!);
 
     if (!bots.length) {
         await interaction.editReply({ content: "No music bots yet. Add one with `/music create`." });
