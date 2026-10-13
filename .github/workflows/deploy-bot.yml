@@ -1,9 +1,8 @@
 name: Deploy bot
 
 on:
-  workflow_run:
-    workflows: ["Deploy Minecraft API"]
-    types: [completed]
+  push:
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       force:
@@ -23,18 +22,11 @@ jobs:
   changes:
     name: What changed
     runs-on: ubuntu-latest
-    if: >-
-      ${{ github.event_name == 'workflow_dispatch'
-      || github.event.workflow_run.conclusion != 'failure' }}
     outputs:
       deploy: ${{ steps.decision.outputs.deploy }}
       signature: ${{ steps.decision.outputs.signature }}
     steps:
-      # The commit the upstream run was built from, not whatever main points at now: a push landing
-      # mid-deploy would otherwise make this run sign a different tree than the one being deployed.
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - id: decision
         uses: ./.github/actions/deploy-decision
@@ -71,8 +63,6 @@ jobs:
     runs-on: [self-hosted, robtic-deploy]
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Publish commands from the running container
         run: |
@@ -90,7 +80,7 @@ jobs:
       - name: Write marker
         run: |
           mkdir -p .deploy-signatures
-          printf '%s %s %s\n' "${{ github.event.workflow_run.head_sha || github.sha }}" \
+          printf '%s %s %s\n' "${{ github.sha }}" \
             "$(date -u +%FT%TZ)" "${{ github.run_id }}" > .deploy-signatures/bot
 
       - uses: actions/cache/save@v4

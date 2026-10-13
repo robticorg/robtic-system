@@ -30,8 +30,10 @@ Dockerfile paths below are relative to `infra/docker/dockerfiles/`.
 
 | Workflow | Trigger | Image | Dockerfile | Compose service |
 |---|---|---|---|---|
-| `deploy-minecraft-api.yml` | push to `main` | `ghcr.io/robticorg/robtic-minecraft-api` | `minecraft-api.Dockerfile` | `robtic-minecraft-api` |
-| `deploy-bot.yml` | the Minecraft API workflow finishing | `ghcr.io/robticorg/robtic-system` | `bot.Dockerfile` | `robtic-system` |
+| `deploy-bot.yml` | push to `main` | `ghcr.io/robticorg/robtic-system` | `bot.Dockerfile` | `robtic-system` |
+
+The Minecraft API has no deploy workflow for now (removed 2026-10-13): its container keeps running
+the last image that was built, and a push no longer rebuilds it.
 
 The Minecraft API (`apps/minecraft-api`, `minecraft.api.robtic.org`) is the service the Minecraft
 plugin talks to, and the only one permitted to reach MongoDB. It deploys first, because the bot and
@@ -62,8 +64,8 @@ point every image exists in GHCR.
 A client restarts *after* the service it depends on, and the chain is wired to the upstream
 *workflow* finishing, whatever it decided:
 
-- The bot is a client of the Minecraft API: `deploy-bot.yml` fires when **Deploy Minecraft API**
-  finishes.
+- The bot used to wait for **Deploy Minecraft API** to finish; that workflow is removed for now, so
+  `deploy-bot.yml` fires on the push itself and the chain has a single link.
 
 - A **skipped** deploy (unchanged) still releases the client. Only a *failed* service run stops it,
   because restarting a client against a half-deployed service is worse than not restarting it.
