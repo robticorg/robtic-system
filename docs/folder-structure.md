@@ -13,7 +13,7 @@ apps/
                                                     inside)
                                    guild/general/   any member
                                    guild/games/     any member, game-related
-                                   admin/           super users only, admin-guild only
+                                   admin/           super users only
             components/          *.component.ts outside any feature
             events/              *.event.ts outside any feature
             services/            Background work and schedulers not yet owned by a feature

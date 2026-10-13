@@ -25,7 +25,7 @@ become a feature.
 | minecraft | `commands/guild/games/` | Linking, shared economy, chat bridge, LuckPerms sync |
 | member-facing | `commands/guild/general/` | Profile, level, help, notes |
 | cross-server | `commands/global/` | Version |
-| bot operator | `commands/admin/` | Server allowlist, super users, reload, admin guild |
+| bot operator | `commands/admin/` | Server allowlist, super users, reload |
 
 Command names are unique across the whole tree — two systems cannot both register `/mod`, and the
 loader reports a collision rather than letting one silently overwrite the other.

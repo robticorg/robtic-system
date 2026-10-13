@@ -31,8 +31,11 @@ const NOT_JOINED = "1521603602349822223";
 
 (AllowedGuildRepository as unknown as { list: () => Promise<unknown[]> }).list = async () =>
     [JOINED, NOT_JOINED, ADMIN].map(guildId => ({ guildId }));
-const config = GlobalConfigRepository as unknown as { get: (key: string) => Promise<string | null> };
-config.get = async () => ADMIN;
+
+const stored = new Map<string, string>();
+const config = GlobalConfigRepository as unknown as { get: (key: string) => Promise<string | null>; set: (key: string, value: string) => Promise<void> };
+config.get = async key => stored.get(key) ?? null;
+config.set = async (key, value) => void stored.set(key, value);
 
 const command = (name: string, scope?: string) => ({ scope, data: { toJSON: () => ({ name, description: name }) } });
 const commands = new Collection<string, unknown>([
@@ -50,27 +53,22 @@ const rest = {
     async get() { return [{ name: "level" }]; },
 };
 
-delete process.env.COMMAND_GUILD_ID;
 const ok = await publishCommands(rest as never, APP, commands as never, "test" as never);
-check("production: normal commands registered on the bot (global) — every server it joins has them",
-    JSON.stringify(puts.get("global")) === JSON.stringify(["level"]));
-check("production: admin commands only in the admin server", JSON.stringify(puts.get(ADMIN)) === JSON.stringify(["system"]));
-check("production: old per-server copies cleared (no duplicates in the picker)", JSON.stringify(puts.get(JOINED)) === "[]");
-check("production: a whitelisted server the bot isn't in is skipped, not a failure", ok && !puts.has(NOT_JOINED));
+check("every command, admin scope included, is registered on the bot (global)",
+    JSON.stringify(puts.get("global")) === JSON.stringify(["level", "system"]));
+check("no command is registered on a guild", [...puts].every(([route, names]) => route === "global" || names.length === 0));
+check("old per-server copies cleared, the old admin server included (no duplicates in the picker)",
+    JSON.stringify(puts.get(JOINED)) === "[]" && JSON.stringify(puts.get(ADMIN)) === "[]");
+check("a whitelisted server the bot isn't in is skipped, not a failure", ok && !puts.has(NOT_JOINED));
 
 puts.clear();
-config.get = async () => null;
-await publishCommands(rest as never, APP, commands as never, "test" as never);
-check("production without an admin server: admin commands published nowhere",
-    ![...puts.values()].some(names => names.includes("system")) && JSON.stringify(puts.get("global")) === JSON.stringify(["level"]));
-
-puts.clear();
-config.get = async () => ADMIN;
 process.env.COMMAND_GUILD_ID = JOINED;
 await publishCommands(rest as never, APP, commands as never, "test" as never);
-check("development (COMMAND_GUILD_ID): that one server gets them, global emptied",
-    JSON.stringify(puts.get(JOINED)) === JSON.stringify(["level"]) && JSON.stringify(puts.get("global")) === "[]");
+check("COMMAND_GUILD_ID no longer moves commands onto a guild",
+    JSON.stringify(puts.get("global")) === JSON.stringify(["level", "system"]) && !puts.has(JOINED));
 delete process.env.COMMAND_GUILD_ID;
+check("after the one-time cleanup a publish is a single request to the bot — no guild is touched",
+    puts.size === 1 && puts.has("global"));
 
 if (failures > 0) { console.log(`\n${failures} check(s) failed.`); process.exit(1); }
 console.log("\nAll guild whitelist checks passed.");

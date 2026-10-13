@@ -1,10 +1,9 @@
 /**
- * Where a command's data lives, and therefore where it registers.
+ * Where a command's data lives. Every scope registers on the bot itself (global commands).
  *
  * - `global` — data is shared across every server the bot is in.
  * - `guild`  — data belongs to one server.
- * - `admin`  — bot-level operator tooling. Registers only to the configured admin guild
- *              (see `!admin-guild`) and is hard-gated to super users, above every other bypass.
+ * - `admin`  — bot-level operator tooling. Hard-gated to super users, above every other bypass.
  */
 export const COMMAND_SCOPES = ["global", "guild", "admin"] as const;
 

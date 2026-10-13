@@ -21,7 +21,7 @@ import { BOT_DEFINITION, getMainBotToken } from "@config";
 let ok = false;
 
 try {
-    // The admin guild id lives in MongoDB.
+    // The server whitelist (whose old guild-level command copies get cleared) lives in MongoDB.
     await connectDatabase(process.env.MONGODB_URI!);
 
     const client = new BotClient(BOT_DEFINITION.name, getMainBotToken(), BOT_DEFINITION.intents);

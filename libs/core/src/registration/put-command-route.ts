@@ -5,8 +5,7 @@ import { Logger } from "@logger";
  * Publishes one payload to one route.
  *
  * `rest.put` fully replaces a route's command list, so this is also how a route is emptied: pass an
- * empty payload. Failures are reported and swallowed, because the two routes are published
- * independently — a 403 on the admin guild must not stop the main payload from going out.
+ * empty payload. Failures are reported and swallowed; the caller gets `false` and decides.
  */
 export async function putCommandRoute(
     rest: REST,

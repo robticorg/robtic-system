@@ -42,8 +42,8 @@ and put it wherever it belongs: inside a `features/<key>/` folder, or under `com
 scope tree (`global/`, `guild/{admin,general,games}/`, `admin/`). The loader walks
 `apps/bot/src` once and picks it up by name, with no registration list to edit.
 
-Set `scope` and `access` on the command. `scope: "admin"` restricts it to super users and publishes
-it only to the guild set with `!admin-guild`; `access: "admin"` restricts a guild command to server
+Set `scope` and `access` on the command. `scope: "admin"` restricts it to super users;
+`access: "admin"` restricts a guild command to server
 administrators and the roles added with `/command-access admin-roles`.
 
 Slash commands re-register on client ready. `/system reload` re-registers from disk without a

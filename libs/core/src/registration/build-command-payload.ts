@@ -30,21 +30,14 @@ function commandCharacterCount(node: unknown): number {
     return total;
 }
 
-export interface CommandPayload {
-    /** `global` and `guild` scope — published on the ordinary route. */
-    main: object[];
-    /** `admin` scope — published only to the configured admin guild. */
-    admin: object[];
-}
-
 /**
- * Splits loaded commands into the two routes they publish to.
+ * Serialises every loaded command, whatever its scope, into the one list published on the bot.
  *
  * A command whose builder throws is skipped with an error rather than aborting the batch, so one
  * malformed command cannot take every other command offline.
  */
-export function buildCommandPayload(commands: Collection<string, CommandConfig>, botName: BotName): CommandPayload {
-    const payload: CommandPayload = { main: [], admin: [] };
+export function buildCommandPayload(commands: Collection<string, CommandConfig>, botName: BotName): object[] {
+    const payload: object[] = [];
 
     for (const [name, command] of commands) {
         try {
@@ -59,8 +52,7 @@ export function buildCommandPayload(commands: Collection<string, CommandConfig>,
                 );
             }
 
-            if (command.scope === "admin") payload.admin.push(json);
-            else payload.main.push(json);
+            payload.push(json);
         } catch (error) {
             Logger.error(
                 `Command "${name}" is invalid and was skipped so the rest can still register: ${error}`,

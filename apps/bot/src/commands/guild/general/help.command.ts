@@ -39,8 +39,7 @@ type Rows = (ActionRowBuilder<StringSelectMenuBuilder> | ActionRowBuilder<Button
  *
  * Reads the live command collection rather than a maintained list, so a command appears the moment
  * it loads. What it shows is scoped to the reader and the server: admin-scoped commands are hidden
- * from anyone who cannot run them, since they are only registered to the admin guild, and commands
- * from a switched-off feature are listed but marked — hiding those would leave an admin no way to
+ * from anyone who cannot run them, and commands from a switched-off feature are listed but marked — hiding those would leave an admin no way to
  * find out what enabling the feature would bring.
  *
  * Three views, deliberately separated: an overview of categories, a paged list of one category, and

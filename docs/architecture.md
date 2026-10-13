@@ -86,18 +86,17 @@ component handlers, and inside each feature's own listeners and schedulers.
 
 ### Command scopes
 
-`scope` decides where a command registers; `access` decides who may run a `guild`-scoped one.
+`scope` says where a command's data lives; `access` decides who may run a `guild`-scoped one. Every
+scope registers on the bot itself (global commands) — nothing is registered on a guild.
 
-| `scope` | Registers to | Gate |
-|---|---|---|
-| `global` | The main route | Normal chain |
-| `guild` | The main route | Normal chain, plus `access` |
-| `admin` | Only the guild set by `!admin-guild` | Super users only, above every other bypass |
+| `scope` | Gate |
+|---|---|
+| `global` | Normal chain |
+| `guild` | Normal chain, plus `access` |
+| `admin` | Super users only, above every other bypass |
 
-With no admin guild configured, admin commands are published nowhere and stay reachable by prefix —
-the prefix router resolves against the loaded command collection, never Discord's registry. That is
-what lets `!admin-guild set <id>` bootstrap the setting, and why skipping registration is safe
-rather than a fallback to `COMMAND_GUILD_ID`.
+Admin commands are visible in every server's picker but refuse anyone who is not a super user.
+Guild-level copies left from earlier per-server registration are cleared on every publish.
 
 `access` values `general` and `games` gate nothing; only `admin` does, adding server Administrators
 and `ServerConfig.botAdminRoles` as a way in and refusing everyone else.
