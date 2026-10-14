@@ -1,6 +1,9 @@
 import {
+    ActionRowBuilder,
     ActivityType,
     AttachmentBuilder,
+    ButtonBuilder,
+    ButtonStyle,
     Client,
     GatewayIntentBits,
     MessageFlags,
@@ -12,7 +15,7 @@ import {
 } from "discord.js";
 import { Logger } from "@logger";
 import { CompetitionBot, CompetitionEntry, CompetitionVote, lowestFreeNumber, voteCount, voteCounts, type ICompetitionBot, type ICompetitionEntry } from "./models";
-import { COUNT_ID, VOTE_ID, buildEntryPost, lineAttachment, postUrl } from "./entry-post";
+import { COUNT_ID, UNVOTE_ID, VOTE_ID, buildEntryPost, lineAttachment, postUrl } from "./entry-post";
 import { LEADERBOARD_REFRESH_MS, buildLeaderboard } from "./leaderboard";
 import { checkEntry, leaderboardRows } from "./stats";
 import { SOURCE_EMOJIS, ensureApplicationEmojis, type CompetitionEmojis } from "./emojis";
@@ -270,6 +273,10 @@ export class CompetitionBotInstance {
 
         entry.channelId = post.channelId;
         entry.messageId = post.id;
+        // A line under every post, as its own message.
+        const lineFile = lineAttachment();
+        const lineMessage = lineFile ? await room.send({ files: [lineFile] }).catch(() => null) : null;
+        entry.lineMessageId = lineMessage?.id ?? "";
         await entry.save();
         if (post.channelId === message.channelId) await message.delete().catch(() => null);
         else await reply(`✅ #${number} <@${userId}> posted in <#${post.channelId}>.`);
@@ -339,6 +346,7 @@ export class CompetitionBotInstance {
         const postGone = !entry.messageId || (channel?.isTextBased()
             ? await channel.messages.delete(entry.messageId).then(() => true, (e: { code?: number }) => e.code === 10008)
             : true);
+        if (entry.lineMessageId && channel?.isTextBased()) await channel.messages.delete(entry.lineMessageId).catch(() => null);
 
         // Their voters get their vote back; the number is free for the next `!register`.
         await CompetitionVote.deleteMany({ guildId: this.guildId, number: entry.number });
@@ -355,7 +363,7 @@ export class CompetitionBotInstance {
 
         await reply("Resetting…");
         const [entries, state] = await Promise.all([CompetitionEntry.find({ guildId: this.guildId }), this.state()]);
-        const messages = entries.filter(e => e.messageId).map(e => ({ channelId: e.channelId, messageId: e.messageId }));
+        const messages = entries.flatMap(e => [e.messageId, e.lineMessageId].filter(Boolean).map(messageId => ({ channelId: e.channelId, messageId })));
         if (state?.leaderboard.channelId && state.leaderboard.messageId) {
             messages.push({ channelId: state.leaderboard.channelId, messageId: state.leaderboard.messageId });
         }
@@ -446,38 +454,55 @@ export class CompetitionBotInstance {
 
     private async onInteraction(interaction: Interaction): Promise<void> {
         if (!interaction.isButton() || interaction.guildId !== this.guildId) return;
-        if (interaction.customId.startsWith(VOTE_ID)) return this.vote(interaction, Number(interaction.customId.slice(VOTE_ID.length)));
-        if (interaction.customId.startsWith(COUNT_ID)) {
-            const n = Number(interaction.customId.slice(COUNT_ID.length));
+        const id = interaction.customId;
+        if (id.startsWith(VOTE_ID)) return this.vote(interaction, Number(id.slice(VOTE_ID.length)));
+        if (id.startsWith(UNVOTE_ID)) return this.unvote(interaction, Number(id.slice(UNVOTE_ID.length)));
+        if (id.startsWith(COUNT_ID)) {
+            const n = Number(id.slice(COUNT_ID.length));
             await interaction.reply({ content: `#${n} has **${await voteCount(this.guildId, n)}** vote(s).`, flags: MessageFlags.Ephemeral });
         }
     }
 
+    /**
+     * One vote per member in the whole competition. Pressing the vote button of the participant you
+     * already voted for asks whether to remove that vote (a red button) — it is never removed by accident.
+     */
     private async vote(interaction: ButtonInteraction, number: number): Promise<void> {
-        const ephemeral = (content: string) => interaction.reply({ content, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+        const ephemeral = (content: string, components: ActionRowBuilder<ButtonBuilder>[] = []) =>
+            interaction.reply({ content, components, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
         const [state, entry] = await Promise.all([this.state(), CompetitionEntry.findOne({ guildId: this.guildId, number })]);
-        if (!state?.started || state.ended) return void await ephemeral("Voting isn't open.");
-        if (!entry || entry.removed) return void await ephemeral("This participant isn't in the competition anymore.");
-        if (entry.userId === interaction.user.id) return void await ephemeral("You can't vote for yourself.");
+        if (!state?.started || state.ended) return void await ephemeral("التصويت غير متاح حاليا.");
+        if (!entry || entry.removed) return void await ephemeral("هذا المتسابق لم يعد في المسابقة.");
+        if (entry.userId === interaction.user.id) return void await ephemeral("لا يمكنك التصويت لنفسك.");
 
         const existing = await CompetitionVote.findOne({ guildId: this.guildId, voterId: interaction.user.id });
-        let note: string;
         if (existing && existing.number === number) {
-            await existing.deleteOne();
-            note = `Your vote for **#${number}** was removed.`;
-        } else if (existing) {
-            return void await ephemeral(`You already voted for **#${existing.number}**. Press its vote button again to take your vote back first.`);
-        } else {
-            const created = await CompetitionVote.create({ guildId: this.guildId, voterId: interaction.user.id, number }).then(() => true, err => {
-                if ((err as { code?: number }).code === 11000) return false;
-                throw err;
-            });
-            if (!created) return void await ephemeral("You already voted.");
-            note = `✅ You voted for **#${number}** <@${entry.userId}>. Press again to take it back.`;
+            return void await ephemeral("لقد قمت بالتصويت على هذا المتسابق مسبقا هل تريد ازالة تصويت ؟", [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                    new ButtonBuilder().setCustomId(`${UNVOTE_ID}${number}`).setStyle(ButtonStyle.Danger).setLabel("ازالة التصويت"),
+                ),
+            ]);
         }
+        if (existing) return void await ephemeral(`لقد قمت بالتصويت مسبقا على المتسابق **#${existing.number}**. يمكنك التصويت لمتسابق واحد فقط.`);
+
+        const created = await CompetitionVote.create({ guildId: this.guildId, voterId: interaction.user.id, number }).then(() => true, err => {
+            if ((err as { code?: number }).code === 11000) return false;
+            throw err;
+        });
+        if (!created) return void await ephemeral("لقد قمت بالتصويت مسبقا.");
 
         const hasLine = interaction.message.attachments.some(a => a.name === "line.png");
         await interaction.update({ components: buildEntryPost(entry, state, await voteCount(this.guildId, number), this.emojis, hasLine), allowedMentions: { parse: [] } });
-        await interaction.followUp({ content: note, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } }).catch(() => null);
+        await interaction.followUp({ content: `✅ تم التصويت للمتسابق **#${number}** <@${entry.userId}>`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } }).catch(() => null);
+    }
+
+    /** The red button under "do you want to remove your vote?". */
+    private async unvote(interaction: ButtonInteraction, number: number): Promise<void> {
+        const removed = await CompetitionVote.findOneAndDelete({ guildId: this.guildId, voterId: interaction.user.id, number });
+        await interaction.update({ content: removed ? `تم ازالة تصويتك للمتسابق **#${number}**.` : "لا يوجد لديك تصويت لهذا المتسابق.", components: [] });
+        if (!removed) return;
+
+        const [state, entry] = await Promise.all([this.state(), CompetitionEntry.findOne({ guildId: this.guildId, number })]);
+        if (state && entry) await this.editPost(entry, state).catch(e => this.warn("unvote", e));
     }
 }

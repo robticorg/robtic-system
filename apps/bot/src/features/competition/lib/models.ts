@@ -50,6 +50,8 @@ export interface ICompetitionEntry extends Document {
     userId: string;
     channelId: string;
     messageId: string;
+    /** The separate line message sent right after the post — deleted with it. */
+    lineMessageId: string;
     /** The image's file name on the post — referenced as `attachment://<imageName>` on every edit. */
     imageName: string;
     /** `!remove #N` — the post stays, struck through, with no buttons. */
@@ -64,6 +66,7 @@ const competitionEntrySchema = new Schema<ICompetitionEntry>(
         channelId: { type: String, required: true },
         /** Empty while the number is reserved and the post is being sent. */
         messageId: { type: String, default: "" },
+        lineMessageId: { type: String, default: "" },
         imageName: { type: String, required: true },
         removed: { type: Boolean, default: false },
     },

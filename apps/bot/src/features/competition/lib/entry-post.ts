@@ -16,6 +16,7 @@ import { buttonEmoji, type CompetitionEmojis } from "./emojis";
 
 export const VOTE_ID = "comp:vote:";
 export const COUNT_ID = "comp:count:";
+export const UNVOTE_ID = "comp:unvote:";
 
 export const LINE_NAME = "line.png";
 const LINE_PATH = path.join(process.cwd(), "images", LINE_NAME);
@@ -38,7 +39,7 @@ type EntryLike = Pick<ICompetitionEntry, "number" | "userId" | "imageName" | "re
  *     [their image]
  *     ───────────
  *     [line.png]
- *     [<add>| تـصـويـت] [<info>| N]   (only while voting is open; the count goes with `!hide`)
+ *     [<add>| تـصـويـت] [<info>| N Votes]   (only while voting is open; the count is disabled, and goes with `!hide`)
  *
  * Images are referenced by file name, so an edit keeps pointing at the files already on the message.
  */
@@ -65,7 +66,8 @@ export function buildEntryPost(entry: EntryLike, state: CompetitionState, votes:
                     .setCustomId(`${COUNT_ID}${entry.number}`)
                     .setStyle(ButtonStyle.Secondary)
                     .setEmoji(buttonEmoji(emojis.info))
-                    .setLabel(`| ${votes}`),
+                    .setLabel(`| ${votes} Votes`)
+                    .setDisabled(true),
             );
         }
         components.push(row);

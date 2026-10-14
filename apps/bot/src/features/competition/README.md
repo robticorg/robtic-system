@@ -23,8 +23,8 @@ In the Developer Portal, the competition bot needs **Message Content Intent** tu
 | Command | What it does |
 |---|---|
 | `!set-room #channel` | Where participant posts are sent (without it: the channel `!register` is used in) |
-| `!register <userID>` + image | Posts `<minidot> **#N <@user>**`, the image, a separator and `images/line.png` |
-| `!start` | Opens voting — adds the buttons `<add>\| تـصـويـت` and `<info>\| N` to every post |
+| `!register <userID>` + image | Posts `<minidot> **#N <@user>**`, the image, a separator and `images/line.png`, then a line message after it |
+| `!start` | Opens voting — adds the buttons `<add>\| تـصـويـت` and `<info>\| N Votes` (disabled, just shows the count) to every post |
 | `!end` | Ends the competition — removes every button |
 | `!hide` | Hides the vote-count button (use again to show it) |
 | `!check #N` | Invites, fake invites, votes from people they invited / didn't invite, total, and votes without fakes and without who left |
@@ -38,8 +38,9 @@ In the Developer Portal, the competition bot needs **Message Content Intent** tu
 `!dm` variables: `[user]` mention, `[post]` link to their post, `[vote]` their votes,
 `[Label;https://link]` a link button (e.g. `[Go to post;[post]]`).
 
-Voting: one vote per member in the whole competition; pressing the same button again takes it back.
-Nobody can vote for themselves. "Current votes" on the leaderboard = votes from members still in the server.
+Voting: one vote per member in the whole competition. Pressing the same participant's vote button again
+shows "لقد قمت بالتصويت على هذا المتسابق مسبقا هل تريد ازالة تصويت ؟" with a red **ازالة التصويت** button.
+Nobody can vote for themselves. Every post is followed by a separate `line.png` message (deleted with the post). "Current votes" on the leaderboard = votes from members still in the server.
 
 ## What to delete
 
