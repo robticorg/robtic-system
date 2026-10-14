@@ -4,6 +4,7 @@ import { DEFAULT_PREFIX, STREAK_CONFIG, isChannelRestricted } from "@constants";
 import { ServerConfigRepository, PunishConfigRepository } from "@database/repositories";
 import { parsePrefixCommand, runPrefixShortcut } from "../utils/prefix";
 import { getUserLang, t } from "../utils/lang";
+import { isCompetitionCommand } from "@bot/features/competition/lib/main-bot-guard"; // TEMP competition bot
 
 const PUNISH_SHORTCUT_COMMANDS = new Set(["jail", "mute", "warn"]);
 
@@ -45,6 +46,7 @@ export default {
         if (!parsed) return;
 
         const { commandName, argString } = parsed;
+        if (isCompetitionCommand(message.guild.id, commandName)) return; // TEMP: the competition bot answers these
 
         const command = client.commands.get(commandName);
         const messageCommand = client.messageCommands.get(commandName);
