@@ -1,4 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { arabicNumberWords } from "./arabic-number";
 
 /**
  * `!dm` message variables:
@@ -6,13 +7,17 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
  *   [user]          → the participant's mention
  *   [post]          → link to their post
  *   [vote]          → their vote count
+ *   [number]        → their participant number (34)
+ *   [number;letter] → the same number in Arabic words (ثلاثة و اربعون)
  *   [Label;https://…] → a link button (up to 5) — e.g. `[Go to post;[post]]`
  */
-export function renderDm(template: string, vars: { userId: string; post: string; votes: number }): { content: string; buttons: ActionRowBuilder<ButtonBuilder>[] } {
+export function renderDm(template: string, vars: { userId: string; post: string; votes: number; number: number }): { content: string; buttons: ActionRowBuilder<ButtonBuilder>[] } {
     let text = template
         .replaceAll("[user]", `<@${vars.userId}>`)
         .replaceAll("[post]", vars.post)
-        .replaceAll("[vote]", String(vars.votes));
+        .replaceAll("[vote]", String(vars.votes))
+        .replaceAll("[number;letter]", arabicNumberWords(vars.number))
+        .replaceAll("[number]", String(vars.number));
 
     const buttons: ButtonBuilder[] = [];
     text = text.replace(/\[([^\[\];\n]{1,80});\s*(https?:\/\/[^\s\]]+)\]/g, (_all, label: string, url: string) => {

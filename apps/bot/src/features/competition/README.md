@@ -23,7 +23,7 @@ In the Developer Portal, the competition bot needs **Message Content Intent** tu
 | Command | What it does |
 |---|---|
 | `!set-room #channel` | Where participant posts are sent (without it: the channel `!register` is used in) |
-| `!register <userID>` + image | Posts `<minidot> **#N <@user>**`, the image, a separator and `images/line.png`, then a line message after it |
+| `!register <userID>` + image | Posts `<minidot> **#N <@user>**`, the image, a separator and `images/line.png` |
 | `!start` | Opens voting — adds the buttons `<add>\| تـصـويـت` and `<info>\| N Votes` (disabled, just shows the count) to every post |
 | `!end` | Ends the competition — removes every button |
 | `!hide` | Hides the vote-count button (use again to show it) |
@@ -31,16 +31,17 @@ In the Developer Portal, the competition bot needs **Message Content Intent** tu
 | `!remove #N` | Post stays as `<minidot> ~~**#N <@user>**~~`, no buttons; their voters can vote again |
 | `!delete #N` | Deletes the participant completely — post, votes and number; the next `!register` reuses the lowest free number |
 | `!reset` | Wipes the whole competition — every post, vote and the leaderboard (asks you to type `confirm`). The room and the bot stay |
-| `!leaderboard` | Posts the top 10 (current votes + current invites), refreshed every 5 minutes with the last refresh time |
+| `!leaderboard` | Deletes the command and the old leaderboard, then posts the top 10 (current votes + current invites), refreshed every 5 minutes with the last refresh time |
 | `!dm` / `!dm #N` / `!dm >N` / `!dm <N` / `!dm =N` | Asks for the message, then DMs the matching participants |
 | `!help` | The list above |
 
-`!dm` variables: `[user]` mention, `[post]` link to their post, `[vote]` their votes,
+`!dm` variables: `[user]` mention, `[post]` link to their post, `[vote]` their votes, `[number]` their number (34),
+`[number;letter]` the number in Arabic words (ثلاثة و اربعون),
 `[Label;https://link]` a link button (e.g. `[Go to post;[post]]`).
 
 Voting: one vote per member in the whole competition. Pressing the same participant's vote button again
 shows "لقد قمت بالتصويت على هذا المتسابق مسبقا هل تريد ازالة تصويت ؟" with a red **ازالة التصويت** button.
-Nobody can vote for themselves. Every post is followed by a separate `line.png` message (deleted with the post). "Current votes" on the leaderboard = votes from members still in the server.
+Nobody can vote for themselves. "Current votes" on the leaderboard = votes from members still in the server.
 
 ## What to delete
 

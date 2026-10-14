@@ -40,6 +40,7 @@ export class CompetitionBotInstance {
     /** Admins with a `!dm` waiting for its message — a second `!dm` from them is refused meanwhile. */
     private readonly pendingDm = new Set<string>();
     private refreshing = false;
+    private postingLeaderboard = false;
     /** The bot's own copies of the emojis once uploaded (see ./emojis.ts). */
     private emojis: CompetitionEmojis = { ...SOURCE_EMOJIS };
 
@@ -195,7 +196,7 @@ export class CompetitionBotInstance {
             case "remove": return this.remove(args, reply);
             case "delete": return this.deleteEntry(args, reply);
             case "reset": return this.reset(message, reply);
-            case "leaderboard": return this.postLeaderboard(message, reply);
+            case "leaderboard": return this.postLeaderboard(message);
             case "help": return void await reply([
                 "**Competition commands**",
                 "`!set-room #channel` — where participant posts are sent",
@@ -209,7 +210,7 @@ export class CompetitionBotInstance {
                 "`!delete #N` — delete a participant completely: post, votes and number (the next `!register` reuses it)",
                 "`!leaderboard` — post the top 10 (refreshes every 5 minutes)",
                 "`!dm` · `!dm #N` · `!dm >N` · `!dm <N` · `!dm =N` — DM participants",
-                "Variables: `[user]` `[post]` `[vote]` `[Label;https://link]`",
+                "Variables: `[user]` `[post]` `[vote]` `[number]` `[number;letter]` `[Label;https://link]`",
             ].join("\n"));
         }
     }
@@ -273,10 +274,6 @@ export class CompetitionBotInstance {
 
         entry.channelId = post.channelId;
         entry.messageId = post.id;
-        // A line under every post, as its own message.
-        const lineFile = lineAttachment();
-        const lineMessage = lineFile ? await room.send({ files: [lineFile] }).catch(() => null) : null;
-        entry.lineMessageId = lineMessage?.id ?? "";
         await entry.save();
         if (post.channelId === message.channelId) await message.delete().catch(() => null);
         else await reply(`✅ #${number} <@${userId}> posted in <#${post.channelId}>.`);
@@ -387,26 +384,37 @@ export class CompetitionBotInstance {
         await reply(`♻️ The competition was reset: ${messages.length - failed} message(s) deleted${failed ? `, ${failed} couldn't be (delete them by hand)` : ""}. The next \`!register\` is #1.`);
     }
 
-    private async postLeaderboard(message: Message<true>, reply: (c: string) => Promise<unknown>): Promise<void> {
-        if (!message.channel.isSendable()) return;
-        const state = await this.state();
-        if (!state) return;
-        const { now, line, container } = await this.leaderboardPayload();
-        const sent = await message.channel.send({
-            components: [container],
-            files: line ? [line] : [],
-            flags: MessageFlags.IsComponentsV2,
-            allowedMentions: { parse: [] },
-        }).catch(e => { this.warn("leaderboard", e); return null; });
-        if (!sent) return void await reply("I couldn't post the leaderboard here.");
+    /**
+     * Only one leaderboard exists: the command message is deleted, then the old leaderboard, then
+     * the new one is sent where the command was used.
+     */
+    private async postLeaderboard(message: Message<true>): Promise<void> {
+        if (!message.channel.isSendable() || this.postingLeaderboard) return;
+        this.postingLeaderboard = true;
+        try {
+            await message.delete().catch(() => null);
+            const state = await this.state();
+            if (!state) return;
 
-        const old = state.leaderboard;
-        if (old.channelId && old.messageId && old.messageId !== sent.id) {
-            const oldChannel = await this.client.channels.fetch(old.channelId).catch(() => null);
-            if (oldChannel?.isTextBased()) await oldChannel.messages.delete(old.messageId).catch(() => null);
+            const old = state.leaderboard;
+            if (old.channelId && old.messageId) {
+                const oldChannel = await this.client.channels.fetch(old.channelId).catch(() => null);
+                if (oldChannel?.isTextBased()) await oldChannel.messages.delete(old.messageId).catch(() => null);
+                await CompetitionBot.updateOne({ guildId: this.guildId }, { $set: { "leaderboard.messageId": null } });
+            }
+
+            const { now, line, container } = await this.leaderboardPayload();
+            const sent = await message.channel.send({
+                components: [container],
+                files: line ? [line] : [],
+                flags: MessageFlags.IsComponentsV2,
+                allowedMentions: { parse: [] },
+            }).catch(e => { this.warn("leaderboard", e); return null; });
+            if (!sent) return;
+            await CompetitionBot.updateOne({ guildId: this.guildId }, { $set: { leaderboard: { channelId: sent.channelId, messageId: sent.id, refreshedAt: now } } });
+        } finally {
+            this.postingLeaderboard = false;
         }
-        await CompetitionBot.updateOne({ guildId: this.guildId }, { $set: { leaderboard: { channelId: sent.channelId, messageId: sent.id, refreshedAt: now } } });
-        await message.delete().catch(() => null);
     }
 
     private async dm(message: Message<true>, arg: string, reply: (c: string) => Promise<unknown>): Promise<void> {
@@ -418,7 +426,7 @@ export class CompetitionBotInstance {
         this.pendingDm.add(message.author.id);
         let text: string | null = null;
         try {
-            await reply("Send your message now (5 minutes, `cancel` to stop).\nVariables: `[user]` `[post]` `[vote]` `[Label;https://link]`");
+            await reply("Send your message now (5 minutes, `cancel` to stop).\nVariables: `[user]` `[post]` `[vote]` `[number]` `[number;letter]` `[Label;https://link]`");
             const collected = await message.channel.awaitMessages({ filter: m => m.author.id === message.author.id, max: 1, time: DM_WAIT_MS }).catch(() => null);
             text = collected?.first()?.content ?? null;
         } finally {
@@ -438,7 +446,7 @@ export class CompetitionBotInstance {
         let sent = 0;
         const failed: number[] = [];
         for (const entry of targets) {
-            const { content, buttons } = renderDm(text, { userId: entry.userId, post: postUrl(entry), votes: counts.get(entry.number) ?? 0 });
+            const { content, buttons } = renderDm(text, { userId: entry.userId, post: postUrl(entry), votes: counts.get(entry.number) ?? 0, number: entry.number });
             const user = await this.client.users.fetch(entry.userId).catch(() => null);
             const ok = user && content
                 ? await user.send({ content, components: buttons }).then(() => true, () => false)
