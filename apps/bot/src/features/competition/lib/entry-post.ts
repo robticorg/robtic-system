@@ -12,17 +12,7 @@ import {
     TextDisplayBuilder,
 } from "discord.js";
 import type { ICompetitionBot, ICompetitionEntry } from "./models";
-
-export const EMOJI = {
-    minidot: "<:minidot:1482015855305949375>",
-    info: "<:info:1480426659747463242>",
-    add: "<:add:1480426720967266334>",
-} as const;
-
-const BUTTON_EMOJI = {
-    add: { id: "1480426720967266334", name: "add" },
-    info: { id: "1480426659747463242", name: "info" },
-} as const;
+import { buttonEmoji, type CompetitionEmojis } from "./emojis";
 
 export const VOTE_ID = "comp:vote:";
 export const COUNT_ID = "comp:count:";
@@ -52,10 +42,10 @@ type EntryLike = Pick<ICompetitionEntry, "number" | "userId" | "imageName" | "re
  *
  * Images are referenced by file name, so an edit keeps pointing at the files already on the message.
  */
-export function buildEntryPost(entry: EntryLike, state: CompetitionState, votes: number, hasLine = lineAttachment() !== null): PostComponent[] {
+export function buildEntryPost(entry: EntryLike, state: CompetitionState, votes: number, emojis: CompetitionEmojis, hasLine = lineAttachment() !== null): PostComponent[] {
     const title = `**#${entry.number} <@${entry.userId}>**`;
     const components: PostComponent[] = [
-        new TextDisplayBuilder().setContent(`${EMOJI.minidot} ${entry.removed ? `~~${title}~~` : title}`),
+        new TextDisplayBuilder().setContent(`${emojis.minidot} ${entry.removed ? `~~${title}~~` : title}`),
         new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(`attachment://${entry.imageName}`)),
         new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small),
     ];
@@ -66,7 +56,7 @@ export function buildEntryPost(entry: EntryLike, state: CompetitionState, votes:
             new ButtonBuilder()
                 .setCustomId(`${VOTE_ID}${entry.number}`)
                 .setStyle(ButtonStyle.Secondary)
-                .setEmoji(BUTTON_EMOJI.add)
+                .setEmoji(buttonEmoji(emojis.add))
                 .setLabel("| تـصـويـت"),
         );
         if (!state.hideCounts) {
@@ -74,7 +64,7 @@ export function buildEntryPost(entry: EntryLike, state: CompetitionState, votes:
                 new ButtonBuilder()
                     .setCustomId(`${COUNT_ID}${entry.number}`)
                     .setStyle(ButtonStyle.Secondary)
-                    .setEmoji(BUTTON_EMOJI.info)
+                    .setEmoji(buttonEmoji(emojis.info))
                     .setLabel(`| ${votes}`),
             );
         }

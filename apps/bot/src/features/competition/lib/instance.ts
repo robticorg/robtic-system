@@ -11,14 +11,15 @@ import {
     type Message,
 } from "discord.js";
 import { Logger } from "@logger";
-import { CompetitionBot, CompetitionEntry, CompetitionVote, voteCount, voteCounts, type ICompetitionBot, type ICompetitionEntry } from "./models";
-import { COUNT_ID, EMOJI, VOTE_ID, buildEntryPost, lineAttachment, postUrl } from "./entry-post";
+import { CompetitionBot, CompetitionEntry, CompetitionVote, lowestFreeNumber, voteCount, voteCounts, type ICompetitionBot, type ICompetitionEntry } from "./models";
+import { COUNT_ID, VOTE_ID, buildEntryPost, lineAttachment, postUrl } from "./entry-post";
 import { LEADERBOARD_REFRESH_MS, buildLeaderboard } from "./leaderboard";
 import { checkEntry, leaderboardRows } from "./stats";
+import { SOURCE_EMOJIS, ensureApplicationEmojis, type CompetitionEmojis } from "./emojis";
 import { matchesTarget, parseDmTarget, renderDm } from "./dm-template";
 
 const PREFIX = "!";
-export const COMPETITION_COMMANDS = new Set(["set-room", "register", "dm", "start", "end", "check", "leaderboard", "remove", "hide", "help"]);
+export const COMPETITION_COMMANDS = new Set(["set-room", "register", "dm", "start", "end", "check", "leaderboard", "remove", "delete", "reset", "hide", "help"]);
 const DM_WAIT_MS = 5 * 60_000;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -36,6 +37,8 @@ export class CompetitionBotInstance {
     /** Admins with a `!dm` waiting for its message — a second `!dm` from them is refused meanwhile. */
     private readonly pendingDm = new Set<string>();
     private refreshing = false;
+    /** The bot's own copies of the emojis once uploaded (see ./emojis.ts). */
+    private emojis: CompetitionEmojis = { ...SOURCE_EMOJIS };
 
     constructor(readonly guildId: string, private readonly token: string) {
         this.ctx = `competition:${guildId}`;
@@ -77,6 +80,12 @@ export class CompetitionBotInstance {
         Logger.success(`${this.client.user?.tag} online`, this.ctx);
         this.client.user?.setPresence({ activities: [{ name: "the competition", type: ActivityType.Watching }], status: "online" });
         for (const guild of this.client.guilds.cache.values()) this.enforceGuild(guild);
+        if (this.client.isReady()) {
+            this.emojis = await ensureApplicationEmojis(this.client, this.ctx);
+            // Posts made before the bot had its own emojis still show the old ones — redraw them.
+            const state = await this.state();
+            if (state) void this.editAllPosts(state).catch(e => this.warn("redraw posts", e));
+        }
 
         if (this.ticker) clearInterval(this.ticker);
         this.ticker = setInterval(() => this.tick().catch(e => this.warn("leaderboard", e)), 60_000);
@@ -107,7 +116,7 @@ export class CompetitionBotInstance {
         const rows = await leaderboardRows(this.guildId, entries);
         const line = lineAttachment();
         const now = new Date();
-        return { now, line, container: buildLeaderboard(rows, now, line !== null) };
+        return { now, line, container: buildLeaderboard(rows, now, this.emojis, line !== null) };
     }
 
     /** Edits the stored leaderboard message. A deleted message is forgotten. */
@@ -140,7 +149,7 @@ export class CompetitionBotInstance {
         const message = channel?.isTextBased() ? await channel.messages.fetch(entry.messageId).catch(() => null) : null;
         if (!message) return false;
         const hasLine = message.attachments.some(a => a.name === "line.png");
-        const components = buildEntryPost(entry, state, votes ?? await voteCount(this.guildId, entry.number), hasLine);
+        const components = buildEntryPost(entry, state, votes ?? await voteCount(this.guildId, entry.number), this.emojis, hasLine);
         return message.edit({ components, allowedMentions: { parse: [] } }).then(() => true, () => false);
     }
 
@@ -181,6 +190,8 @@ export class CompetitionBotInstance {
             case "hide": return this.toggleHide(reply);
             case "check": return this.check(args, reply);
             case "remove": return this.remove(args, reply);
+            case "delete": return this.deleteEntry(args, reply);
+            case "reset": return this.reset(message, reply);
             case "leaderboard": return this.postLeaderboard(message, reply);
             case "help": return void await reply([
                 "**Competition commands**",
@@ -188,10 +199,12 @@ export class CompetitionBotInstance {
                 "`!register <userID> [image]` — add a participant (attach the image)",
                 "`!start` — open voting (adds the buttons)",
                 "`!end` — end the competition (removes every button)",
+                "`!reset` — wipe the whole competition: every post, vote and the leaderboard (asks to confirm)",
                 "`!hide` — hide / show the vote-count button",
                 "`!check #N` — invites and votes of participant N",
-                "`!remove #N` — strike a participant out",
-                "`!leaderboard` — post the top 10 (refreshes every hour)",
+                "`!remove #N` — strike a participant out (post and number stay)",
+                "`!delete #N` — delete a participant completely: post, votes and number (the next `!register` reuses it)",
+                "`!leaderboard` — post the top 10 (refreshes every 5 minutes)",
                 "`!dm` · `!dm #N` · `!dm >N` · `!dm <N` · `!dm =N` — DM participants",
                 "Variables: `[user]` `[post]` `[vote]` `[Label;https://link]`",
             ].join("\n"));
@@ -229,23 +242,35 @@ export class CompetitionBotInstance {
         const data = await fetch(image.url).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null);
         if (!data) return void await reply("I couldn't download the image — try again.");
 
-        const state = await CompetitionBot.findOneAndUpdate({ guildId: this.guildId }, { $inc: { nextNumber: 1 } }, { new: false });
+        const state = await this.state();
         if (!state) return;
-        const number = state.nextNumber;
         const ext = (image.name.split(".").pop() ?? "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
-        const imageName = `entry-${number}.${ext}`;
+
+        // Reserve the lowest free number; the unique index settles two registrations racing for it.
+        let entry: ICompetitionEntry | null = null;
+        for (let attempt = 0; attempt < 5 && !entry; attempt++) {
+            const number = await lowestFreeNumber(this.guildId);
+            entry = await CompetitionEntry.create({ guildId: this.guildId, number, userId, channelId: room.id, imageName: `entry-${number}.${ext}` })
+                .catch(err => { if ((err as { code?: number }).code === 11000) return null; throw err; });
+        }
+        if (!entry) return void await reply("Couldn't reserve a number — try again.");
+        const { number, imageName } = entry;
 
         const line = lineAttachment();
-        const entryLike = { number, userId, imageName, removed: false };
         const post = await room.send({
-            components: buildEntryPost(entryLike, state, 0, line !== null),
+            components: buildEntryPost(entry, state, 0, this.emojis, line !== null),
             files: [new AttachmentBuilder(Buffer.from(data), { name: imageName }), ...(line ? [line] : [])],
             flags: MessageFlags.IsComponentsV2,
             allowedMentions: { parse: [] },
         }).catch(e => { this.warn("register", e); return null; });
-        if (!post) return void await reply("I couldn't post it — I need Send Messages, Attach Files and Embed Links in the room.");
+        if (!post) {
+            await entry.deleteOne();
+            return void await reply("I couldn't post it — I need Send Messages, Attach Files and Embed Links in the room.");
+        }
 
-        await CompetitionEntry.create({ guildId: this.guildId, number, userId, channelId: post.channelId, messageId: post.id, imageName });
+        entry.channelId = post.channelId;
+        entry.messageId = post.id;
+        await entry.save();
         if (post.channelId === message.channelId) await message.delete().catch(() => null);
         else await reply(`✅ #${number} <@${userId}> posted in <#${post.channelId}>.`);
     }
@@ -282,13 +307,13 @@ export class CompetitionBotInstance {
         if (!entry) return void await reply("Usage: `!check #N` — no participant with that number.");
         const c = await checkEntry(entry);
         await reply([
-            `${EMOJI.minidot} **#${entry.number}** <@${entry.userId}>${entry.removed ? " (removed)" : ""}`,
-            `${EMOJI.info} Invites: **${c.invites}**`,
-            `${EMOJI.info} Fake invites: **${c.fakes}**`,
-            `${EMOJI.info} Votes from people they invited: **${c.fromInvited}**`,
-            `${EMOJI.info} Votes from people they didn't invite: **${c.fromOthers}**`,
-            `${EMOJI.info} Total votes: **${c.total}**`,
-            `${EMOJI.info} Votes without fakes and without who left: **${c.real}**`,
+            `${this.emojis.minidot} **#${entry.number}** <@${entry.userId}>${entry.removed ? " (removed)" : ""}`,
+            `${this.emojis.info} Invites: **${c.invites}**`,
+            `${this.emojis.info} Fake invites: **${c.fakes}**`,
+            `${this.emojis.info} Votes from people they invited: **${c.fromInvited}**`,
+            `${this.emojis.info} Votes from people they didn't invite: **${c.fromOthers}**`,
+            `${this.emojis.info} Total votes: **${c.total}**`,
+            `${this.emojis.info} Votes without fakes and without who left: **${c.real}**`,
         ].join("\n"));
     }
 
@@ -304,6 +329,54 @@ export class CompetitionBotInstance {
         const state = await this.state();
         const edited = state ? await this.editPost(entry, state, 0) : false;
         await reply(`#${entry.number} <@${entry.userId}> was removed${edited ? "" : " (I couldn't edit the post — was it deleted?)"}.`);
+    }
+
+    private async deleteEntry(arg: string, reply: (c: string) => Promise<unknown>): Promise<void> {
+        const entry = await this.findEntry(arg);
+        if (!entry) return void await reply("Usage: `!delete #N` — no participant with that number.");
+
+        const channel = entry.messageId ? await this.client.channels.fetch(entry.channelId).catch(() => null) : null;
+        const postGone = !entry.messageId || (channel?.isTextBased()
+            ? await channel.messages.delete(entry.messageId).then(() => true, (e: { code?: number }) => e.code === 10008)
+            : true);
+
+        // Their voters get their vote back; the number is free for the next `!register`.
+        await CompetitionVote.deleteMany({ guildId: this.guildId, number: entry.number });
+        await entry.deleteOne();
+        await reply(`#${entry.number} <@${entry.userId}> was deleted${postGone ? "" : " (I couldn't delete the post — delete it by hand)"}. The next \`!register\` gets #${await lowestFreeNumber(this.guildId)}.`);
+    }
+
+    /** Back to a fresh competition: every post and the leaderboard deleted, entries and votes gone. Room and token stay. */
+    private async reset(message: Message<true>, reply: (c: string) => Promise<unknown>): Promise<void> {
+        if (!message.channel.isTextBased()) return;
+        await reply("⚠️ This deletes **every** participant post, all votes and the leaderboard. Type `confirm` within 30 seconds.");
+        const answer = await message.channel.awaitMessages({ filter: m => m.author.id === message.author.id, max: 1, time: 30_000 }).catch(() => null);
+        if (answer?.first()?.content.trim().toLowerCase() !== "confirm") return void await reply("Reset cancelled.");
+
+        await reply("Resetting…");
+        const [entries, state] = await Promise.all([CompetitionEntry.find({ guildId: this.guildId }), this.state()]);
+        const messages = entries.filter(e => e.messageId).map(e => ({ channelId: e.channelId, messageId: e.messageId }));
+        if (state?.leaderboard.channelId && state.leaderboard.messageId) {
+            messages.push({ channelId: state.leaderboard.channelId, messageId: state.leaderboard.messageId });
+        }
+
+        let failed = 0;
+        for (const { channelId, messageId } of messages) {
+            const channel = await this.client.channels.fetch(channelId).catch(() => null);
+            const ok = channel?.isTextBased()
+                ? await channel.messages.delete(messageId).then(() => true, (e: { code?: number }) => e.code === 10008)
+                : true;
+            if (!ok) failed++;
+        }
+
+        await Promise.all([
+            CompetitionEntry.deleteMany({ guildId: this.guildId }),
+            CompetitionVote.deleteMany({ guildId: this.guildId }),
+            CompetitionBot.updateOne({ guildId: this.guildId }, {
+                $set: { started: false, ended: false, hideCounts: false, leaderboard: { channelId: null, messageId: null, refreshedAt: null } },
+            }),
+        ]);
+        await reply(`♻️ The competition was reset: ${messages.length - failed} message(s) deleted${failed ? `, ${failed} couldn't be (delete them by hand)` : ""}. The next \`!register\` is #1.`);
     }
 
     private async postLeaderboard(message: Message<true>, reply: (c: string) => Promise<unknown>): Promise<void> {
@@ -404,7 +477,7 @@ export class CompetitionBotInstance {
         }
 
         const hasLine = interaction.message.attachments.some(a => a.name === "line.png");
-        await interaction.update({ components: buildEntryPost(entry, state, await voteCount(this.guildId, number), hasLine), allowedMentions: { parse: [] } });
+        await interaction.update({ components: buildEntryPost(entry, state, await voteCount(this.guildId, number), this.emojis, hasLine), allowedMentions: { parse: [] } });
         await interaction.followUp({ content: note, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } }).catch(() => null);
     }
 }

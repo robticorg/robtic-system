@@ -15,7 +15,8 @@ A temporary bot for one competition. When the competition is over, delete everyt
 - Running `/create bot` again replaces the bot's token but keeps the competition.
 
 In the Developer Portal, the competition bot needs **Message Content Intent** turned on. The emojis
-(`minidot`, `info`, `add`) must be in a server the bot is in.
+(`minidot`, `info`, `add`) are in another server, so on start the bot copies them into its own
+**application emojis** (Developer Portal → your app → Emojis), which work in every server.
 
 ## Commands (prefix `!`, members with Manage Server only)
 
@@ -28,7 +29,9 @@ In the Developer Portal, the competition bot needs **Message Content Intent** tu
 | `!hide` | Hides the vote-count button (use again to show it) |
 | `!check #N` | Invites, fake invites, votes from people they invited / didn't invite, total, and votes without fakes and without who left |
 | `!remove #N` | Post stays as `<minidot> ~~**#N <@user>**~~`, no buttons; their voters can vote again |
-| `!leaderboard` | Posts the top 10 (current votes + current invites), refreshed every hour with the last refresh time |
+| `!delete #N` | Deletes the participant completely — post, votes and number; the next `!register` reuses the lowest free number |
+| `!reset` | Wipes the whole competition — every post, vote and the leaderboard (asks you to type `confirm`). The room and the bot stay |
+| `!leaderboard` | Posts the top 10 (current votes + current invites), refreshed every 5 minutes with the last refresh time |
 | `!dm` / `!dm #N` / `!dm >N` / `!dm <N` / `!dm =N` | Asks for the message, then DMs the matching participants |
 | `!help` | The list above |
 

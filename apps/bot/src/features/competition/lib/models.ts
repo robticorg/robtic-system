@@ -20,8 +20,6 @@ export interface ICompetitionBot extends Document {
     hideCounts: boolean;
     /** `!set-room` — where `!register` posts. `null` = the channel the command is used in. */
     roomChannelId: string | null;
-    /** The number the next `!register` gets. */
-    nextNumber: number;
     leaderboard: { channelId: string | null; messageId: string | null; refreshedAt: Date | null };
 }
 
@@ -36,7 +34,6 @@ const competitionBotSchema = new Schema<ICompetitionBot>(
         ended: { type: Boolean, default: false },
         hideCounts: { type: Boolean, default: false },
         roomChannelId: { type: String, default: null },
-        nextNumber: { type: Number, default: 1 },
         leaderboard: {
             channelId: { type: String, default: null },
             messageId: { type: String, default: null },
@@ -65,7 +62,8 @@ const competitionEntrySchema = new Schema<ICompetitionEntry>(
         number: { type: Number, required: true },
         userId: { type: String, required: true },
         channelId: { type: String, required: true },
-        messageId: { type: String, required: true },
+        /** Empty while the number is reserved and the post is being sent. */
+        messageId: { type: String, default: "" },
         imageName: { type: String, required: true },
         removed: { type: Boolean, default: false },
     },
@@ -95,6 +93,14 @@ competitionVoteSchema.index({ guildId: 1, number: 1 });
 export const CompetitionBot = model<ICompetitionBot>("TempCompetitionBot", competitionBotSchema);
 export const CompetitionEntry = model<ICompetitionEntry>("TempCompetitionEntry", competitionEntrySchema);
 export const CompetitionVote = model<ICompetitionVote>("TempCompetitionVote", competitionVoteSchema);
+
+/** The lowest number no entry holds — a number freed by `!delete` is given out again. */
+export async function lowestFreeNumber(guildId: string): Promise<number> {
+    const taken = new Set((await CompetitionEntry.find({ guildId }, { number: 1 }).lean()).map(e => e.number));
+    let n = 1;
+    while (taken.has(n)) n++;
+    return n;
+}
 
 export async function voteCount(guildId: string, number: number): Promise<number> {
     return CompetitionVote.countDocuments({ guildId, number });
