@@ -6,11 +6,11 @@
 # infra/docker/portainer-robtic-bots.env.example, the procedure in docs/deployment-portainer.md.
 # `${VAR:?…}` is required: the deploy fails instead of starting a bot with a missing setting.
 #
-# Networks (both created outside this stack):
-#   backend — MongoDB and the central Redis. Never published to the host.
-#   proxy   — Nginx Proxy Manager. Only HTTP APIs reached from outside the host join it.
+# Networks:
+#   proxy   — Nginx Proxy Manager, created outside this stack. Only HTTP APIs reached from outside
+#             the host join it.
 #   internal (this stack) — service-to-service calls and outbound internet (Discord).
-# MongoDB and Redis run on the database VM (192.168.1.120), reached by LAN IP, not over `backend`.
+# MongoDB and Redis run on the database VM (192.168.1.120) and are reached by LAN IP.
 # The HTTP APIs publish the same host ports the old server did (8790 bank, 8788 staff points,
 # 3002 Minecraft, 8787 guard), so callers on the LAN keep working. Services inside this stack still
 # call each other by container name over `internal`.
@@ -42,7 +42,7 @@ x-robtic-system-gateway: &robtic-system-gateway
   restart: unless-stopped
   stop_grace_period: 30s
   logging: *logging
-  networks: [internal, backend]
+  networks: [internal]
   healthcheck:
     test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/gateway-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
     interval: 30s
@@ -65,7 +65,7 @@ x-robtic-system-worker: &robtic-system-worker
   logging: *logging
   environment:
     <<: *robtic-system-env
-  networks: [internal, backend]
+  networks: [internal]
   healthcheck:
     test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/worker-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
     interval: 30s
@@ -123,7 +123,7 @@ services:
     environment:
       <<: *robtic-system-env
       INVITES_API_PORT: "3005"
-    networks: [internal, backend]
+    networks: [internal]
     healthcheck:
       test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:3005/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -156,7 +156,7 @@ services:
       MINECRAFT_API_PUBLIC_URL: ${MINECRAFT_API_PUBLIC_URL:-https://minecraft.api.robtic.org}
     ports:
       - "3002:3002"
-    networks: [internal, backend, proxy]
+    networks: [internal, proxy]
     healthcheck:
       test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:3002/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -212,7 +212,7 @@ services:
       GIFT_LINK_SECRET: ${STAFF_GIFT_LINK_SECRET:-}
     ports:
       - "8788:8788"
-    networks: [internal, backend]
+    networks: [internal]
     healthcheck:
       test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:8788/internal/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -256,8 +256,6 @@ networks:
     driver: bridge
   default:
     name: robtic-bots-default
-  backend:
-    external: true
   proxy:
     external: true
 

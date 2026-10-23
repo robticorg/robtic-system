@@ -1,8 +1,10 @@
 # Deployment: Portainer stack `robtic-bots`
 
-Four repositories, one stack. Each repository's deploy workflow builds its image on a GitHub-hosted
-runner, pushes it to GHCR, and calls the stack's Portainer webhook; Portainer re-pulls and recreates
-only the containers whose image changed.
+Five repositories, one stack on the bots server (192.168.1.137). Each repository's deploy workflow
+builds its image on a GitHub-hosted runner, pushes it to GHCR, and calls the stack's Portainer webhook
+from the self-hosted `robtic-deploy` runner on that server (Portainer is LAN-only); Portainer re-pulls
+and recreates only the containers whose image changed. MongoDB 8 and Redis run on the database VM
+(192.168.1.120, `/opt/robtic-db`), not in this stack.
 
 | Repository | Workflow | Image | Containers |
 |---|---|---|---|
@@ -24,7 +26,6 @@ No container publishes a host port.
 
 | Network | Created by | Members | Purpose |
 |---|---|---|---|
-| `backend` | outside the stack (existing) | every service except `robtic-shop` | MongoDB, central Redis |
 | `proxy` | outside the stack (existing) | `robtic-minecraft-api` only | Nginx Proxy Manager upstreams |
 | `robtic-bots-internal` | this stack | every service except `robtic-shop` | calls between services, outbound internet |
 | `robtic-bots-default` | this stack | `robtic-shop` | outbound internet only (no MongoDB/Redis use) |
