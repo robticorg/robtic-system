@@ -75,7 +75,8 @@ jobs:
   redeploy:
     name: Redeploy robtic-bots
     needs: image
-    runs-on: ubuntu-latest
+    # The runner on the new server (192.168.1.137): Portainer's webhook is reachable on the LAN only.
+    runs-on: [self-hosted, robtic-deploy]
     steps:
       - name: Call the Portainer stack webhook
         env:
@@ -85,7 +86,8 @@ jobs:
             echo "::warning::ROBTIC_BOTS_PORTAINER_WEBHOOK_URL is not set — image pushed, nothing redeployed."
             exit 0
           fi
-          curl --fail-with-body -sS -X POST --max-time 300 "$WEBHOOK"
+          # Portainer serves a self-signed certificate on :9443.
+          curl --fail-with-body -sSk -X POST --max-time 300 "$WEBHOOK"
 
   notify:
     name: Deploy notification
