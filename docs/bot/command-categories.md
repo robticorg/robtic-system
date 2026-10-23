@@ -15,7 +15,6 @@ whether the command is confined to the configured commands channel.
 | `Activity` | ✅ Yes | `/check` |
 | `Utility` | ❌ Anywhere | `/line`, `/send` |
 | `Partnership` | ❌ No | `/partner` |
-| `Minecraft` | ❌ Anywhere | `/minecraft`, `!ip`, `!status`, `!version` |
 | `Configuration` | ❌ Anywhere | `/set-prefix`, `/setup-log` |
 | `Admin` | ❌ Anywhere | `/system`, `/whitelist` |
 | `Moderation` | ❌ Anywhere | punishment commands |
@@ -25,7 +24,7 @@ whether the command is confined to the configured commands channel.
 The commands channel exists to keep `!profile` and `!top` spam out of conversation channels. That
 reasoning does not extend to staff work.
 
-An admin fixing a broken role mapping, or a moderator checking `!status` during an incident,
+An admin fixing a broken role mapping, or a moderator checking `/check` during an incident,
 should not have to walk to a specific channel first. Forcing them to actually *spreads* the noise
 the restriction was meant to contain, because staff commands then run in the busiest channel on
 the server at the worst possible moment.
@@ -37,7 +36,7 @@ without adding protection.
 
 ```ts
 export default {
-    category: "Minecraft",   // exempt — usable anywhere
+    category: "Configuration",   // exempt — usable anywhere
     data: new SlashCommandBuilder()...,
     async run(interaction, client) { ... },
 };

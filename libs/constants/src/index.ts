@@ -10,7 +10,6 @@ export * from "./combo";
 export * from "./interaction";
 export * from "./log-registry";
 export * from "./messages";
-export * from "./minecraft";
 export * from "./moderation";
 export * from "./moderation-security";
 export * from "./security";

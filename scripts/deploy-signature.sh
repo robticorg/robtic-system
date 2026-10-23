@@ -5,7 +5,7 @@
 # content was built and deployed before, so the service is skipped.
 #
 #   scripts/deploy-signature.sh bot
-#   EXTRA_SIGNATURE_INPUT="$SOME_BUILD_ARG" scripts/deploy-signature.sh minecraft-api
+#   EXTRA_SIGNATURE_INPUT="$SOME_BUILD_ARG" scripts/deploy-signature.sh bot
 #
 # Content, not history: two different commits with identical file contents produce the same
 # signature, so a revert or a rebase re-uses what was already deployed instead of rebuilding it.
@@ -13,7 +13,7 @@ set -euo pipefail
 
 service="${1:-}"
 if [ -z "$service" ]; then
-    echo "usage: scripts/deploy-signature.sh <bot|minecraft-api>" >&2
+    echo "usage: scripts/deploy-signature.sh <bot>" >&2
     exit 2
 fi
 
@@ -34,8 +34,9 @@ common=(
     # The production topology. Not previously signed, which was a gap: editing a port mapping or a
     # healthcheck changed what runs on the server while every signature stayed the same, so the
     # deploy that would have applied it was skipped as "unchanged". The local stack is deliberately
-    # absent — it never runs on the server.
-    infra/docker/compose/docker-compose.yml
+    # absent — it never runs on the server. Since the move to Portainer this is the robtic-bots
+    # manifest, which the stack webhook re-reads on every redeploy.
+    infra/docker/compose/portainer-robtic-bots.yml
 )
 
 # One entry per service, matching what its Dockerfile actually copies into the image.
@@ -47,9 +48,6 @@ common=(
 case "$service" in
     bot)
         paths=("${common[@]}" infra/docker/dockerfiles/bot.Dockerfile apps/bot apps/worker internal-api libs images)
-        ;;
-    minecraft-api)
-        paths=("${common[@]}" infra/docker/dockerfiles/minecraft-api.Dockerfile apps/minecraft-api libs)
         ;;
     *)
         echo "unknown service: $service" >&2

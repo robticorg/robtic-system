@@ -10,7 +10,7 @@ export const list: FeatureSubcommandHandler = async (interaction, _client) => {
     const bots = await listMusicBots(interaction.guildId!);
 
     if (!bots.length) {
-        await interaction.editReply({ content: "No music bots yet. Add one with `/music create`." });
+        await interaction.editReply({ content: "No music bots yet. Add one with `/bot create`." });
         return;
     }
 

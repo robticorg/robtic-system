@@ -34,12 +34,6 @@
     "apps/bot": {
       "name": "@robtic/bot",
     },
-    "apps/minecraft-api": {
-      "name": "@robtic/minecraft-api",
-      "dependencies": {
-        "@robtic/sdk": "workspace:*",
-      },
-    },
     "apps/worker": {
       "name": "@robtic/worker",
     },
@@ -244,8 +238,6 @@
     "@robtic/invites-api": ["@robtic/invites-api@workspace:internal-api/invites"],
 
     "@robtic/logger": ["@robtic/logger@workspace:libs/logger"],
-
-    "@robtic/minecraft-api": ["@robtic/minecraft-api@workspace:apps/minecraft-api"],
 
     "@robtic/queue": ["@robtic/queue@workspace:libs/queue"],
 

@@ -6,7 +6,6 @@ export * from "./common";
 export * from "./community";
 export * from "./moderation";
 export * from "./points";
-export * from "./robs";
 export * from "./role-management";
 export * from "./security";
 export * from "./streak";

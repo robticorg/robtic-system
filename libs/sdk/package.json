@@ -9,7 +9,7 @@
     ".": "./src/index.ts",
     "./api": "./src/api.ts"
   },
-  "description": "Shared contract for the Robtic platform: Robtic API client, DTOs, validation, errors and constants, plus the Discord Embedded App SDK integration layer",
+  "description": "Shared contract for the Robtic platform: API errors and the response envelope, plus the Discord Embedded App SDK integration layer",
   "dependencies": {
     "@discord/embedded-app-sdk": "^2.1.0"
   }

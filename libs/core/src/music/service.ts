@@ -66,7 +66,7 @@ export async function createMusicBot(input: CreateMusicBotInput, deps: MusicServ
     if (!key) return { ok: false, problem: "Music bots aren't set up yet: `MUSIC_TOKEN_KEY` is missing from the bot's environment." };
 
     if (await MusicBotRepository.countByGuild(input.guildId) >= MUSIC_CONFIG.maxBotsPerGuild) {
-        return { ok: false, problem: `This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one with \`/bot remove\` first.` };
+        return { ok: false, problem: `This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one with \`/bot delete\` first.` };
     }
 
     const token = input.token.trim();

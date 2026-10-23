@@ -54,14 +54,6 @@ export class ApiError extends Error {
         return new ApiError(API_ERROR_CODES.conflict, message);
     }
 
-    static notLinked(): ApiError {
-        return new ApiError(API_ERROR_CODES.notLinked, "That Minecraft account is not linked to Discord");
-    }
-
-    static insufficientFunds(): ApiError {
-        return new ApiError(API_ERROR_CODES.insufficientFunds, "The balance is too low for that debit");
-    }
-
     static upstream(message: string): ApiError {
         return new ApiError(API_ERROR_CODES.upstreamUnavailable, message);
     }

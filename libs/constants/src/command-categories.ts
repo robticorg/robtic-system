@@ -22,7 +22,6 @@ export const COMMAND_CATEGORIES = [
     "Activity",
     "Projects",
     "Utility",
-    "Minecraft",
     "Configuration",
     "Admin",
     "Moderation",
@@ -35,7 +34,6 @@ export const COMMAND_CATEGORIES = [
  * confinement adds nothing except friction at the moment it is least wanted.
  */
 export const UNRESTRICTED_COMMAND_CATEGORIES: readonly string[] = [
-    "Minecraft",
     "Configuration",
     "Admin",
     "Moderation",

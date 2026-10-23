@@ -18,6 +18,9 @@ concurrency:
   group: deploy-compose
   cancel-in-progress: false
 
+env:
+  IMAGE: ghcr.io/robticorg/robtic-system
+
 jobs:
   changes:
     name: What changed
@@ -34,47 +37,80 @@ jobs:
           service: bot
           force: ${{ inputs.force || false }}
 
-  deploy:
+  # `:production` is what the robtic-bots stack runs; `:sha-<commit>` never moves, so a rollback is
+  # the Portainer variable ROBTIC_SYSTEM_IMAGE_TAG=sha-<commit>.
+  image:
+    name: Build & push image
     needs: changes
     if: ${{ needs.changes.outputs.deploy == 'true' }}
-    uses: robticorg/robtic-actions/.github/workflows/deploy.yml@main
-    with:
-      deploy-type: docker
-      runner-labels: '["self-hosted", "robtic-deploy"]'
-      environment-name: 'Robtic Server'
-      environment-url: 'https://robtic.org'
-      server-label: 'core.robtic.org'
-      dockerfile: 'infra/docker/dockerfiles/bot.Dockerfile'
-      image-name: 'ghcr.io/robticorg/robtic-system'
-      compose-project-name: 'robtic-system'
-      compose-env-file: '/home/robtic/robtic-system/.env'
-      compose-pull-command: 'docker compose -f infra/docker/compose/docker-compose.yml -p robtic-system --env-file /home/robtic/robtic-system/.env pull'
-      compose-up-command: 'docker compose -f infra/docker/compose/docker-compose.yml -p robtic-system --env-file /home/robtic/robtic-system/.env up -d --remove-orphans'
-    secrets:
-      DISCORD_WEBHOOK_DEPLOY: ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
-
-  # Runs on every push, including when the bot image was unchanged and the deploy was skipped. The
-  # bot also publishes on startup, but that only happens when its container is recreated and a
-  # failure there is only logged — this makes a failed registration a red job instead.
-  register:
-    name: Register slash commands
-    needs: [changes, deploy]
-    if: ${{ always() && needs.changes.result == 'success' && needs.deploy.result != 'failure' && needs.deploy.result != 'cancelled' }}
-    runs-on: [self-hosted, robtic-deploy]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Publish commands from the running container
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/dockerfiles/bot.Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:production
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=robtic-system
+          cache-to: type=gha,mode=max,scope=robtic-system
+
+  # Portainer re-pulls `:production` and recreates only the containers whose image changed. The
+  # Gateway that comes up leading publishes the slash commands as it starts (the job that used to
+  # `docker compose exec` register-commands.ts needed a runner on the server).
+  redeploy:
+    name: Redeploy robtic-bots
+    needs: image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the Portainer stack webhook
+        env:
+          WEBHOOK: ${{ secrets.ROBTIC_BOTS_PORTAINER_WEBHOOK_URL }}
         run: |
-          docker compose -f infra/docker/compose/docker-compose.yml -p robtic-system \
-            --env-file /home/robtic/robtic-system/.env \
-            exec -T robtic-system \
-            bun --preload ./libs/shared/src/preload.ts apps/bot/src/register-commands.ts
+          if [ -z "$WEBHOOK" ]; then
+            echo "::warning::ROBTIC_BOTS_PORTAINER_WEBHOOK_URL is not set — image pushed, nothing redeployed."
+            exit 0
+          fi
+          curl --fail-with-body -sS -X POST --max-time 300 "$WEBHOOK"
+
+  notify:
+    name: Deploy notification
+    needs: [image, redeploy]
+    if: ${{ always() && needs.image.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_DEPLOY }}
+          RESULT: ${{ needs.redeploy.result == 'success' && 'success' || 'failure' }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          [ -n "$WEBHOOK" ] || { echo "DISCORD_WEBHOOK_DEPLOY is not set — skipping."; exit 0; }
+          PAYLOAD=$(jq -n --arg repo "$REPO" --arg sha "${SHA:0:7}" --arg result "$RESULT" --arg url "$RUN_URL" \
+            '{username: "Robtic Deploy", embeds: [{title: "\($repo) → robtic-bots: \($result)", url: $url,
+              description: "Image `sha-\($sha)` · stack webhook called", color: (if $result == "success" then 3066993 else 15158332 end)}]}')
+          curl --fail-with-body -sS -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK"
 
   seal:
     name: Record what was deployed
-    needs: [changes, deploy]
-    if: ${{ needs.deploy.result == 'success' }}
+    needs: [changes, redeploy]
+    if: ${{ needs.redeploy.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Write marker

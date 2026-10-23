@@ -62,7 +62,6 @@ export const HELP_CATEGORY_EMOJI: Record<string, string> = {
     Moderation: "🛡️",
     Partnership: "🤝",
     Projects: "🚀",
-    Minecraft: "⛏️",
     Configuration: "⚙️",
     Admin: "🔑",
     Utility: "🧰",

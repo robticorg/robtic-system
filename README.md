@@ -6,16 +6,13 @@ One bot runs every system, with each system kept as a separate module in the cod
 ## Overview
 
 The system manages community operations, staff workflows, moderation, and service access in a
-structured and automated way. It is no longer only a bot: an HTTP API and a
-Minecraft plugin are all clients of the same MongoDB-backed domain.
+structured and automated way.
 
 ## Services
 
 | Service | What it is | Runs as |
 |---|---|---|
 | **Bot** | The Discord client. One login, one command tree, every module. | `robtic-system` |
-| **Minecraft API** | Owns MongoDB. The bot and every Minecraft server are its clients. | `robtic-minecraft-api` |
-| **Minecraft Plugin** | Paper plugin (Java/Maven). Makes a Minecraft server another client of the same economy. | — |
 
 ## Core Components
 
@@ -24,7 +21,7 @@ Minecraft plugin are all clients of the same MongoDB-backed domain.
 * **HR** – staff management, recruitment, and promotions
 * **ModMail** – private communication between users and staff
 * **Community** – XP, activity tracking, and progression roles
-* **Economy** – activity Points and RC on Discord; robs in Minecraft
+* **Economy** – activity Points and RC
 * **Dev** – project sharing and review
 
 ## Key Features
@@ -36,14 +33,12 @@ Minecraft plugin are all clients of the same MongoDB-backed domain.
 * Activity and role progression system
 * Advertisement ordering and management
 * Structured moderation logging
-* Minecraft integration — account linking, the robs wallet, in-game ore exchange, chat bridge, server status, and Discord role → LuckPerms sync
 
 ## Technology
 
 * Bun (workspaces monorepo), TypeScript
 * Discord.js v14
 * MongoDB via Mongoose
-* Java 21 + Maven + Paper (Minecraft plugin)
 * Docker Compose, GitHub Actions
 
 ## Repository Layout
@@ -51,8 +46,7 @@ Minecraft plugin are all clients of the same MongoDB-backed domain.
 ```
 apps/
     bot/                Discord client — every module
-    minecraft-api/         Minecraft API; owns MongoDB
-    minecraft-plugin/   Paper plugin (Java/Maven)
+    worker/             Queue consumers
 
 libs/                   Shared libraries: core, database, config, constants,
                         logger, sdk, types, utils, cache, events, shared
@@ -101,6 +95,11 @@ actually changed. Configuration is not deployed — `.env` is maintained on the 
 
 * [docs/deployment.md](docs/deployment.md) — the pipeline, per-service
 * [infra/docker/README.md](infra/docker/README.md) — Dockerfiles, build contexts, Compose
+
+## Minecraft
+
+Everything Minecraft — the Minecraft API, the Paper plugins and their CI — lives in its own project,
+`robtic-minecraft`, next to this one. This repository no longer builds, deploys or depends on it.
 
 ## Purpose
 

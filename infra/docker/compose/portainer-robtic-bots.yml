@@ -1,0 +1,270 @@
+# Production stack `robtic-bots` — deployed by Portainer from this file, redeployed by its stack
+# webhook after every image push. Images only: nothing is built here. Each repository's
+# .github/workflows/deploy*.yml pushes `:production` and an immutable `:sha-<commit>` tag.
+#
+# Every value comes from the Portainer stack's environment variables — the names are listed in
+# infra/docker/portainer-robtic-bots.env.example, the procedure in docs/deployment-portainer.md.
+# `${VAR:?…}` is required: the deploy fails instead of starting a bot with a missing setting.
+#
+# Networks (both created outside this stack):
+#   backend — MongoDB and the central Redis. Never published to the host.
+#   proxy   — Nginx Proxy Manager. Only HTTP APIs reached from outside the host join it.
+#   internal (this stack) — service-to-service calls and outbound internet (Discord).
+# MongoDB and Redis run on the database VM (192.168.1.120), reached by LAN IP, not over `backend`.
+# The HTTP APIs publish the same host ports the old server did (8790 bank, 8788 staff points,
+# 3002 Minecraft, 8787 guard), so callers on the LAN keep working. Services inside this stack still
+# call each other by container name over `internal`.
+
+name: robtic-bots
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# What every robtic-system container shares. The image runs several roles: the Gateway (default
+# CMD), the queue workers and the Invites API — the same code with a different start command.
+x-robtic-system-env: &robtic-system-env
+  NODE_ENV: production
+  MONGODB_URI: ${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}
+  # Required, never empty: an unset REDIS_URL makes each Gateway skip the leadership lock, and the
+  # primary and the standby would then both log in to Discord.
+  REDIS_URL: ${ROBTIC_REDIS_URL:?ROBTIC_REDIS_URL is required}
+  INTERNAL_API_TOKEN: ${ROBTIC_INTERNAL_API_TOKEN:?ROBTIC_INTERNAL_API_TOKEN is required}
+  BOT_OWNER_ID: ${ROBTIC_BOT_OWNER_ID:-}
+  # Staff points API (robtic-staff), by container name over `internal`.
+  STAFF_POINTS_API_URL: http://robtic-staff:8788
+  STAFF_POINTS_API_TOKEN: ${STAFF_INTERNAL_API_TOKEN:-}
+
+x-robtic-system-gateway: &robtic-system-gateway
+  image: ghcr.io/robticorg/robtic-system:${ROBTIC_SYSTEM_IMAGE_TAG:-production}
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging: *logging
+  networks: [internal, backend]
+  healthcheck:
+    test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/gateway-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 60s
+
+x-robtic-system-gateway-env: &robtic-system-gateway-env
+  <<: *robtic-system-env
+  MainBotToken: ${ROBTIC_SYSTEM_DISCORD_TOKEN:?ROBTIC_SYSTEM_DISCORD_TOKEN is required}
+  BANK_TOKEN: ${ROBTIC_BANK_TOKEN:-}
+  MUSIC_TOKEN_KEY: ${ROBTIC_MUSIC_TOKEN_KEY:-}
+  INVITES_API_URL: http://robtic-invites-api:3005
+
+x-robtic-system-worker: &robtic-system-worker
+  image: ghcr.io/robticorg/robtic-system:${ROBTIC_SYSTEM_IMAGE_TAG:-production}
+  command: ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/worker/src/index.ts"]
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging: *logging
+  environment:
+    <<: *robtic-system-env
+  networks: [internal, backend]
+  healthcheck:
+    test: ["CMD", "bun", "-e", "const t=Number(await Bun.file('/tmp/worker-health').text().catch(()=>0));process.exit(Date.now()-t<60000?0:1)"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+
+services:
+  # The Gateway (apps/bot) — the primary. Only one Gateway is logged in to Discord at a time (the
+  # Redis lock in apps/bot/src/services/gateway-leadership); robtic-system-standby takes over
+  # within ~15s if this one dies, hangs or loses Discord. Also serves the bank API on :8790 —
+  # unauthenticated, so it stays on `internal` (robtic-staff is its only caller) and never `proxy`.
+  # Slash commands are published by whichever Gateway leads, every time it starts.
+  robtic-system:
+    <<: *robtic-system-gateway
+    container_name: robtic-system
+    environment:
+      <<: *robtic-system-gateway-env
+      GATEWAY_ROLE: primary
+    # Bank API. Unauthenticated: LAN only, never on `proxy`. The standby publishes nothing.
+    ports:
+      - "8790:8790"
+    # Started, not healthy: the Gateway must never be held back by an internal service.
+    depends_on:
+      robtic-invites-api:
+        condition: service_started
+
+  # Standby Gateway: same image, waits (not logged in) while the primary leads. It never logs in
+  # without the Redis lock, even if Redis is down.
+  robtic-system-standby:
+    <<: *robtic-system-gateway
+    container_name: robtic-system-standby
+    environment:
+      <<: *robtic-system-gateway-env
+      GATEWAY_ROLE: standby
+
+  # Queue workers (apps/worker): consume BullMQ queues, write MongoDB, award staff points. Two
+  # separate services rather than replicas, so each has a fixed name; a dead worker's jobs are
+  # picked up by the other once their locks expire (30s).
+  robtic-system-worker-1:
+    <<: *robtic-system-worker
+    container_name: robtic-system-worker-1
+
+  robtic-system-worker-2:
+    <<: *robtic-system-worker
+    container_name: robtic-system-worker-2
+
+  # Invites internal API (internal-api/invites) for the Gateway. `internal` only.
+  robtic-invites-api:
+    image: ghcr.io/robticorg/robtic-system:${ROBTIC_SYSTEM_IMAGE_TAG:-production}
+    container_name: robtic-invites-api
+    command: ["bun", "--preload", "./libs/shared/src/preload.ts", "internal-api/invites/src/index.ts"]
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      <<: *robtic-system-env
+      INVITES_API_PORT: "3005"
+    networks: [internal, backend]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:3005/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Minecraft API (robtic-minecraft: apps/minecraft-api), public as minecraft.api.robtic.org.
+  # Game servers on other hosts call it, so it joins `proxy`; Nginx Proxy Manager forwards to
+  # http://robtic-minecraft-api:3002. Also runs the Minecraft Discord bot (token stored encrypted
+  # in MongoDB, enabled with /bot create), so it counts as a bot during cutover.
+  robtic-minecraft-api:
+    image: ghcr.io/robticorg/robtic-minecraft-api:${MINECRAFT_API_IMAGE_TAG:-production}
+    container_name: robtic-minecraft-api
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: ${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}
+      # Discord REST only (role sync, logs) — the main Robtic bot's token; it never logs in with it.
+      MainBotToken: ${ROBTIC_SYSTEM_DISCORD_TOKEN:?ROBTIC_SYSTEM_DISCORD_TOKEN is required}
+      BOT_OWNER_ID: ${ROBTIC_BOT_OWNER_ID:-}
+      MINECRAFT_BOT_SECRET: ${MINECRAFT_BOT_SECRET:-}
+      BOT_TOKEN_KEY: ${MINECRAFT_BOT_TOKEN_KEY:-}
+      ROBTIC_WEBSITE_URL: ${MINECRAFT_WEBSITE_URL:-}
+      ROBTIC_DISCORD_INVITE: ${MINECRAFT_DISCORD_INVITE:-}
+      MINECRAFT_API_HOST: 0.0.0.0
+      MINECRAFT_API_PORT: "3002"
+      MINECRAFT_API_PUBLIC_URL: ${MINECRAFT_API_PUBLIC_URL:-https://minecraft.api.robtic.org}
+    ports:
+      - "3002:3002"
+    networks: [internal, backend, proxy]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:3002/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Shop bot (robtic-shop). All state is JSON files under /app/database — no MongoDB or Redis, so
+  # it is on neither `backend` nor `internal`, only the stack's default network for Discord.
+  robtic-shop:
+    image: ghcr.io/robticorg/robtic-shop:${SHOP_IMAGE_TAG:-production}
+    container_name: robtic-shop
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      DISCORD_TOKEN: ${SHOP_DISCORD_TOKEN:?SHOP_DISCORD_TOKEN is required}
+    volumes:
+      - robtic-shop-database:/app/database
+    networks: [default]
+
+  # Staff bot (robtic-staff). Its points API (:8788) is called only by robtic-system and the
+  # workers, so it stays on `internal`. Gift credits go to robtic-system's bank API.
+  robtic-staff:
+    image: ghcr.io/robticorg/robtic-staff:${STAFF_IMAGE_TAG:-production}
+    container_name: robtic-staff
+    restart: unless-stopped
+    # Shutdown destroys the gateway client and closes Mongo — more than the 10s default.
+    stop_grace_period: 30s
+    logging: *logging
+    # The app reads several of these with `??`, where an empty string is a value, not a default:
+    # an empty STAFF_TIMEZONE fails startup and an empty AUTOCLAIM_API_URL disables gift credits.
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: ${STAFF_MONGODB_URI:-${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}}
+      MONGODB_DB: ${STAFF_MONGODB_DB:-robtic_staff}
+      STAFF_TIMEZONE: ${STAFF_TIMEZONE:-UTC}
+      LOG_LEVEL: ${STAFF_LOG_LEVEL:-info}
+      DISCORD_TOKEN: ${STAFF_DISCORD_TOKEN:?STAFF_DISCORD_TOKEN is required}
+      DISCORD_APP_ID: ${STAFF_DISCORD_APP_ID:?STAFF_DISCORD_APP_ID is required}
+      DISCORD_GUILD_ID: ${STAFF_DISCORD_GUILD_ID:-}
+      DISCORD_DEV_GUILD_ID: ${STAFF_DISCORD_DEV_GUILD_ID:-}
+      PREFIX: ${STAFF_PREFIX:-!}
+      FAST_ACCESS_PREFIX: ${STAFF_FAST_ACCESS_PREFIX:-$$}
+      MODMAIL_CASE_PREFIX: ${STAFF_MODMAIL_CASE_PREFIX:-RPT-}
+      BOT_OWNER_ID: ${ROBTIC_BOT_OWNER_ID:-}
+      INTERNAL_API_HOST: 0.0.0.0
+      INTERNAL_API_PORT: "8788"
+      INTERNAL_API_TOKEN: ${STAFF_INTERNAL_API_TOKEN:-}
+      AUTOCLAIM_API_URL: ${STAFF_AUTOCLAIM_API_URL:-http://robtic-system:8790}
+      AUTOCLAIM_API_TOKEN: ${STAFF_AUTOCLAIM_API_TOKEN:-}
+      GIFT_LINK_SECRET: ${STAFF_GIFT_LINK_SECRET:-}
+    ports:
+      - "8788:8788"
+    networks: [internal, backend]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:8788/internal/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Scam guard bot (robticorg/robtic-guard-). MongoDB only (database `scamguard`). The app reads its
+  # tuning with `??`, so an empty value would become 0: every default here is the production value.
+  robtic-guard:
+    image: ghcr.io/robticorg/robtic-guard:${GUARD_IMAGE_TAG:-production}
+    container_name: robtic-guard
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      TOKEN: ${GUARD_DISCORD_TOKEN:?GUARD_DISCORD_TOKEN is required}
+      MONGODB_URI: ${GUARD_MONGODB_URI:?GUARD_MONGODB_URI is required}
+      RoBo: ${ROBTIC_BOT_OWNER_ID:-}
+      RISK_DELETE_THRESHOLD: ${GUARD_RISK_DELETE_THRESHOLD:-85}
+      RISK_WARN_THRESHOLD: ${GUARD_RISK_WARN_THRESHOLD:-60}
+      RISK_LOG_THRESHOLD: ${GUARD_RISK_LOG_THRESHOLD:-30}
+      MAX_IMAGE_BYTES: ${GUARD_MAX_IMAGE_BYTES:-8388608}
+      IMAGE_FETCH_TIMEOUT_MS: ${GUARD_IMAGE_FETCH_TIMEOUT_MS:-8000}
+      OCR_TIMEOUT_MS: ${GUARD_OCR_TIMEOUT_MS:-10000}
+      OCR_LANG: ${GUARD_OCR_LANG:-eng}
+      HASH_CACHE_TTL_MS: ${GUARD_HASH_CACHE_TTL_MS:-300000}
+      FUZZY_HASH_MAX_DISTANCE: ${GUARD_FUZZY_HASH_MAX_DISTANCE:-8}
+      DETECTION_MAX_CONCURRENCY: ${GUARD_DETECTION_MAX_CONCURRENCY:-4}
+      # 0 disables the public HTTP API; the bot still runs.
+      API_ENABLED: ${GUARD_API_ENABLED:-0}
+      API_PORT: "8787"
+    ports:
+      - "8787:8787"
+    networks: [internal]
+
+networks:
+  internal:
+    name: robtic-bots-internal
+    driver: bridge
+  default:
+    name: robtic-bots-default
+  backend:
+    external: true
+  proxy:
+    external: true
+
+volumes:
+  # External on purpose: it must be created and filled from the old robtic-shop volume before the
+  # first deploy (docs/deployment-portainer.md). Left to Compose, a missing volume would be created
+  # empty and seeded from the JSON baked into the image, silently replacing the live data.
+  robtic-shop-database:
+    external: true
+    name: robtic-bots-shop-database

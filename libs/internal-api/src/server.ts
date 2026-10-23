@@ -4,7 +4,7 @@ import { Logger } from "@logger";
 import { isShuttingDown, onShutdown } from "./shutdown";
 
 /**
- * The shared server for every `internal-api/*` service — the same shape as apps/minecraft-api
+ * The shared server for every `internal-api/*` service — the same shape as the Robtic Minecraft API
  * (plain Bun.serve, a route table, the `@sdk` envelope and `ApiError`), plus what internal
  * services need: a shared internal token, request ids, and graceful shutdown.
  *

@@ -1,6 +1,6 @@
 # Architecture
 
-Robtic System is a Bun-workspaces monorepo that today runs a Discord bot and a Minecraft API, and is structured to grow into the backend foundation of the Robtic Platform (bot, REST API, and future desktop/mobile/CLI clients).
+Robtic System is a Bun-workspaces monorepo that today runs a Discord bot, and is structured to grow into the backend foundation of the Robtic Platform (bot, REST API, and future desktop/mobile/CLI clients).
 
 ## Layout
 
@@ -16,9 +16,7 @@ images/     Static image assets served/attached by the bot
 
 | App | Status | Purpose |
 |---|---|---|
-| `apps/bot` | **Live** | The Discord bot — one client running every system (admin, moderation, community, dev, minecraft) |
-| `apps/minecraft-api` | **Live** | Bun HTTP API for machines — the bot and the Minecraft plugin, authenticated with scoped API keys |
-| `apps/minecraft-plugin` | **Live** | Paper plugin (Java/Maven) — a Minecraft client for the same MongoDB, see [bot/minecraft.md](bot/minecraft.md) |
+| `apps/bot` | **Live** | The Discord bot — one client running every system (admin, moderation, community, dev) |
 
 ## Libraries
 
@@ -133,9 +131,8 @@ apps/*  →  libs/core  →  libs/database
 
 Libraries never import from applications. `libs/database` never imports business logic.
 
-`apps/minecraft-plugin` sits outside the TypeScript graph entirely: it is a separate Maven build
-that shares only the MongoDB schema, and it talks to the bot through a queue collection rather than
-through code. Its collection names mirror the Mongoose model names in `libs/database`.
+The Minecraft API and plugins are not part of this repository — they live in the separate
+`robtic-minecraft` project.
 
 ## Permissions
 

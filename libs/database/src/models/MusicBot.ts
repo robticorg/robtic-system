@@ -1,7 +1,7 @@
 import { Schema, model, type Document } from "mongoose";
 
 /**
- * A music bot created with `/music create`: a separate bot account the main bot logs in and runs.
+ * A music bot created with `/bot create`: a separate bot account the main bot logs in and runs.
  *
  * It belongs to exactly one guild (`guildId`, where it was created) and plays in exactly one voice
  * channel. The token is never stored in plain text — `encryptedToken` is AES-256-GCM

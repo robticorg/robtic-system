@@ -11,7 +11,7 @@ from a real `loadModules` run, not written by hand.
 | [Permissions](#permissions) | scope, access, staff tiers, and the order they are checked in |
 | [Command surfaces](#command-surfaces) | slash, prefix, context menus, shortcuts |
 | [Features](#the-features) | the 11 feature folders |
-| [Command systems](#command-systems) | moderation, minecraft, configuration, leveling, operator |
+| [Command systems](#command-systems) | moderation, configuration, leveling, operator |
 | [Cross-cutting systems](#cross-cutting-systems) | XP, activity/AFK, statistics, leaderboards, profile, logging |
 | [Data](#data) | collections, grouped by system |
 | [Reference](#reference) | defaults, limits, categories |
@@ -37,7 +37,8 @@ on or off. Everything else is an ordinary command and is always available.
 | [partner](docs/bot/partner.md) | default-on | Partner servers, each announced with a banner; `/partner edit` and `/partner update` redraw posts |
 | boost | default-on | Thanks each booster in the `/boost channel` (Arabic + English) |
 | tag | default-on | Server-tag role: a member wearing the server tag of any whitelisted server gets the `/tag setup` role of every whitelisted server they are in; `log:` (optional) logs each change |
-| music | default-on | Runs separate music bots: `/music create\|list`, `/bot remove` — each locked to one server and voice channel |
+| music | default-on | Runs separate music bots, each locked to one server and voice channel; `/music list` shows them |
+| bots | default-on | `/bot create` (a form: Music or Minecraft, token, and for music a name and voice channel) and `/bot delete` (a form listing existing bots). Minecraft goes to the Minecraft API, owner/super users only |
 | referral | default-on | Referral codes: `/referral use\|info`, `/referral-config` — the code's bonus (≤ +15%) applies to rewards ([rewards.md](docs/bot/rewards.md)) |
 | [logging](#logging) | default-on | Log-channel routing |
 | [panels](#panels) | default-on | Reusable message panels |
@@ -499,30 +500,6 @@ the escalation rules.
 (`rule-add · rule-remove · rule-list`), a whitelist (`whitelist-add · remove · list`) and a
 role-strip list (`rolestrip-add · remove · list`).
 
-### Minecraft
-
-| Command | |
-|---|---|
-| `/minecraft link · unlink` | Account linking via an in-game code |
-| `/minecraft profile` | Link, robs balance and recent sales |
-| `/minecraft status` · `/status` | Live server status, TPS, memory, uptime |
-| `/minecraft history` | Ore-exchange transactions, paid in robs |
-| `/minecraft apikey create · list · revoke` | Server API keys |
-| `/ip` | Server address and status |
-| `/version` | Supported versions (**global** scope) |
-
-Backed by `apps/minecraft-api` — a separate API-key-authenticated service for the game server, distinct
-from the Activity's API. See [docs/bot/minecraft.md](docs/bot/minecraft.md).
-
-**In-game currency — robs.** Players earn and spend robs with `/bal` (aliases `/balance`, `/robs`),
-keyed by Minecraft UUID, so linking Discord is not required to have a wallet. Robs are the only
-wallet the game uses.
-
-**Staff comes from LuckPerms.** A rank *is* a LuckPerms group: holding the group is holding the
-rank, resolved on the game server with no API call. `roles.yml` maps each group to a display name,
-an ordering and — optionally — a Discord role to mirror it onto. The mirror runs one way only,
-Minecraft → Discord, so granting a Discord role never makes anyone staff.
-
 ### Leveling and activity
 
 | Command | |
@@ -637,12 +614,11 @@ The bot leaves any server not on the `AllowedGuild` list.
 | Combo | `Combo` `ComboHistory` `ComboSettings` `ComboUserStats` `ComboLeaderboardEntry` `ComboServerRecords` |
 | Moderation | `Punishment` `PunishConfig` `Reason` `AuditLog` `Note` |
 | Support | `SupportSession` |
-| Staff | `StaffTier` `StaffStats` `StaffLog` `StaffSession` `StaffBackup` |
+| Staff | `StaffTier` |
 | Features and config | `GuildFeature` `FeatureCatalog` `ServerConfig` `GlobalConfig` `BotConfig` `CommandAccess` `LogConfig` |
 | Shortcuts | `Shortcut` |
-| Minecraft | `MinecraftLink` `MinecraftLinkCode` `MinecraftServer` `MinecraftApiKey` `MinecraftTransaction` `MinecraftItemPrice` `MinecraftConfig` `MinecraftBridgeEvent` `MinecraftJail` `MinecraftWarning` `MinecraftNote` `MinecraftReport` `MinecraftFreeze` `MinecraftRoleState` |
 | Partner | `PartnerServer` |
-| Platform | `User` `SuperUser` `AllowedGuild` `Membership` `ServiceTier` `ApiRequestLog` |
+| Platform | `User` `SuperUser` `AllowedGuild` `Membership` `ServiceTier` |
 
 Repositories that sit on a hot path are cached with a 60-second TTL and invalidated on write:
 `StaffTier` · `PunishConfig` · `ServerConfig` · `GuildFeature` · `PointSettings` · `VoiceSettings` ·
@@ -696,7 +672,6 @@ Player-facing categories are confined to the commands channel when one is set.
 | `Leveling` | ✅ | `/level`, `/leaderboard` |
 | `Utility` | ❌ | `/send`, `/note`, `/mod` |
 | `Partnership` | ❌ | `/partner` |
-| `Minecraft` | ❌ | `/minecraft`, `!ip`, `!status`, `!version` |
 | `Moderation` | ❌ | `/ban`, `/jail` |
 | `Configuration` | ❌ | `/set-prefix`, `/setup-log` |
 | `Admin` | ❌ | `/system`, `/whitelist` |
@@ -712,5 +687,3 @@ Player-facing categories are confined to the commands channel when one is set.
 | [docs/bot/streak.md](docs/bot/streak.md) | Streaks |
 | [docs/bot/combo.md](docs/bot/combo.md) | Combo scoring |
 | [docs/bot/shortcuts.md](docs/bot/shortcuts.md) | Shortcut triggers and cleanup modes |
-| [docs/bot/minecraft.md](docs/bot/minecraft.md) | Minecraft architecture |
-| [docs/bot/minecraft-setup.md](docs/bot/minecraft-setup.md) | Minecraft operator guide |

@@ -1,7 +1,7 @@
 import type { PermissionsString } from "discord.js";
 
 /**
- * Music bots (`/music create`): separate bot accounts the main bot runs, each locked to one server
+ * Music bots (`/bot create`): separate bot accounts the main bot runs, each locked to one server
  * and one voice channel. Ported from the standalone RobTic Music bot.
  */
 export const MUSIC_CONFIG = {

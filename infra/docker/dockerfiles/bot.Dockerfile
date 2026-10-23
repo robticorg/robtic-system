@@ -4,7 +4,6 @@ WORKDIR /app
 
 COPY package.json bun.lock ./
 COPY apps/bot/package.json ./apps/bot/
-COPY apps/minecraft-api/package.json ./apps/minecraft-api/
 COPY libs/core/package.json ./libs/core/
 COPY libs/database/package.json ./libs/database/
 COPY libs/types/package.json ./libs/types/

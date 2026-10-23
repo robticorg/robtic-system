@@ -1,8 +1,8 @@
 /**
  * Stable machine-readable error codes shared by every Robtic API consumer.
  *
- * The string values are part of the wire contract: the Minecraft plugin branches on them to decide
- * whether a failed request is worth queueing for a retry, so renaming one is a breaking change.
+ * The string values are part of the wire contract: clients branch on them to decide whether a
+ * failed request is worth retrying, so renaming one is a breaking change.
  */
 export const API_ERROR_CODES = {
     /** The Authorization header was missing, malformed, or named an unknown key. */
@@ -17,10 +17,6 @@ export const API_ERROR_CODES = {
     rateLimited: "RATE_LIMITED",
     /** A precondition failed, e.g. linking an account that is already linked. */
     conflict: "CONFLICT",
-    /** The player is not linked to a Discord account. */
-    notLinked: "NOT_LINKED",
-    /** The balance cannot cover the requested debit. */
-    insufficientFunds: "INSUFFICIENT_FUNDS",
     /** Mongo, Discord, or another dependency failed. Safe to retry. */
     upstreamUnavailable: "UPSTREAM_UNAVAILABLE",
     /** Anything uncaught. Safe to retry. */
@@ -30,8 +26,8 @@ export const API_ERROR_CODES = {
 export type ApiErrorCode = typeof API_ERROR_CODES[keyof typeof API_ERROR_CODES];
 
 /**
- * Codes whose cause is transient. The plugin's offline queue only retains a request that failed
- * with one of these — a validation error would fail identically forever and must not be requeued.
+ * Codes whose cause is transient. Only a request that failed with one of these is worth retrying —
+ * a validation error would fail identically forever.
  */
 export const RETRYABLE_ERROR_CODES: readonly ApiErrorCode[] = [
     API_ERROR_CODES.rateLimited,
@@ -51,8 +47,6 @@ export const API_ERROR_STATUS: Record<ApiErrorCode, number> = {
     [API_ERROR_CODES.validationFailed]: 422,
     [API_ERROR_CODES.rateLimited]: 429,
     [API_ERROR_CODES.conflict]: 409,
-    [API_ERROR_CODES.notLinked]: 404,
-    [API_ERROR_CODES.insufficientFunds]: 409,
     [API_ERROR_CODES.upstreamUnavailable]: 503,
     [API_ERROR_CODES.internal]: 500,
 };

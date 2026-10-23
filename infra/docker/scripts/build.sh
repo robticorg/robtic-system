@@ -10,7 +10,7 @@ shift || true
 
 usage() {
     echo "usage: bun run docker:build <service> [docker build flags...]" >&2
-    echo "  services: bot, minecraft-api, minecraft-plugin" >&2
+    echo "  services: bot" >&2
 }
 
 if [ -z "$service" ]; then
@@ -20,9 +20,6 @@ fi
 
 case "$service" in
     bot)           context="$ROOT"; image=robtic-system ;;
-    minecraft-api) context="$ROOT"; image=robtic-minecraft-api ;;
-    # Its own context: the root .dockerignore excludes this directory.
-    minecraft-plugin) context="$ROOT/apps/minecraft-plugin"; image=robtic-minecraft ;;
     *)
         echo "error: unknown service: $service" >&2
         usage

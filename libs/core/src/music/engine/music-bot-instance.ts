@@ -130,7 +130,7 @@ export class MusicBotInstance {
         await this.client.destroy();
     }
 
-    /** Removes the bot from its server (used by `/bot remove`). */
+    /** Removes the bot from its server (used by `/bot delete`). */
     async leaveGuild(): Promise<void> {
         await this.client.guilds.cache.get(this.settings.guildId)?.leave().catch(() => null);
     }

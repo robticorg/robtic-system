@@ -35,15 +35,6 @@ apps/
                 functions/           Domain orchestration and event bodies
                 utils/               Embeds and feature-local helpers
                 lib/                 Re-export barrel over the matching libs/core domain
-    minecraft-api/                  Minecraft API — owns MongoDB; bot and Minecraft servers are clients
-    minecraft-plugin/            Paper plugin (Java/Maven) — Minecraft client for the shared MongoDB
-        src/main/java/org/robtic/minecraft/
-            config/              Immutable config.yml snapshot
-            persistence/         MongoProvider, collection names, repositories
-            service/             Linking, prices, exchange, chat bridge, status, LuckPerms sync
-            gui/                 Exchange menus and their controller
-            listener/            Connection, chat, menu clicks, NPC interaction
-            command/             /link, /robs (aka /bal), /exchange, /robtic
 
 libs/
     core/
@@ -56,7 +47,7 @@ libs/
             features/            Feature manifest registry and the enable/disable gate
             metrics/             The metric bus activity systems publish to
             <domain>/            One folder per domain, discord.js-free: activity, combo,
-                                 leaderboard, minecraft, points, profile, rewards, streak, xp, ...
+                                 leaderboard, points, profile, rewards, streak, xp, ...
             config/              BOT_DEFINITION, BRANCH_CONFIG, constants (extraction pending)
             handlers/            Error handling
             libs/                Logger, health, permissions (extraction pending)
@@ -67,8 +58,8 @@ libs/
             models/              Mongoose schemas
             repositories/        Static-class repositories, one per aggregate
     types/                       Shared ambient types (bot.d.ts)
-    sdk/                         Robtic API client + DTOs, plus the Discord Embedded App layer
-        src/{api-client,dto,validation,errors,authentication,client,types}/
+    sdk/                         API errors + response envelope, plus the Discord Embedded App layer
+        src/{dto,errors,authentication,client,types}/
     config/                      Scaffold — future home of configuration
     constants/                   Scaffold — future home of all static values
     utils/                       Scaffold — future home of pure utilities
@@ -87,7 +78,7 @@ infra/                           All infrastructure definitions. Terraform and K
                                  get siblings of docker/.
     docker/
         dockerfiles/             One per service, named for it. Build context is the
-                                 repository root for all but minecraft-plugin.
+                                 repository root.
         compose/                 docker-compose.yml (production) and .local.yml (developer)
         scripts/build.sh         Builds any one image, from anywhere in the repo
         configs/                 Reserved — see .gitkeep

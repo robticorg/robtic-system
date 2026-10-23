@@ -7,8 +7,6 @@ Two currencies, with different jobs and different sources.
 | **Points** | The activity currency | **Per guild** | Earned from chat, combo, voice and streaks |
 | **RC** | The premium currency | **Per guild** | **Only** by converting Points |
 
-The Minecraft wallet is **robs** — a separate balance, see [minecraft.md](./minecraft.md).
-
 ## Earning Points
 
 Nothing pays out per event. Each source accumulates *progress* on the wallet and converts whole

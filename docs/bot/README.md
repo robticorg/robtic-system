@@ -22,9 +22,7 @@ become a feature.
 | partner | `features/partner/` | Partner servers and their banner posts — on by default |
 | moderation | `commands/guild/admin/moderation/` | Punishments, audit logging, security rules |
 | configuration | `commands/guild/admin/` | Prefix, roles, channels, panels, XP, shortcuts |
-| minecraft | `commands/guild/games/` | Linking, shared economy, chat bridge, LuckPerms sync |
 | member-facing | `commands/guild/general/` | Profile, level, help, notes |
-| cross-server | `commands/global/` | Version |
 | bot operator | `commands/admin/` | Server allowlist, super users, reload |
 
 Command names are unique across the whole tree — two systems cannot both register `/mod`, and the
@@ -35,10 +33,7 @@ loader reports a collision rather than letting one silently overwrite the other.
 - [combo.md](./combo.md) — two-user conversation scoring
 - [economy.md](./economy.md) — points, RC, and every way activity pays out
 - [command-categories.md](./command-categories.md) — command categories and which are confined to the commands channel
-- [minecraft.md](./minecraft.md) — Minecraft architecture: linking, shared economy, chat bridge, LuckPerms sync
-- [minecraft-setup.md](./minecraft-setup.md) — Operator guide: API keys, chat wiring, logging channels, full command reference
 - [modal.md](./modal.md) — modal patterns
-- [placeholders.md](./placeholders.md) — every `%robtic_…%` PlaceholderAPI variable the Minecraft plugin exposes
 - [partner.md](./partner.md) — partner servers, the banner and `/partner`
 - [invites.md](./invites.md) — invite tracking, join announcements, `/invites` and `/info`
 - [rewards.md](./rewards.md) — the Activity & Reward System core: Credits, the reward formula, and every bonus source
