@@ -41,7 +41,8 @@ export function onBlockedChange(fn: (ids: string[]) => void): void {
 
 function decrypt(value: string, key: Uint8Array): string {
   const [v, iv, tag, data] = value.split(".");
-  if (v !== "v1" || !iv || !tag || !data) throw new Error("unknown format");
+  // An empty value encrypts to an empty data part, so only a missing part is wrong.
+  if (v !== "v1" || !iv || !tag || data === undefined) throw new Error("unknown format");
   const d = createDecipheriv("aes-256-gcm", key, new Uint8Array(Buffer.from(iv, "base64")));
   d.setAuthTag(new Uint8Array(Buffer.from(tag, "base64")));
   return Buffer.concat([d.update(new Uint8Array(Buffer.from(data, "base64"))), d.final()] as unknown as Uint8Array[]).toString("utf8");
