@@ -47,11 +47,27 @@ export class AllowedGuildRepository {
         this.cache = null;
         this.loadingPromise = null;
         await this.getCache();
+        this.startRefresh();
     }
 
     static async isAllowed(guildId: string): Promise<boolean> {
         const cache = await this.getCache();
-        return cache.has(guildId);
+        if (cache.has(guildId)) return true;
+        // The admin console adds servers straight to the collection: check it before treating a server as unknown,
+        // so a bot invited right after the server was allowed doesn't leave.
+        const found = await AllowedGuild.exists({ guildId });
+        if (found) cache.add(guildId);
+        return !!found;
+    }
+
+    /** Re-reads the list every minute (removals made in the admin console). Started by preload(). */
+    private static refresher: ReturnType<typeof setInterval> | null = null;
+    private static startRefresh(): void {
+        if (this.refresher) return;
+        this.refresher = setInterval(() => {
+            AllowedGuild.find().then((docs) => { this.cache = new Set(docs.map((d) => d.guildId)); }).catch(() => {});
+        }, 60_000);
+        this.refresher.unref?.();
     }
 
     /** Returns false when the guild was already on the list. */

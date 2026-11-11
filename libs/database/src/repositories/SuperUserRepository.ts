@@ -34,6 +34,11 @@ export class SuperUserRepository {
     /** Warm the cache at boot so the first command doesn't pay a DB round-trip. */
     static async preload(): Promise<void> {
         await this.getCache();
+        // The admin console edits the collection directly: re-read it every minute.
+        const timer = setInterval(() => {
+            SuperUser.find().then((docs) => { this.cache = new Set(docs.map((d) => d.userId)); }).catch(() => {});
+        }, 60_000);
+        timer.unref?.();
     }
 
     static async add(userId: string, addedBy: string): Promise<ISuperUser> {
