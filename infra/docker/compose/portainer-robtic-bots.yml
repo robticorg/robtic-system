@@ -169,21 +169,6 @@ services:
       retries: 3
       start_period: 20s
 
-  # Shop bot (robtic-shop). All state is JSON files under /app/database — no MongoDB or Redis, so
-  # it is on neither `backend` nor `internal`, only the stack's default network for Discord.
-  robtic-shop:
-    image: ghcr.io/robticorg/robtic-shop:${SHOP_IMAGE_TAG:-production}
-    container_name: robtic-shop
-    restart: unless-stopped
-    stop_grace_period: 30s
-    logging: *logging
-    environment:
-      NODE_ENV: production
-      DISCORD_TOKEN: ${SHOP_DISCORD_TOKEN:?SHOP_DISCORD_TOKEN is required}
-    volumes:
-      - robtic-shop-database:/app/database
-    networks: [default]
-
   # Staff bot (robtic-staff). Its points API (:8788) is called only by robtic-system and the
   # workers, so it stays on `internal`. Gift credits go to robtic-system's bank API.
   robtic-staff:
@@ -267,11 +252,3 @@ networks:
     name: robtic-bots-default
   proxy:
     external: true
-
-volumes:
-  # External on purpose: it must be created and filled from the old robtic-shop volume before the
-  # first deploy (docs/deployment-portainer.md). Left to Compose, a missing volume would be created
-  # empty and seeded from the JSON baked into the image, silently replacing the live data.
-  robtic-shop-database:
-    external: true
-    name: robtic-bots-shop-database

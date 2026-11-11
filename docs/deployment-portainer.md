@@ -10,8 +10,11 @@ and recreates only the containers whose image changed. MongoDB 8 and Redis run o
 |---|---|---|---|
 | `robticorg/robtic-system` (this repo) | `deploy-bot.yml` | `ghcr.io/robticorg/robtic-system` | `robtic-system`, `robtic-system-standby`, `robtic-system-worker-1`, `robtic-system-worker-2`, `robtic-invites-api` |
 | `robticorg/robtic-minecraft` | `deploy-api.yml` | `ghcr.io/robticorg/robtic-minecraft-api` | `robtic-minecraft-api` |
-| `robticorg/robtic-shop` | `deploy.yml` | `ghcr.io/robticorg/robtic-shop` | `robtic-shop` |
 | `robticorg/robtic-staff` | `deploy.yml` | `ghcr.io/robticorg/robtic-staff` | `robtic-staff` |
+
+> **robtic-shop is no longer in this stack** (2026-11-11): it's hosted elsewhere. Its service and the external
+> `robtic-bots-shop-database` volume were removed from the manifest. While they were there, a missing volume made
+> Portainer refuse the whole stack and every bot stayed down. The shop steps further down are history.
 
 - Manifest: [`infra/docker/compose/portainer-robtic-bots.yml`](../infra/docker/compose/portainer-robtic-bots.yml).
   Images only, no `build:`.
