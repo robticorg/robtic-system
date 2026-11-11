@@ -14,7 +14,10 @@ import mongoose from "mongoose";
 
 const URI = process.env.ROBTIC_CONFIG_MONGO_URI?.trim();
 const KEY = process.env.ROBTIC_CONFIG_KEY?.trim();
-const BOT = process.env.ROBTIC_BOT?.trim();
+/** Which bot this file belongs to when ROBTIC_BOT isn't set (the only line that differs between the two bots). */
+const DEFAULT_BOT = "system";
+const BOT = process.env.ROBTIC_BOT?.trim() || DEFAULT_BOT;
+const REMOTE = !!(process.env.ROBTIC_CONFIG_MONGO_URI?.trim() && process.env.ROBTIC_CONFIG_KEY?.trim());
 const COLLECTION = process.env.ROBTIC_CONFIG_COLLECTION?.trim() || "discord_bot_config";
 /** How often the blocked-server list is read again. */
 const REFRESH_MS = 60_000;
@@ -44,25 +47,32 @@ function decrypt(value: string, key: Uint8Array): string {
   return Buffer.concat([d.update(new Uint8Array(Buffer.from(data, "base64"))), d.final()] as unknown as Uint8Array[]).toString("utf8");
 }
 
-if (URI && KEY && BOT) {
+let reloadEnv: (() => Promise<void>) | null = null;
+
+if (URI && KEY && REMOTE) {
   const key = new Uint8Array(Buffer.from(KEY, "base64"));
   if (key.length !== 32) throw new Error("[remote-config] ROBTIC_CONFIG_KEY must be 32 bytes, base64.");
 
   const conn = await mongoose.createConnection(URI, { serverSelectionTimeoutMS: 20_000 }).asPromise();
   const read = () => conn.collection<ConfigDoc>(COLLECTION).findOne({ _id: BOT } as never) as Promise<ConfigDoc | null>;
-  const doc = await read();
-  if (!doc) throw new Error(`[remote-config] no settings for "${BOT}" in ${COLLECTION}. Set them in the admin console first.`);
+  // No settings yet is fine: the bot waits for its token below instead of failing.
+  const doc: ConfigDoc = (await read()) ?? { _id: BOT };
 
-  let count = 0;
-  for (const [name, value] of Object.entries(doc.env ?? {})) {
-    try {
-      process.env[name] = decrypt(value, key);
-      count++;
-    } catch {
-      // Never print the value. A wrong key fails every variable, so stop rather than run half-configured.
-      throw new Error(`[remote-config] could not decrypt ${name}: is ROBTIC_CONFIG_KEY right?`);
+  const apply = (d: ConfigDoc): number => {
+    let n = 0;
+    for (const [name, value] of Object.entries(d.env ?? {})) {
+      try {
+        process.env[name] = decrypt(value, key);
+        n++;
+      } catch {
+        // Never print the value. A wrong key fails every variable, so stop rather than run half-configured.
+        throw new Error(`[remote-config] could not decrypt ${name}: is ROBTIC_CONFIG_KEY right?`);
+      }
     }
-  }
+    return n;
+  };
+  const count = apply(doc);
+  reloadEnv = async () => { const d = await read(); if (d) apply(d); };
   blocked = new Set((doc.blacklist ?? []).map((b) => b.guildId));
   console.log(`[remote-config] ${count} settings loaded for ${BOT}, ${blocked.size} blocked server(s).`);
 
@@ -77,4 +87,60 @@ if (URI && KEY && BOT) {
     }
   }, REFRESH_MS);
   timer.unref?.();
+}
+
+/* ------------------------------------------------------------------ no token yet: wait quietly */
+
+// A bot without its Discord token used to crash and restart over and over. Now it waits: with the config store it
+// checks every 30 seconds and starts as soon as a token is saved in the admin console; without it, it says so once and
+// idles until restarted. Its health check stays green meanwhile, so nothing flaps.
+
+const TOKEN_KEY = BOT === "staff" ? "DISCORD_TOKEN" : process.env.NODE_ENV === "production" ? "MainBotToken" : "TestBot";
+/** Only the processes that log in to Discord need it (not robtic-system's workers or internal APIs). */
+const NEEDS_TOKEN = BOT === "staff" || /apps[\/]bot[\/]/.test(process.argv[1] ?? "");
+
+if (NEEDS_TOKEN && !process.env[TOKEN_KEY]?.trim()) {
+  console.log(`[remote-config] no Discord token yet (${TOKEN_KEY}): waiting${reloadEnv ? " for it to be set in the admin console" : ""}.`);
+  const healthy = keepHealthy();
+  await new Promise<void>((resolve) => {
+    const timer = setInterval(async () => {
+      if (!reloadEnv) return; // nothing can change until the container restarts with a token
+      try {
+        await reloadEnv();
+      } catch {
+        return; // the database is back next time
+      }
+      if (process.env[TOKEN_KEY]?.trim()) {
+        clearInterval(timer);
+        resolve();
+      }
+    }, 30_000);
+  });
+  healthy();
+  console.log("[remote-config] token found, starting.");
+}
+
+/** Keeps the container's health check green while waiting; returns a function that stops doing so. */
+function keepHealthy(): () => void {
+  // robtic-system's Gateway health check reads this file's timestamp.
+  const touch = () => { void Bun.write("/tmp/gateway-health", String(Date.now())).catch(() => {}); };
+  touch();
+  const timer = setInterval(touch, 20_000);
+  // robtic-staff's health check calls its internal API, which only starts with the bot: answer it meanwhile.
+  let server: ReturnType<typeof Bun.serve> | null = null;
+  if (BOT === "staff") {
+    try {
+      server = Bun.serve({
+        hostname: process.env.INTERNAL_API_HOST || "127.0.0.1",
+        port: Number(process.env.INTERNAL_API_PORT || 8788),
+        fetch: (req) => (new URL(req.url).pathname === "/internal/health" ? Response.json({ ok: true, waiting: "token" }) : new Response("Starting", { status: 503 })),
+      });
+    } catch {
+      server = null;
+    }
+  }
+  return () => {
+    clearInterval(timer);
+    server?.stop(true);
+  };
 }
