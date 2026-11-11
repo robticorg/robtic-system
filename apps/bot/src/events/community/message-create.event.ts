@@ -53,10 +53,10 @@ export default {
                         await logToChannel(client, "support_points", supportSessionEmbed(
                             "reassigned", sessionUserId, member.id,
                             COMMUNITY_MESSAGES.resolutionReasons.takeoverDetails(previousStaff),
-                        ));
+                        ), guildId);
                         await logToChannel(client, "support_points", staffPenaltyEmbed(
                             previousStaff, SUPPORT_SCORING.takeoverPenalty, COMMUNITY_MESSAGES.penaltyReasons.ignoredUser,
-                        ));
+                        ), guildId);
 
                         const newStaffMember = await message.guild!.members.fetch(member.id).catch(() => null);
                         if (newStaffMember) {
@@ -90,7 +90,7 @@ export default {
                             });
                             await logToChannel(client, "support_points", staffPenaltyEmbed(
                                 member.id, SUPPORT_SCORING.intrusionPenalty, COMMUNITY_MESSAGES.penaltyReasons.intruding(claimResult.intruding.claimedBy),
-                            ));
+                            ), guildId);
                         }
                     }
 
@@ -130,7 +130,7 @@ export default {
                             });
                             await logToChannel(client, "support_points", staffPenaltyEmbed(
                                 member.id, SUPPORT_SCORING.staffChatPenalty, COMMUNITY_MESSAGES.penaltyReasons.staffChatAfterWarning,
-                            ));
+                            ), guildId);
                         }
                     }
 
@@ -149,7 +149,7 @@ export default {
                         analysis.classification.confidence,
                         analysis.classification.fallback,
                         "Support (staff)",
-                    ));
+                    ), guildId);
 
                     if (analysis.isConversationEnd) {
                         for (const session of openSessions) {
@@ -182,7 +182,7 @@ export default {
                         analysis.classification.confidence,
                         analysis.classification.fallback,
                         "Support (member)",
-                    ));
+                    ), guildId);
 
                     if (analysis.isConversationEnd) {
                         const openSessions = await SupportSessionRepository.findOpen(channelId);
@@ -199,7 +199,7 @@ export default {
                         if (created) {
                             await logToChannel(client, "support_points", supportSessionEmbed(
                                 "created", member.id,
-                            ));
+                            ), guildId);
                         }
                     }
                 }
@@ -222,7 +222,7 @@ export default {
                     Logger.debug(`[activity] Granted ${result.xp} XP to ${username} (levelUp=${result.leveledUp}, level=${result.newLevel})`, client.botName);
                     await logToChannel(client, "xp_gain", xpGainEmbed(
                         username, member.id, result.xp, result.leveledUp, result.newLevel,
-                    ));
+                    ), guildId);
                 }
             }
         } catch (error) {

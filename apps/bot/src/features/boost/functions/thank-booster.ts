@@ -1,6 +1,50 @@
-import { MessageFlags, type Guild } from "discord.js";
+import { AttachmentBuilder, MediaGalleryBuilder, MessageFlags, TextDisplayBuilder, type Guild } from "discord.js";
 import { BOOST_CONFIG } from "@constants";
-import { getLineImage } from "@core/assets";
+import { getLineImage, isBrandedGuild } from "@core/assets";
+import { fetchPicture, renderCard, type CardLayoutDoc } from "@bot/utils/render-card";
+
+const DEFAULT_THANKS = "[users] thank you for boosting [server]!";
+
+/** Fills the server's thank-you: [users], [server], [count], [#123…] channel mentions. */
+export function fillBoostText(text: string, memberIds: readonly string[], server: string): string {
+    return text
+        .replaceAll("[users]", memberIds.map(id => `<@${id}>`).join(", "))
+        .replaceAll("[server]", server)
+        .replaceAll("[count]", String(memberIds.length))
+        .replace(/\[#(\d{15,22})\]/g, "<#$1>")
+        .slice(0, 3800);
+}
+
+/** The server's own thank-you: its text, a card per booster (if it designed one) and its line (if it chose to). */
+async function buildCustomThanks(guild: Guild, memberIds: readonly string[], config: NonNullable<Awaited<ReturnType<typeof ServerConfigRepository.find>>>["boostMessage"]) {
+    const text = fillBoostText(config?.text?.trim() || DEFAULT_THANKS, memberIds, guild.name);
+    const files: AttachmentBuilder[] = [];
+    const components: (TextDisplayBuilder | MediaGalleryBuilder)[] = [new TextDisplayBuilder().setContent(text)];
+
+    if (config?.mode === "image") {
+        const gallery = new MediaGalleryBuilder();
+        for (const id of memberIds.slice(0, 10)) {
+            const member = guild.members.cache.get(id) ?? await guild.members.fetch(id).catch(() => null);
+            const card = await renderCard(config.card as CardLayoutDoc | undefined, {
+                pictures: { avatar: await fetchPicture(member?.displayAvatarURL({ extension: "png", size: 256 })) },
+                texts: { name: member?.displayName ?? "" },
+            });
+            if (!card) break;
+            const name = `boost-${id}.png`;
+            files.push(new AttachmentBuilder(card, { name }));
+            gallery.addItems(item => item.setURL(`attachment://${name}`));
+        }
+        if (files.length) components.push(gallery);
+    }
+    if (config?.withLine) {
+        const line = await getLineImage(guild.id).catch(() => null);
+        if (line) {
+            files.push(new AttachmentBuilder(line.data, { name: line.name }));
+            components.push(new MediaGalleryBuilder().addItems(item => item.setURL(`attachment://${line.name}`)));
+        }
+    }
+    return { components, files };
+}
 import { isFeatureEnabled } from "@core/features";
 import { ServerConfigRepository } from "@database/repositories";
 import { handleError, BotError } from "@core/handlers";
@@ -26,17 +70,23 @@ async function sendBoostThanks(guild: Guild, memberIds: string[]): Promise<void>
     const channel = guild.channels.cache.get(channelId);
     if (!channel?.isSendable()) return;
 
-    const [emoji, line] = await Promise.all([
-        resolveEmoji(guild),
-        getLineImage().catch(() => null),
-    ]);
-    for (let i = 0; i < memberIds.length; i += BOOST_CONFIG.maxMentionsPerMessage) {
-        const group = memberIds.slice(i, i + BOOST_CONFIG.maxMentionsPerMessage);
-        await channel.send({
-            ...buildBoostThanks(group, emoji, line),
-            flags: MessageFlags.IsComponentsV2,
-            allowedMentions: { users: group },
-        });
+    const config = (await ServerConfigRepository.find(guild.id))?.boostMessage ?? null;
+
+    // Robtic's own servers keep Robtic's thank-you until they design their own.
+    if (!config && isBrandedGuild(guild.id)) {
+        const [emoji, line] = await Promise.all([resolveEmoji(guild), getLineImage(guild.id).catch(() => null)]);
+        for (let i = 0; i < memberIds.length; i += BOOST_CONFIG.maxMentionsPerMessage) {
+            const group = memberIds.slice(i, i + BOOST_CONFIG.maxMentionsPerMessage);
+            await channel.send({ ...buildBoostThanks(group, emoji, line), flags: MessageFlags.IsComponentsV2, allowedMentions: { users: group } });
+        }
+        return;
+    }
+
+    // Cards: at most 10 images per message, so image mode sends boosters in tens.
+    const per = config?.mode === "image" ? 10 : BOOST_CONFIG.maxMentionsPerMessage;
+    for (let i = 0; i < memberIds.length; i += per) {
+        const group = memberIds.slice(i, i + per);
+        await channel.send({ ...(await buildCustomThanks(guild, group, config)), flags: MessageFlags.IsComponentsV2, allowedMentions: { users: group } });
     }
 }
 

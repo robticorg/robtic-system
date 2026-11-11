@@ -17,13 +17,15 @@ interface ApprovalParams {
     reasonKey: string;
     reasonLabel: string;
     requesterId: string;
+    /** The server the punishment is in, so the request goes to its own approvals channel if it has one. */
+    guildId?: string;
     extra?: string;
     proofUrl?: string;
 }
 
 /** Shared senior-approval request (score <= 20 band), posted to punishments_case with the approve/deny buttons. */
 export async function requestApproval(params: ApprovalParams): Promise<void> {
-    const { client, type, targetId, reasonKey, reasonLabel, requesterId, extra, proofUrl } = params;
+    const { client, type, targetId, reasonKey, reasonLabel, requesterId, guildId, extra, proofUrl } = params;
 
     const embed = new EmbedBuilder()
         .setTitle(PUNISH_APPROVAL_MESSAGES.title(PUNISH_TITLES[type]))
@@ -64,7 +66,7 @@ export async function requestApproval(params: ApprovalParams): Promise<void> {
             .setEmoji(PUNISH_APPROVAL_MESSAGES.denyEmoji),
     );
 
-    const approvalChannel = await getLogChannel(client, "punishments_case") as TextChannel | null;
+    const approvalChannel = await getLogChannel(client, "punishments_case", guildId) as TextChannel | null;
     if (approvalChannel) {
         await approvalChannel.send({ embeds: [embed], components: [buttons] });
     }

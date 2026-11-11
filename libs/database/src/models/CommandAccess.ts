@@ -6,6 +6,12 @@ export interface ICommandAccess extends Document {
     commandName: string;
     allowedRoleIds: string[];
     allowedCategoryKeys: string[];
+    /** Only in these channels (empty = anywhere). Set from the dashboard's Command access page. */
+    channelIds: string[];
+    /** Must be used in the server's commands channel (ServerConfig.commandsChannelId). */
+    commandsChannelOnly: boolean;
+    /** Turned off in this server from the dashboard: the bot ignores it. */
+    disabled: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -16,6 +22,9 @@ const commandAccessSchema = new Schema<ICommandAccess>(
         commandName: { type: String, required: true },
         allowedRoleIds: { type: [String], default: [] },
         allowedCategoryKeys: { type: [String], default: [] },
+        channelIds: { type: [String], default: [] },
+        commandsChannelOnly: { type: Boolean, default: false },
+        disabled: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

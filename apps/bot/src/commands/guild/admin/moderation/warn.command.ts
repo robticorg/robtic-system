@@ -152,7 +152,7 @@ export default {
             await interaction.deferReply();
             const guildId = interaction.guildId!;
             const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
-            const reasonDoc = await ReasonRepository.findByKey(reasonKey);
+            const reasonDoc = await ReasonRepository.findByKey(reasonKey, interaction.guildId!);
             const reason = reasonDoc?.label ?? reasonKey;
             const reasonAr = reasonDoc?.labelAr ?? reason;
 
@@ -243,7 +243,7 @@ export default {
         const sub = interaction.options.getSubcommand();
 
         if (focused.name === "reason" && sub === "add") {
-            const reasons = await ReasonRepository.findByType("warn");
+            const reasons = await ReasonRepository.findByType("warn", interaction.guildId!);
             const filtered = reasons
                 .filter(r => r.key.includes(focused.value.toLowerCase()) || r.label.toLowerCase().includes(focused.value.toLowerCase()))
                 .slice(0, 25);

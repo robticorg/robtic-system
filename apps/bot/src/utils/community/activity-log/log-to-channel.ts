@@ -9,9 +9,11 @@ export async function logToChannel(
     client: Client,
     type: ActivityLogChannel,
     embed: EmbedBuilder,
+    /** The server the activity happened in (its own log channel wins over the shared one). */
+    guildId?: string | null,
 ): Promise<void> {
     try {
-        const channel = await getLogChannel(client, ACTIVITY_LOG_KEY_MAP[type]) as TextChannel | null;
+        const channel = await getLogChannel(client, ACTIVITY_LOG_KEY_MAP[type], guildId) as TextChannel | null;
         if (!channel) return;
         await channel.send({ embeds: [embed] });
     } catch (err) {

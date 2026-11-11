@@ -37,7 +37,7 @@ export default {
             return;
         }
 
-        const reasonDoc = await ReasonRepository.findByKey(reasonKey);
+        const reasonDoc = await ReasonRepository.findByKey(reasonKey, guildId);
         const reason = reasonDoc?.label ?? reasonKey;
         const reasonAr = reasonDoc?.labelAr ?? reason;
 
@@ -52,6 +52,7 @@ export default {
 
         if (needsApproval) {
             await requestApproval({
+                    guildId,
                 client, type, targetId, reasonKey, reasonLabel: reason,
                 requesterId: moderatorId, extra, proofUrl: proofUrl ?? undefined,
             });

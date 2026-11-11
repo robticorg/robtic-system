@@ -15,7 +15,7 @@ export const activitySystemSelectHandler: ComponentHandler<StringSelectMenuInter
             return;
         }
 
-        const line = await getLineImage().catch(() => null);
+        const line = await getLineImage(interaction.guildId).catch(() => null);
 
         const container = new ContainerBuilder()
             .addTextDisplayComponents(td => td.setContent(`## ${option.emoji ? `${option.emoji} ` : ""}${option.label}`))

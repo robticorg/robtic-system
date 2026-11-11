@@ -30,7 +30,7 @@ export async function announceStreakRewards(guild: Guild, user: User, guildId: s
         const created = await StreakRewardClaimRepository.tryCreateNotification(guildId, user.id, reward.threshold);
         if (!created) continue;
 
-        const logChannel = await getLogChannel(guild.client, "rewards_log") as TextChannel | null;
+        const logChannel = await getLogChannel(guild.client, "rewards_log", guildId) as TextChannel | null;
         if (!logChannel) continue;
 
         const embed = new EmbedBuilder()

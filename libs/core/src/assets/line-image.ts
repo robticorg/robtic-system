@@ -2,6 +2,7 @@ import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import path from "path";
 import { BranchAssetRepository } from "@database/repositories";
+import { isBrandedGuild } from "./branding";
 
 /**
  * The separator line image the bot posts (line channels, the activity panel, boost thank-yous).
@@ -29,13 +30,49 @@ async function load(): Promise<LineImage | null> {
     return null;
 }
 
-/** The current line image, or `null` if none is set and `images/line.png` is missing. */
-export function getLineImage(): Promise<LineImage | null> {
+/** The bot-wide line (/setline, else images/line.png): only Robtic's own servers use it. */
+function getSharedLine(): Promise<LineImage | null> {
     cached ??= load().catch(err => {
         cached = null;
         throw err;
     });
     return cached;
+}
+
+const perGuild = new Map<string, Promise<LineImage | null>>();
+const guildKey = (guildId: string) => `line:${guildId}`;
+
+/**
+ * A server's line: the one it uploaded on the dashboard. Robtic's own servers (ROBTIC_BRANDED_GUILD_IDS) fall back to
+ * the bot-wide line; any other server without its own has no line, so nothing is posted.
+ */
+export function getLineImage(guildId?: string | null): Promise<LineImage | null> {
+    if (!guildId) return getSharedLine();
+    let entry = perGuild.get(guildId);
+    if (!entry) {
+        entry = BranchAssetRepository.get(guildKey(guildId))
+            .then(stored => (stored ? { data: Buffer.from(stored.data), name: stored.fileName } : null))
+            .catch(err => { perGuild.delete(guildId); throw err; });
+        perGuild.set(guildId, entry);
+    }
+    return entry.then(own => own ?? (isBrandedGuild(guildId) ? getSharedLine() : null));
+}
+
+/** Sets a server's own line (the dashboard writes it the same way). */
+export async function setGuildLineImage(guildId: string, data: Buffer, contentType: string, fileName: string, updatedBy: string): Promise<void> {
+    await BranchAssetRepository.set(guildKey(guildId), { data, contentType, fileName, updatedBy });
+    perGuild.set(guildId, Promise.resolve({ data, name: fileName }));
+}
+
+export async function resetGuildLineImage(guildId: string): Promise<boolean> {
+    const removed = await BranchAssetRepository.delete(guildKey(guildId));
+    perGuild.delete(guildId);
+    return removed;
+}
+
+/** Forget a server's cached line, e.g. after the dashboard changed it. */
+export function forgetGuildLine(guildId: string): void {
+    perGuild.delete(guildId);
 }
 
 /** File extension for the image types `/setline` accepts. */

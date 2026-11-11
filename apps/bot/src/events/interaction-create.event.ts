@@ -1,3 +1,6 @@
+import type { GuildMember } from "discord.js";
+import { COMMAND_OFF_MESSAGE, checkCommandChannel, whereToUse } from "../utils/command-channel";
+import { getUserLang, t } from "../utils/lang";
 import {
     Events,
     type Interaction,
@@ -45,6 +48,21 @@ export default {
             if (!gate.allowed) {
                 await interaction.reply({ content: errorText(gate.message!), flags: MessageFlags.Ephemeral });
                 return;
+            }
+
+            // The server's channel rule for this command (Command access in the dashboard).
+            if (interaction.guildId && interaction.channelId) {
+                const verdict = await checkCommandChannel(interaction.guildId, interaction.commandName, interaction.channelId);
+                if (!verdict.ok) {
+                    const lang = await getUserLang(interaction.member as GuildMember | null);
+                    await interaction.reply({
+                        content: verdict.reason === "disabled"
+                            ? errorText(COMMAND_OFF_MESSAGE)
+                            : t("commandsChannel.wrong_channel_notice", lang, { user: `<@${interaction.user.id}>`, channel: whereToUse(verdict) }),
+                        flags: MessageFlags.Ephemeral,
+                    });
+                    return;
+                }
             }
 
             const hasPerms = await checkPermissions(interaction, command);

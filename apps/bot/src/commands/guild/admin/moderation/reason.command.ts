@@ -101,9 +101,14 @@ export default {
 
             const key = interaction.options.getString("key", true).toLowerCase();
 
-            const deleted = await ReasonRepository.delete(key);
+            const deleted = await ReasonRepository.delete(key, interaction.guildId!);
             if (!deleted) {
-                await interaction.editReply({ content: errorText(`Reason \`${key}\` not found.`) });
+                const shared = await ReasonRepository.isShared(key);
+                await interaction.editReply({
+                    content: errorText(shared
+                        ? `Reason \`${key}\` is shared by every server, so it can't be removed from here. Add your own reason with the same key to replace it.`
+                        : `Reason \`${key}\` not found.`),
+                });
                 return;
             }
 
@@ -120,7 +125,7 @@ export default {
         if (sub === "list") {
             await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-            const reasons = await ReasonRepository.getAll();
+            const reasons = await ReasonRepository.getAll(interaction.guildId!);
 
             if (!reasons.length) {
                 await interaction.editReply({ embeds: [new EmbedBuilder().setDescription("No punishment reasons created yet.").setColor(COLORS.info)] });
@@ -150,7 +155,8 @@ export default {
 
     async autocomplete(interaction: AutocompleteInteraction) {
         const focused = interaction.options.getFocused().toLowerCase();
-        const keys = await ReasonRepository.getAllKeys();
+        if (!interaction.guildId) return interaction.respond([]);
+        const keys = await ReasonRepository.getAllKeys(interaction.guildId);
         const filtered = keys
             .filter(k => k.includes(focused))
             .slice(0, 25);

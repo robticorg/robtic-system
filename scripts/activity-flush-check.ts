@@ -75,6 +75,7 @@ function memoryStore(rate = 10) {
             return earned;
         },
         async messagesPerPoint() { return rate; },
+        async staffMessagesPerPoint() { return 100; },
     };
     return { store, activity, periods, points, failNext: (n: number) => { calls = 0; failAt = n; } };
 }

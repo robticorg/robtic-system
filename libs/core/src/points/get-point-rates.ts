@@ -1,4 +1,5 @@
 import { PointSettingsRepository } from "@database/repositories";
+import { POINT_DEFAULTS } from "@constants";
 
 export interface PointRates {
     messagesPerPoint: number;
@@ -8,6 +9,7 @@ export interface PointRates {
     pointsPerRc: number;
     conversionEnabled: boolean;
     minConversionPoints: number;
+    staffMessagesPerPoint: number;
 }
 
 /** The guild's economy rates. Settings are upserted with schema defaults, so nothing to fall back to. */
@@ -22,5 +24,7 @@ export async function getPointRates(guildId: string): Promise<PointRates> {
         pointsPerRc: s.pointsPerRc,
         conversionEnabled: s.conversionEnabled,
         minConversionPoints: s.minConversionPoints,
+        // Rows saved before the field existed read it as the default.
+        staffMessagesPerPoint: s.staffMessagesPerPoint ?? POINT_DEFAULTS.staffMessagesPerPoint,
     };
 }

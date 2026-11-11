@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { createCanvas, GlobalFonts, loadImage, type Image, type SKRSContext2D } from "@napi-rs/canvas";
 import { LEVEL_CARD_CONFIG } from "@constants";
 import type { XpKind } from "@core/xp";
+import type { LevelCardLayoutDoc } from "@database/models/XPSettings";
 
 const ROOT = join(import.meta.dir, "../../../../../..");
 const FONT_STACK = [LEVEL_CARD_CONFIG.fontFamily, ...LEVEL_CARD_CONFIG.fallbackFonts].map(f => (f.includes(" ") ? `"${f}"` : f)).join(", ");
@@ -60,23 +61,58 @@ export interface LevelCardInput {
     name: string;
     kind: XpKind;
     level: number;
+    /** The server's own layout (dashboard). Without it, the built-in card and LEVEL_CARD_CONFIG positions. */
+    layout?: LevelCardLayoutDoc | null;
+}
+
+const COLOR = /^#[0-9a-f]{6}$/i;
+const num = (v: unknown, min: number, max: number, fallback: number) => (typeof v === "number" && Number.isFinite(v) && v >= min && v <= max ? v : fallback);
+
+/** A stored layout → the slots the drawing code uses, every value checked (bad ones fall back to the defaults). */
+function slotsFor(layout: LevelCardLayoutDoc | null | undefined, width: number, height: number) {
+    const d = LEVEL_CARD_CONFIG;
+    if (!layout) return { avatar: d.avatar, name: d.name, kind: d.kind, level: d.level };
+    const text = (t: LevelCardLayoutDoc["name"] | undefined, fallback: TextSlot, maxWidth?: number): TextSlot => ({
+        centerX: num(t?.x, 0, width, fallback.centerX),
+        centerY: num(t?.y, 0, height, fallback.centerY),
+        fontSize: num(t?.size, 4, height, fallback.fontSize),
+        minFontSize: Math.round(num(t?.size, 4, height, fallback.fontSize) * 0.45),
+        color: t && COLOR.test(t.color) ? t.color : fallback.color,
+        maxWidth,
+    });
+    return {
+        avatar: { centerX: num(layout.avatar?.x, 0, width, d.avatar.centerX), centerY: num(layout.avatar?.y, 0, height, d.avatar.centerY), radius: num(layout.avatar?.r, 4, height, d.avatar.radius) },
+        name: text(layout.name, d.name, width * 0.22),
+        kind: text(layout.kind, d.kind),
+        level: text(layout.level, d.level, num(layout.level?.size, 4, height, d.level.fontSize) * 2),
+    };
+}
+
+/** An uploaded background (data URL) decoded, or null when it isn't one. */
+async function loadBackground(dataUrl: string | null | undefined): Promise<Image | null> {
+    const m = /^data:image\/(?:png|jpeg|webp);base64,(.+)$/.exec(dataUrl ?? "");
+    if (!m) return null;
+    return loadImage(Buffer.from(m[1]!, "base64")).catch(() => null);
 }
 
 /**
  * The level-up card: the template with the member's avatar in the left circle, their name and the
  * level type in the middle, and the level they reached in the right circle. Returns a JPEG.
  */
-export async function renderLevelCard({ avatar, name, kind, level }: LevelCardInput): Promise<Buffer> {
-    const [base, picture] = await Promise.all([loadTemplate(), avatar ? loadImage(avatar).catch(() => null) : null]);
+export async function renderLevelCard({ avatar, name, kind, level, layout }: LevelCardInput): Promise<Buffer> {
+    const custom = await loadBackground(layout?.background);
+    const [base, picture] = await Promise.all([custom ?? loadTemplate(), avatar ? loadImage(avatar).catch(() => null) : null]);
+    const slots = slotsFor(layout, base.width, base.height);
 
-    const scale = LEVEL_CARD_CONFIG.outputScale;
+    // The built-in template is huge and posted at 40 %; an uploaded background is already web-sized.
+    const scale = custom ? Math.min(1, 1800 / base.width) : LEVEL_CARD_CONFIG.outputScale;
     const canvas = createCanvas(Math.round(base.width * scale), Math.round(base.height * scale));
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(base, 0, 0, canvas.width, canvas.height);
 
     if (picture) {
-        const { centerX, centerY, radius } = LEVEL_CARD_CONFIG.avatar;
+        const { centerX, centerY, radius } = slots.avatar;
         const r = radius * scale;
         ctx.save();
         ctx.beginPath();
@@ -87,9 +123,9 @@ export async function renderLevelCard({ avatar, name, kind, level }: LevelCardIn
         ctx.restore();
     }
 
-    drawText(ctx, name.trim() || "Member", LEVEL_CARD_CONFIG.name, scale);
-    drawText(ctx, LEVEL_CARD_CONFIG.kindLabels[kind], LEVEL_CARD_CONFIG.kind, scale);
-    drawText(ctx, String(level), LEVEL_CARD_CONFIG.level, scale);
+    drawText(ctx, name.trim() || "Member", slots.name, scale);
+    drawText(ctx, LEVEL_CARD_CONFIG.kindLabels[kind], slots.kind, scale);
+    drawText(ctx, String(level), slots.level, scale);
 
     return canvas.toBuffer("image/jpeg", LEVEL_CARD_CONFIG.jpegQuality);
 }

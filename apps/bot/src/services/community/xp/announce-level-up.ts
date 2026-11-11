@@ -1,21 +1,38 @@
+import { isBrandedGuild } from "@core/assets";
 import { AttachmentBuilder, type Guild, type TextChannel } from "discord.js";
 import { XPSettingsRepository } from "@database/repositories";
 import { LEVEL_UP_MESSAGES } from "@constants";
 import type { XpKind } from "@core/xp";
 import { Logger } from "@logger";
 import { renderLevelCard } from "./render-level-card";
+import type { LevelCardLayoutDoc } from "@database/models/XPSettings";
+
+/**
+ * Fills the server's level-up text: [user] mention, [username], [level], [type] (Message / Voice), [server], and
+ * [#123…] channel mentions. Capped at Discord's 2,000 characters.
+ */
+export function fillLevelUpText(text: string, v: { userId: string; username: string; level: number; kind: XpKind; server: string }): string {
+    return text
+        .replaceAll("[user]", `<@${v.userId}>`)
+        .replaceAll("[username]", v.username)
+        .replaceAll("[level]", String(v.level))
+        .replaceAll("[type]", v.kind === "voice" ? "Voice" : "Message")
+        .replaceAll("[server]", v.server)
+        .replace(/\[#(\d{15,22})\]/g, "<#$1>")
+        .slice(0, 2000);
+}
 
 const CTX = "main:xp";
 
 /** The level-up card for this member, or `null` when it can't be drawn — the text is posted instead. */
-async function buildLevelCard(guild: Guild, userId: string, kind: XpKind, level: number): Promise<AttachmentBuilder | null> {
+async function buildLevelCard(guild: Guild, userId: string, kind: XpKind, level: number, layout?: LevelCardLayoutDoc | null): Promise<AttachmentBuilder | null> {
     try {
         const member = guild.members.cache.get(userId) ?? await guild.members.fetch(userId);
         const avatar = await fetch(member.displayAvatarURL({ extension: "png", size: 256 }))
             .then(async response => (response.ok ? Buffer.from(await response.arrayBuffer()) : null))
             .catch(() => null);
 
-        const card = await renderLevelCard({ avatar, name: member.displayName, kind, level });
+        const card = await renderLevelCard({ avatar, name: member.displayName, kind, level, layout });
         return new AttachmentBuilder(card, { name: "level-up.jpg" });
     } catch (err) {
         Logger.warn(`Could not draw the level-up card for ${userId} in ${guild.id}: ${err}`, CTX);
@@ -44,10 +61,18 @@ export async function announceLevelUp(guild: Guild, userId: string, kind: XpKind
         return;
     }
 
-    const card = await buildLevelCard(guild, userId, kind, level);
+    // The server's own announcement (dashboard), else Robtic's card with a mention.
+    const custom = settings.levelUpMessage;
+    const member = guild.members.cache.get(userId);
+    const text = custom?.text?.trim()
+        ? fillLevelUpText(custom.text, { userId, username: member?.displayName ?? "", level, kind, server: guild.name })
+        : null;
+    // A card needs an image: the server's own (dashboard), or Robtic's built-in one in Robtic's own servers.
+    const wantsCard = custom ? custom.mode === "image" && Boolean(custom.card?.background) : isBrandedGuild(guild.id);
+    const card = wantsCard ? await buildLevelCard(guild, userId, kind, level, custom?.card) : null;
 
     await (channel as TextChannel).send({
-        content: card ? `<@${userId}>` : LEVEL_UP_MESSAGES.reached(userId, kind, level),
+        content: card ? (text ?? `<@${userId}>`) : (text ?? LEVEL_UP_MESSAGES.reached(userId, kind, level)),
         files: card ? [card] : [],
         allowedMentions: { users: [userId] },
     }).catch(err => {

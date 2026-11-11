@@ -50,7 +50,7 @@ export default {
 
         const guild = interaction.guild!;
         const guildId = guild.id;
-        const reasonDoc = await ReasonRepository.findByKey(reasonKey);
+        const reasonDoc = await ReasonRepository.findByKey(reasonKey, guildId);
         const reason = reasonDoc?.label ?? reasonKey;
         const reasonAr = reasonDoc?.labelAr ?? reason;
         const member = guild.members.cache.get(targetId) ?? await guild.members.fetch(targetId).catch(() => null);

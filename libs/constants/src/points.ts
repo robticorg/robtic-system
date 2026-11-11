@@ -6,6 +6,8 @@ export const POINT_DEFAULTS = {
     voiceMinutesPerPoint: 10,
     pointsPerRc: 100,
     minConversionPoints: 100,
+    /** Real messages per staff point sent to Robtic Staff. */
+    staffMessagesPerPoint: 100,
 } as const;
 
 /** How many ledger rows `/points history` shows. */

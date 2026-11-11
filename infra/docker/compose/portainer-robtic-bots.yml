@@ -27,6 +27,11 @@ x-logging: &logging
 # CMD), the queue workers and the Invites API — the same code with a different start command.
 x-robtic-system-env: &robtic-system-env
   NODE_ENV: production
+  # Settings from the admin console (admin.robtic.org → Discord → Bot settings): with both values set, the bot reads
+  # its token, database and other variables from there at start-up and they win over this file. Empty: unchanged.
+  ROBTIC_BOT: system
+  ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
+  ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
   MONGODB_URI: ${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}
   # Required, never empty: an unset REDIS_URL makes each Gateway skip the leadership lock, and the
   # primary and the standby would then both log in to Discord.
@@ -52,7 +57,7 @@ x-robtic-system-gateway: &robtic-system-gateway
 
 x-robtic-system-gateway-env: &robtic-system-gateway-env
   <<: *robtic-system-env
-  MainBotToken: ${ROBTIC_SYSTEM_DISCORD_TOKEN:?ROBTIC_SYSTEM_DISCORD_TOKEN is required}
+  MainBotToken: ${ROBTIC_SYSTEM_DISCORD_TOKEN:-}  # optional: set in the admin console instead
   BANK_TOKEN: ${ROBTIC_BANK_TOKEN:-}
   MUSIC_TOKEN_KEY: ${ROBTIC_MUSIC_TOKEN_KEY:-}
   INVITES_API_URL: http://robtic-invites-api:3005
@@ -192,11 +197,15 @@ services:
     # an empty STAFF_TIMEZONE fails startup and an empty AUTOCLAIM_API_URL disables gift credits.
     environment:
       NODE_ENV: production
+      # Admin console settings, as for robtic-system above.
+      ROBTIC_BOT: staff
+      ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
+      ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
       MONGODB_URI: ${STAFF_MONGODB_URI:-${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}}
       MONGODB_DB: ${STAFF_MONGODB_DB:-robtic_staff}
       STAFF_TIMEZONE: ${STAFF_TIMEZONE:-UTC}
       LOG_LEVEL: ${STAFF_LOG_LEVEL:-info}
-      DISCORD_TOKEN: ${STAFF_DISCORD_TOKEN:?STAFF_DISCORD_TOKEN is required}
+      DISCORD_TOKEN: ${STAFF_DISCORD_TOKEN:-}  # optional: set in the admin console instead
       DISCORD_APP_ID: ${STAFF_DISCORD_APP_ID:?STAFF_DISCORD_APP_ID is required}
       DISCORD_GUILD_ID: ${STAFF_DISCORD_GUILD_ID:-}
       DISCORD_DEV_GUILD_ID: ${STAFF_DISCORD_DEV_GUILD_ID:-}

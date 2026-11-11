@@ -38,7 +38,7 @@ export const partnerAddModalHandler: ComponentHandler<ModalSubmitInteraction> = 
         });
 
         try {
-            const message = await resolved.channel.send(await renderPartnerPost(partner));
+            const message = await resolved.channel.send(await renderPartnerPost(partner, resolved.channel.guild.name));
             await PartnerServerRepository.setPost(String(partner._id), message.channelId, message.id);
 
             const roleNote = ROLE_NOTE[await grantPartnerRole(guild, representativeId)](representativeId);

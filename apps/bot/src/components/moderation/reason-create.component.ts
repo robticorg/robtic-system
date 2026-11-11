@@ -19,13 +19,14 @@ export const reasonCreateHandler: ComponentHandler<ModalSubmitInteraction> = {
         const label = interaction.fields.getTextInputValue("reason_label").trim();
         const labelAr = interaction.fields.getTextInputValue("reason_label_ar").trim();
 
-        const existing = await ReasonRepository.findByKey(key);
+        const existing = await ReasonRepository.findOwn(key, interaction.guildId!);
         if (existing) {
             await interaction.editReply({ content: errorText(`Reason \`${key}\` already exists.`) });
             return;
         }
 
         await ReasonRepository.create({
+            guildId: interaction.guildId!,
             key,
             label,
             labelAr,

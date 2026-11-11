@@ -1,9 +1,19 @@
 import { GuildFeatureRepository } from "@database/repositories";
+import { getPointRates } from "../points/get-point-rates";
 import { Logger } from "@logger";
 import { staffApiHeaders, staffApiUrl } from "./client";
 
-/** Every this many real messages, the author earns one staff point. */
+/**
+ * The default: every this many real messages, the author earns one staff point. Each server can change it
+ * (PointSettings.staffMessagesPerPoint, set from the dashboard); see staffMessagesPerPoint().
+ */
 export const MESSAGES_PER_STAFF_POINT = 100;
+
+/** This server's messages per staff point. */
+export async function staffMessagesPerPoint(guildId: string): Promise<number> {
+    const rate = (await getPointRates(guildId)).staffMessagesPerPoint;
+    return Number.isInteger(rate) && rate > 0 ? rate : MESSAGES_PER_STAFF_POINT;
+}
 
 /** The per-server switch: `/feature disable staff-points`. */
 export const STAFF_MESSAGE_POINTS_FEATURE = "staff-points";
@@ -73,7 +83,8 @@ export async function sendMessageMilestone(guildId: string, userId: string, mess
  * throws, logs instead, exactly like the pre-queue behavior.
  */
 export async function awardMessageMilestone(guildId: string, userId: string, messageCount: number): Promise<void> {
-    const milestones = crossedMilestones(messageCount, 1);
+    const every = await staffMessagesPerPoint(guildId).catch(() => MESSAGES_PER_STAFF_POINT);
+    const milestones = crossedMilestones(messageCount, 1, every);
     if (!milestones.length || !(await isStaffMessagePointsEnabled(guildId).catch(() => true))) return;
     for (const milestone of milestones) {
         try {

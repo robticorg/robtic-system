@@ -42,7 +42,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
         let reasonAr = reasonRaw;
         let reasonKey = reasonRaw;
 
-        const reasonDoc = await ReasonRepository.findByKey(reasonRaw.toLowerCase());
+        const reasonDoc = await ReasonRepository.findByKey(reasonRaw.toLowerCase(), guildId);
         if (reasonDoc) {
             reasonKey = reasonDoc.key;
             reason = reasonDoc.label;
@@ -61,6 +61,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
         if (type === "warn") {
             if (needsApproval) {
                 await requestApproval({
+                    guildId,
                     client, type: "warn", targetId, reasonKey, reasonLabel: reason,
                     requesterId: interaction.user.id, proofUrl: proofUrl ?? undefined,
                 });
@@ -85,6 +86,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
 
             if (needsApproval) {
                 await requestApproval({
+                    guildId,
                     client, type: "mute", targetId, reasonKey, reasonLabel: reason,
                     requesterId: interaction.user.id, extra: String(durationHours), proofUrl: proofUrl ?? undefined,
                 });
@@ -109,6 +111,7 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
 
             if (needsApproval) {
                 await requestApproval({
+                    guildId,
                     client, type: "ban", targetId, reasonKey, reasonLabel: reason,
                     requesterId: interaction.user.id, extra: permanent ? "perm" : String(durationDays), proofUrl: proofUrl ?? undefined,
                 });

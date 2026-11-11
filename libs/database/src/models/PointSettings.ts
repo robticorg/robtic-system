@@ -23,6 +23,8 @@ export interface IPointSettings extends Document {
     conversionEnabled: boolean;
     /** Smallest conversion a member may make, so the ledger is not filled with 1-point rounding. */
     minConversionPoints: number;
+    /** Real messages a staff member writes per staff point sent to Robtic Staff (the `staff-points` feature). */
+    staffMessagesPerPoint: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -44,6 +46,7 @@ const pointSettingsSchema = new Schema<IPointSettings>(
         pointsPerRc: { type: Number, default: 100 },
         conversionEnabled: { type: Boolean, default: true },
         minConversionPoints: { type: Number, default: 100 },
+        staffMessagesPerPoint: { type: Number, default: 100, min: 1, max: 10_000 },
     },
     { timestamps: true }
 );

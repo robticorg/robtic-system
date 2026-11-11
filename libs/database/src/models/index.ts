@@ -57,3 +57,4 @@ export {
     type RewardTransactionType,
     REWARD_TRANSACTION_TYPES,
 } from "./RewardTransaction";
+export { GuildPanel, type IGuildPanel } from "./GuildPanel";

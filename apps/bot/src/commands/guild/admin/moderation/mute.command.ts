@@ -89,7 +89,7 @@ export async function executeMute(
         )
         .setTimestamp();
 
-    const noticeChannel = await getLogChannel(client, "punishments_notice") as TextChannel | null;
+    const noticeChannel = await getLogChannel(client, "punishments_notice", guildId) as TextChannel | null;
     if (noticeChannel) {
         await noticeChannel.send({ embeds: [logEmbed] }).catch(() => null);
     }
@@ -183,7 +183,7 @@ export default {
             const guildId = interaction.guildId!;
             const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
             const durationMs = durationHours * 60 * 60 * 1000;
-            const reasonDoc = await ReasonRepository.findByKey(reasonKey);
+            const reasonDoc = await ReasonRepository.findByKey(reasonKey, interaction.guildId!);
             const reason = reasonDoc?.label ?? reasonKey;
             const reasonAr = reasonDoc?.labelAr ?? reason;
 
@@ -314,7 +314,7 @@ export default {
         const sub = interaction.options.getSubcommand();
 
         if (focused.name === "reason" && sub === "add") {
-            const reasons = await ReasonRepository.findByType("mute");
+            const reasons = await ReasonRepository.findByType("mute", interaction.guildId!);
             const filtered = reasons
                 .filter(r => r.key.includes(focused.value.toLowerCase()) || r.label.toLowerCase().includes(focused.value.toLowerCase()))
                 .slice(0, 25);

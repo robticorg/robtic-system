@@ -29,7 +29,7 @@ export default {
         const isAutoLine = channels.includes(message.channel.id);
         if (!isShortcut && !isAutoLine) return;
 
-        const line = await getLineImage().catch(() => null);
+        const line = await getLineImage(message.guild!.id).catch(() => null);
         if (!line) return;
 
         await message.channel.send({ files: [new AttachmentBuilder(line.data, { name: line.name })] }).catch(() => null);

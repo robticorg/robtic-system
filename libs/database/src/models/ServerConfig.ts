@@ -49,6 +49,10 @@ export interface IServerConfig extends Document {
     partnerChannelId?: string;
     /** Where the boost thank-you is posted (`/boost channel`). */
     boostChannelId?: string;
+    /** The thank-you itself (dashboard → Boosts). Unset: Robtic's wording in Robtic's servers, a plain thanks elsewhere. */
+    boostMessage?: { mode: "text" | "image"; text: string; withLine: boolean; card?: Record<string, unknown> } | null;
+    /** How partners are announced (dashboard → Partners). Unset: Robtic's banner in Robtic's servers, components elsewhere. */
+    partnerMessage?: { format: "components" | "embed" | "text" | "image"; text: string; withLine: boolean; card?: Record<string, unknown> } | null;
     /** Given to every member wearing the server tag of any whitelisted server (`/tag setup`). */
     tagRoleId?: string;
     /** Where tag-role changes are logged (`/tag setup log:`). Optional. */
@@ -110,6 +114,8 @@ const serverConfigSchema = new Schema<IServerConfig>(
         inviteLogChannelId: { type: String },
         partnerChannelId: { type: String },
         boostChannelId: { type: String },
+        boostMessage: { type: Schema.Types.Mixed, default: null },
+        partnerMessage: { type: Schema.Types.Mixed, default: null },
         tagRoleId: { type: String },
         tagLogChannelId: { type: String },
         partnerRoleId: { type: String },

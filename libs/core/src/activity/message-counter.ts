@@ -1,7 +1,7 @@
 import { COMBO_LEADERBOARD_PERIODS, type ComboLeaderboardPeriod } from "@constants";
 import { ActivityRepository, PeriodicStatRepository, PointsRepository } from "@database/repositories";
 import { periodKeyFor } from "@utils";
-import { crossedMilestones } from "../staff-api";
+import { crossedMilestones, staffMessagesPerPoint } from "../staff-api";
 import { getPointRates } from "../points/get-point-rates";
 
 /**
@@ -88,6 +88,8 @@ export interface MessageCounterStore {
     addPeriod(m: MemberBatch, period: ComboLeaderboardPeriod, periodKey: string, amount: number, batchId: string): Promise<unknown>;
     addProgress(m: MemberBatch, rate: number, batchId: string): Promise<number>;
     messagesPerPoint(guildId: string): Promise<number>;
+    /** Real messages per staff point in this server. */
+    staffMessagesPerPoint(guildId: string): Promise<number>;
 }
 
 export const repositoryMessageCounterStore: MessageCounterStore = {
@@ -96,6 +98,7 @@ export const repositoryMessageCounterStore: MessageCounterStore = {
         PeriodicStatRepository.incrementBatch(m.guildId, period, periodKey, "messages", m.discordId, amount, batchId),
     addProgress: (m, rate, batchId) => PointsRepository.addMessageProgressBatch(m.guildId, m.discordId, m.username, m.total, rate, batchId),
     messagesPerPoint: async guildId => (await getPointRates(guildId)).messagesPerPoint,
+    staffMessagesPerPoint: guildId => staffMessagesPerPoint(guildId),
 };
 
 export interface FlushOutcome {
@@ -120,11 +123,13 @@ export async function applyMessageBatch(
 ): Promise<FlushOutcome> {
     const store = deps.store ?? repositoryMessageCounterStore;
     const rates = new Map<string, number>();
+    const staffRates = new Map<string, number>();
     const outcome: FlushOutcome = { members: 0, messages: 0, pointsPaid: 0, milestones: 0 };
 
     for (const m of members) {
         const { total, added } = await store.addRealMessages(m, batchId);
-        for (const milestone of crossedMilestones(total, added)) {
+        if (!staffRates.has(m.guildId)) staffRates.set(m.guildId, await store.staffMessagesPerPoint(m.guildId));
+        for (const milestone of crossedMilestones(total, added, staffRates.get(m.guildId))) {
             await deps.onMilestone(m.guildId, m.discordId, milestone);
             outcome.milestones++;
         }

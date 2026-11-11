@@ -69,6 +69,6 @@ export async function processGuildDecay(client: Client, guild: Guild): Promise<v
 
         Logger.debug(`Decay: ${user.username} lost ${parts}`, "community");
 
-        await logToChannel(client, "decay", decayEmbed(user.discordId, loss, levelDown, before, levels));
+        await logToChannel(client, "decay", decayEmbed(user.discordId, loss, levelDown, before, levels), guild.id);
     }
 }
