@@ -1,4 +1,5 @@
 import { createDecipheriv } from "node:crypto";
+import { formatWithOptions } from "node:util";
 import mongoose from "mongoose";
 
 // Settings from the Robtic admin console. The container keeps only three values:
@@ -83,26 +84,45 @@ function startLogShipping(conn: mongoose.Connection): void {
   // eslint-disable-next-line no-control-regex
   const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
-  const capture = (stream: "out" | "err", original: typeof process.stdout.write) =>
-    function (this: unknown, chunk: unknown, ...rest: unknown[]) {
-      try {
-        const text = partial[stream] + (typeof chunk === "string" ? chunk : Buffer.from(chunk as Uint8Array).toString("utf8"));
-        const lines = text.split("\n");
-        partial[stream] = lines.pop() ?? "";
-        for (const raw of lines) {
-          const line = strip(raw).trimEnd();
-          if (!line) continue;
-          pending.push({ bot: BOT, source: LOG_SOURCE, at: new Date(), stream, line: line.slice(0, LOG_LINE_MAX) });
-        }
-        if (pending.length > LOG_BUFFER_MAX) pending.splice(0, pending.length - LOG_BUFFER_MAX);
-      } catch {
-        // Never let copying a log line break the write itself.
+  const record = (stream: "out" | "err", chunk: unknown) => {
+    try {
+      const text = partial[stream] + (typeof chunk === "string" ? chunk : Buffer.from(chunk as Uint8Array).toString("utf8"));
+      const lines = text.split("\n");
+      partial[stream] = lines.pop() ?? "";
+      for (const raw of lines) {
+        const line = strip(raw).trimEnd();
+        if (!line) continue;
+        pending.push({ bot: BOT, source: LOG_SOURCE, at: new Date(), stream, line: line.slice(0, LOG_LINE_MAX) });
       }
-      return (original as (...a: unknown[]) => boolean).call(process[stream === "out" ? "stdout" : "stderr"], chunk, ...rest);
-    } as typeof process.stdout.write;
+      if (pending.length > LOG_BUFFER_MAX) pending.splice(0, pending.length - LOG_BUFFER_MAX);
+    } catch {
+      // Never let copying a log line break the write itself.
+    }
+  };
 
-  process.stdout.write = capture("out", process.stdout.write.bind(process.stdout));
-  process.stderr.write = capture("err", process.stderr.write.bind(process.stderr));
+  // Bun's console writes straight to the terminal without going through process.stdout.write, so both are copied;
+  // `inConsole` keeps a runtime that does route console through write (Node) from copying a line twice.
+  let inConsole = false;
+  const wrapWrite = (stream: "out" | "err", original: typeof process.stdout.write) =>
+    function (this: unknown, chunk: unknown, ...rest: unknown[]) {
+      if (!inConsole) record(stream, chunk);
+      return (original as (...a: unknown[]) => boolean)(chunk, ...rest);
+    } as typeof process.stdout.write;
+  process.stdout.write = wrapWrite("out", process.stdout.write.bind(process.stdout));
+  process.stderr.write = wrapWrite("err", process.stderr.write.bind(process.stderr));
+
+  for (const [method, stream] of [["log", "out"], ["info", "out"], ["debug", "out"], ["warn", "err"], ["error", "err"]] as const) {
+    const original = console[method].bind(console);
+    console[method] = (...args: unknown[]) => {
+      record(stream, `${formatWithOptions({ colors: false }, ...args)}\n`);
+      inConsole = true;
+      try {
+        original(...args);
+      } finally {
+        inConsole = false;
+      }
+    };
+  }
 
   const ready = conn
     .createCollection(LOG_COLLECTION, { capped: true, size: 32 * 1024 * 1024, max: 100_000 })
