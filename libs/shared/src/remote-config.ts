@@ -28,6 +28,8 @@ interface ConfigDoc {
   blacklist?: { guildId: string }[];
   /** Emoji slot -> emoji, set in the admin console (Discord -> Emojis). Plain text, not encrypted. */
   emojis?: Record<string, string>;
+  /** Set by the admin console's Restart: every process started before it exits and comes back. */
+  restartAt?: string;
 }
 
 let blocked = new Set<string>();
@@ -97,6 +99,88 @@ if (URI && KEY && REMOTE) {
       console.warn("[remote-config] could not refresh the blocked servers and emojis", err);
     }
   }, REFRESH_MS);
+  timer.unref?.();
+
+  startLogShipping(conn);
+  watchRestart(() => conn.collection<ConfigDoc>(COLLECTION).findOne({ _id: BOT } as never, { projection: { restartAt: 1 } }) as Promise<ConfigDoc | null>);
+}
+
+/* ------------------------------------------------------------------ restart and logs, from the admin console */
+
+// The admin console can restart a bot (Discord → Bot settings → Restart) and read its recent output, without touching
+// Docker or Portainer: it writes `restartAt` on the bot's document, which every process of the bot checks every few
+// seconds and answers by exiting cleanly (the containers restart themselves: `restart: unless-stopped`). Output is
+// copied into a small capped collection the console reads.
+
+const STARTED_AT = Date.now();
+const RESTART_CHECK_MS = 10_000;
+const LOG_COLLECTION = process.env.ROBTIC_LOG_COLLECTION?.trim() || "discord_bot_logs";
+const LOG_FLUSH_MS = 3_000;
+const LOG_LINE_MAX = 2_000;
+const LOG_BUFFER_MAX = 1_000;
+/** Which process of the bot a line came from: the Gateway's role, a worker, an internal API, or the bot itself. */
+const LOG_SOURCE = process.env.ROBTIC_LOG_SOURCE?.trim()
+  || process.env.GATEWAY_ROLE?.trim()
+  || (/worker/.test(process.argv[1] ?? "") ? `worker:${process.env.HOSTNAME ?? ""}`.replace(/:$/, "") : /internal-api/.test(process.argv[1] ?? "") ? "internal-api" : BOT);
+
+let flushLogs: (() => Promise<void>) | null = null;
+
+function startLogShipping(conn: mongoose.Connection): void {
+  const pending: { bot: string; source: string; at: Date; stream: "out" | "err"; line: string }[] = [];
+  let partial = { out: "", err: "" };
+  // eslint-disable-next-line no-control-regex
+  const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+
+  const capture = (stream: "out" | "err", original: typeof process.stdout.write) =>
+    function (this: unknown, chunk: unknown, ...rest: unknown[]) {
+      try {
+        const text = partial[stream] + (typeof chunk === "string" ? chunk : Buffer.from(chunk as Uint8Array).toString("utf8"));
+        const lines = text.split("\n");
+        partial[stream] = lines.pop() ?? "";
+        for (const raw of lines) {
+          const line = strip(raw).trimEnd();
+          if (!line) continue;
+          pending.push({ bot: BOT, source: LOG_SOURCE, at: new Date(), stream, line: line.slice(0, LOG_LINE_MAX) });
+        }
+        if (pending.length > LOG_BUFFER_MAX) pending.splice(0, pending.length - LOG_BUFFER_MAX);
+      } catch {
+        // Never let copying a log line break the write itself.
+      }
+      return (original as (...a: unknown[]) => boolean).call(process[stream === "out" ? "stdout" : "stderr"], chunk, ...rest);
+    } as typeof process.stdout.write;
+
+  process.stdout.write = capture("out", process.stdout.write.bind(process.stdout));
+  process.stderr.write = capture("err", process.stderr.write.bind(process.stderr));
+
+  const ready = conn
+    .createCollection(LOG_COLLECTION, { capped: true, size: 32 * 1024 * 1024, max: 100_000 })
+    .catch(() => null) // already there
+    .then(() => conn.collection(LOG_COLLECTION).createIndex({ bot: 1, at: -1 }).catch(() => null));
+
+  flushLogs = async () => {
+    if (!pending.length) return;
+    const batch = pending.splice(0, pending.length);
+    await ready;
+    await conn.collection(LOG_COLLECTION).insertMany(batch, { ordered: false }).catch(() => null);
+  };
+  const timer = setInterval(() => void flushLogs?.(), LOG_FLUSH_MS);
+  timer.unref?.();
+}
+
+function watchRestart(read: () => Promise<ConfigDoc | null>): void {
+  const timer = setInterval(async () => {
+    try {
+      const at = Date.parse(String((await read())?.restartAt ?? ""));
+      // Only a request made after this process started: the restarted process sees the same value and carries on.
+      if (!Number.isFinite(at) || at <= STARTED_AT) return;
+      console.log(`[remote-config] restart requested from the admin console (${new Date(at).toISOString()}), restarting.`);
+      clearInterval(timer);
+      await flushLogs?.().catch(() => null);
+      process.exit(0);
+    } catch {
+      // The database is back next time.
+    }
+  }, RESTART_CHECK_MS);
   timer.unref?.();
 }
 
