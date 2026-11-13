@@ -25,6 +25,20 @@ export function formatBonusPercent(bp: number): string {
     return `${Number.isInteger(percent) ? percent : percent.toFixed(2).replace(/0+$/, "")}%`;
 }
 
+/** A server's own announcement text (dashboard → Invites), filled the way the dashboard previews it. */
+export function fillInviteText(text: string, v: { user: string; username: string; inviter: string; invites: number; code: string; server: string; members: number }): string {
+    return text
+        .replaceAll("[username]", v.username)
+        .replaceAll("[user]", v.user)
+        .replaceAll("[inviter]", v.inviter)
+        .replaceAll("[invites]", String(v.invites))
+        .replaceAll("[code]", v.code)
+        .replaceAll("[server]", v.server)
+        .replaceAll("[members]", String(v.members))
+        .replace(/\[#(\d{15,22})\]/g, "<#$1>")
+        .slice(0, 2000);
+}
+
 export function vanityJoinMessage(memberId: string, vanityCode: string): string {
     return L(`**<@${memberId}>** has arrived by using the vanity invite **${escapeMarkdown(vanityCode)}**.`, `**<@${memberId}>** دخل برابط السيرفر الخاص **${escapeMarkdown(vanityCode)}**.`);
 }

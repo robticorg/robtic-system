@@ -132,6 +132,14 @@ export class ServerConfigRepository {
         return config?.inviteLogChannelId ?? null;
     }
 
+    /** Where joins and leaves go (leave falls back to the join channel) and the custom texts, from the dashboard. */
+    static async getInviteConfig(guildId: string): Promise<{ joinChannelId: string | null; leaveChannelId: string | null; messages: Record<string, string> }> {
+        const config = await ServerConfig.findOne({ guildId }).select("inviteLogChannelId inviteLeaveChannelId inviteMessages").lean();
+        const join = config?.inviteLogChannelId ?? null;
+        const messages = Object.fromEntries(Object.entries(config?.inviteMessages ?? {}).filter(([, v]) => typeof v === "string" && v.trim())) as Record<string, string>;
+        return { joinChannelId: join, leaveChannelId: config?.inviteLeaveChannelId ?? join, messages };
+    }
+
     static async setBoostChannel(guildId: string, channelId: string | null): Promise<void> {
         await ServerConfig.updateOne(
             { guildId },

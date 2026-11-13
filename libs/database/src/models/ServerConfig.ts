@@ -49,6 +49,10 @@ export interface IServerConfig extends Document {
     commandsChannelId?: string;
     /** Where the invites feature announces each join and who invited them (`/invites-config channel`). */
     inviteLogChannelId?: string;
+    /** Where leaves are announced (dashboard → Invites). Unset: the join channel above. */
+    inviteLeaveChannelId?: string;
+    /** Each invite announcement's own text (dashboard → Invites); empty or unset = the bot's wording. */
+    inviteMessages?: Partial<Record<"joinInvited" | "joinVanity" | "joinUnknown" | "leaveInvited" | "leaveVanity" | "leaveUnknown", string>> | null;
     /** Where `/partner add` posts partner banners (`/partner channel`). */
     partnerChannelId?: string;
     /** Where the boost thank-you is posted (`/boost channel`). */
@@ -118,6 +122,8 @@ const serverConfigSchema = new Schema<IServerConfig>(
         topStyle: { type: Schema.Types.Mixed, default: null },
         commandsChannelId: { type: String },
         inviteLogChannelId: { type: String },
+        inviteLeaveChannelId: { type: String },
+        inviteMessages: { type: Schema.Types.Mixed, default: null },
         partnerChannelId: { type: String },
         boostChannelId: { type: String },
         boostMessage: { type: Schema.Types.Mixed, default: null },

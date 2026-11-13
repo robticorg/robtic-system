@@ -3,13 +3,15 @@ import { isFeatureEnabled } from "@core/features";
 import { ServerConfigRepository } from "@database/repositories";
 
 /**
- * Where joins and leaves are announced: the `/invites-config channel`. `null` when no channel is
- * set, the channel is gone, or the feature is disabled — tracking carries on regardless.
+ * Where a join or a leave is announced, and the server's custom texts (dashboard → Invites). Joins go to the
+ * `/invites-config channel`; leaves to their own channel, or the join one. `channel` is `null` when none is set, it's
+ * gone, or the feature is disabled: tracking carries on regardless.
  */
-export async function inviteLogChannel(guild: Guild): Promise<SendableChannels | null> {
-    const channelId = await ServerConfigRepository.getInviteLogChannel(guild.id);
-    if (!channelId || !(await isFeatureEnabled(guild.id, "invites"))) return null;
+export async function inviteLogChannel(guild: Guild, kind: "join" | "leave" = "join"): Promise<{ channel: SendableChannels | null; messages: Record<string, string> }> {
+    const config = await ServerConfigRepository.getInviteConfig(guild.id);
+    const channelId = kind === "join" ? config.joinChannelId : config.leaveChannelId;
+    if (!channelId || !(await isFeatureEnabled(guild.id, "invites"))) return { channel: null, messages: config.messages };
 
     const channel = guild.channels.cache.get(channelId);
-    return channel?.isSendable() ? channel : null;
+    return { channel: channel?.isSendable() ? channel : null, messages: config.messages };
 }

@@ -14,6 +14,7 @@ import {
     unknownLeaveMessage,
     fakeWindowStart,
     parseTicketQuery,
+    fillInviteText,
 } from "@bot/features/invites/utils/invite-format";
 import { hasTicketName } from "@bot/features/invites/utils/ticket-channels";
 import { INFO_PAGE_ID } from "@bot/features/invites/utils/info-view";
@@ -118,6 +119,14 @@ const check = (name: string, ok: boolean, detail = "") => {
     check("chatter is not a query", parseTicketQuery("info about the server please") === null && parseTicketQuery("my invites") === null);
     check("a prefixed command is not a bare query", parseTicketQuery(`!info <@${id}>`) === null);
     check("ticket channels are recognised by name", hasTicketName("ticket-0042") && hasTicketName("Ticket-x") && !hasTicketName("tickets") && !hasTicketName(null));
+}
+
+{
+    const v = { user: "<@1>", username: "robo", inviter: "patric", invites: 12, code: "robtic", server: "Robtic", members: 1520 };
+    check("custom invite text fills every placeholder", fillInviteText("[user] [username] [inviter] [invites] [code] [server] [members]", v) === "<@1> robo patric 12 robtic Robtic 1520");
+    check("[username] isn't eaten by [user]", fillInviteText("[username]", v) === "robo");
+    check("[#id] becomes a channel mention", fillInviteText("see [#123456789012345678]", v) === "see <#123456789012345678>");
+    check("custom invite text stays within Discord's limit", fillInviteText("x".repeat(1000) + "[members]".repeat(300), v).length === 2000);
 }
 
 if (failures > 0) {
