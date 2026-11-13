@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { COLORS } from "@constants";
 import { sendToServerLog } from "@bot/utils/server-log";
 
+import { L } from "@utils";
 export default {
     name: Events.MessageUpdate,
     async execute(oldMessage: Message, newMessage: Message, client: BotClient) {
@@ -12,14 +13,14 @@ export default {
         const truncate = (s: string, max = 1024) => s.length > max ? s.slice(0, max - 3) + "..." : s;
 
         const embed = new EmbedBuilder()
-            .setTitle("📘 Audit: Message Edited")
+            .setTitle(L("📘 Message edited", "📘 تعديل رسالة"))
             .setColor(COLORS.warning)
             .addFields(
-                { name: "Author", value: `<@${newMessage.author.id}> (\`${newMessage.author.id}\`)`, inline: true },
-                { name: "Channel", value: `${newMessage.channel.toString()} (\`${newMessage.channelId}\`)`, inline: true },
-                { name: "Before", value: truncate(oldMessage.content || "(empty)") },
-                { name: "After", value: truncate(newMessage.content || "(empty)") },
-                { name: "Link", value: `[Jump to message](${newMessage.url})`, inline: true },
+                { name: L("Author", "الكاتب"), value: `<@${newMessage.author.id}> (\`${newMessage.author.id}\`)`, inline: true },
+                { name: L("Channel", "الروم"), value: `${newMessage.channel.toString()} (\`${newMessage.channelId}\`)`, inline: true },
+                { name: L("Before", "قبل"), value: truncate(oldMessage.content || L("(empty)", "(فارغة)")) },
+                { name: L("After", "بعد"), value: truncate(newMessage.content || L("(empty)", "(فارغة)")) },
+                { name: L("Link", "الرابط"), value: L(`[Jump to message](${newMessage.url})`, `[الذهاب للرسالة](${newMessage.url})`), inline: true },
             )
             .setTimestamp();
 

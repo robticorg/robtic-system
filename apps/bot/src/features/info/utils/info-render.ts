@@ -10,6 +10,7 @@ import {
 } from "discord.js";
 import type { IInfoOption, IInfoPanel, InfoButtonStyle } from "@database/models";
 
+import { L } from "@utils";
 export const INFO_BUTTON_ID = /^info:btn:[a-f0-9]{24}:[a-f0-9]{8}$/;
 export const INFO_MENU_ID = /^info:menu:[a-f0-9]{24}$/;
 
@@ -64,7 +65,7 @@ export function buildInfoPanelMessage(panel: IInfoPanel) {
             new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId(`info:menu:${panelId}`)
-                    .setPlaceholder("Choose an option…")
+                    .setPlaceholder(L("Choose an option…", "اختر خيار…"))
                     .addOptions(options.map(menuEntry)),
             ),
         );

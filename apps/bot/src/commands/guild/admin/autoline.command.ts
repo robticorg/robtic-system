@@ -11,6 +11,7 @@ import {
 import { COLORS, SUPER_ADMIN_ID } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
+import { L } from "@utils";
 /**
  * `/autoline add|remove channel:` — channels (text or announcement) where every message gets the
  * line image (`/setline`) posted after it and a reaction. Was `/line add|remove`.
@@ -71,13 +72,13 @@ export default {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         if (!interaction.guildId) {
-            await interaction.editReply({ content: "❌ This command can only be used in a server." });
+            await interaction.editReply({ content: L("❌ This command can only be used in a server.", "❌ هذا الأمر يعمل داخل السيرفر فقط.") });
             return;
         }
 
         const member = interaction.member as GuildMember | null;
         if (interaction.user.id !== SUPER_ADMIN_ID && !member?.permissions.has(PermissionFlagsBits.Administrator)) {
-            await interaction.editReply({ content: "❌ Only Administrators can manage auto-line channels." });
+            await interaction.editReply({ content: L("❌ Only Administrators can manage auto-line channels.", "❌ إدارة رومات الخط التلقائي للأدمن فقط.") });
             return;
         }
 
@@ -87,9 +88,9 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setTitle("✅ Auto-line Channel Added")
+                    .setTitle(L("✅ Auto-line channel added", "✅ تمت إضافة روم خط تلقائي"))
                     .setColor(COLORS.success)
-                    .setDescription(`Every message sent in <#${channel.id}> will now get the line image after it.`)
+                    .setDescription(L(`Every message sent in <#${channel.id}> will now get the line image after it.`, `كل رسالة في <#${channel.id}> بيجي بعدها الخط.`))
                     .setTimestamp()],
             });
             return;
@@ -101,11 +102,11 @@ export default {
 
         await interaction.editReply({
             embeds: [new EmbedBuilder()
-                .setTitle(before.includes(channelId) ? "✅ Auto-line Channel Removed" : "Not an auto-line channel")
+                .setTitle(before.includes(channelId) ? L("✅ Auto-line channel removed", "✅ تم حذف روم الخط التلقائي") : L("Not an auto-line channel", "ليس روم خط تلقائي"))
                 .setColor(before.includes(channelId) ? COLORS.success : COLORS.warning)
                 .setDescription(before.includes(channelId)
-                    ? `<#${channelId}> will no longer get the line image.`
-                    : `<#${channelId}> wasn't an auto-line channel.`)
+                    ? L(`<#${channelId}> will no longer get the line image.`, `<#${channelId}> ما عاد يجيه الخط.`)
+                    : L(`<#${channelId}> wasn't an auto-line channel.`, `<#${channelId}> ما كان روم خط تلقائي.`))
                 .setTimestamp()],
         });
     },

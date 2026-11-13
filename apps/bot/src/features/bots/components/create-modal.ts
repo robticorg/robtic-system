@@ -7,13 +7,14 @@ import { enableMinecraftBot } from "../lib/minecraft-api";
 import { canManageMinecraftBot } from "../utils/can-manage-minecraft-bot";
 import { BOT_CREATE_MODAL_ID, BOT_FIELDS, type BotType } from "../utils/forms";
 
+import { L } from "@utils";
 /** A music bot: checked, saved encrypted and started by `@core/music`; the invite and channel permissions are done here. */
 async function createMusic(interaction: ModalSubmitInteraction, token: string): Promise<void> {
     const guild = interaction.guild!;
     const name = interaction.fields.getTextInputValue(BOT_FIELDS.name).trim();
     const channel = interaction.fields.getSelectedChannels(BOT_FIELDS.channel, false, [ChannelType.GuildVoice])?.first();
-    if (!name) return void await interaction.editReply({ content: "A music bot needs a **name** — fill in *Bot name* and try again." });
-    if (!channel) return void await interaction.editReply({ content: "A music bot needs a **voice channel** — pick one and try again." });
+    if (!name) return void await interaction.editReply({ content: L("A music bot needs a **name**: fill in *Bot name* and try again.", "بوت الموسيقى يحتاج **اسم**: عبّي *Bot name* وحاول مرة ثانية.") });
+    if (!channel) return void await interaction.editReply({ content: L("A music bot needs a **voice channel**: pick one and try again.", "بوت الموسيقى يحتاج **روم صوتي**: اختر واحد وحاول مرة ثانية.") });
 
     const result = await createMusicBot({
         guildId: guild.id,
@@ -33,7 +34,7 @@ async function createMusic(interaction: ModalSubmitInteraction, token: string): 
                 `🎵 **${bot.name}** is online. It isn't in this server yet — add it here:`,
                 musicBotInviteUrl(bot.applicationId, guild.id),
                 "",
-                `It's invited with **no permissions**. Once it joins, I'll give it what it needs on <#${channel.id}> only, and it will join that channel.`,
+                L(`It's invited with **no permissions**. Once it joins, I'll give it what it needs on <#${channel.id}> only, and it will join that channel.`, `ينضاف **بدون صلاحيات**. أول ما يدخل بعطيه اللي يحتاجه في <#${channel.id}> فقط، ويدخل الروم.`),
             ].join("\n"),
             allowedMentions: { parse: [] },
         });
@@ -44,7 +45,7 @@ async function createMusic(interaction: ModalSubmitInteraction, token: string): 
     await interaction.editReply({
         content: problem
             ? `🎵 **${bot.name}** is online, but ${problem}.`
-            : `🎵 **${bot.name}** is online and joining <#${channel.id}>. Play with \`ش <song>\` in that channel's chat.`,
+            : L(`🎵 **${bot.name}** is online and joining <#${channel.id}>. Play with \`play <song>\` in that channel's chat.`, `🎵 **${bot.name}** شغال ويدخل <#${channel.id}>. شغل أغنية بـ \`ش <الأغنية>\` في شات الروم.`),
         allowedMentions: { parse: [] },
     });
 }
@@ -52,7 +53,7 @@ async function createMusic(interaction: ModalSubmitInteraction, token: string): 
 /** The Minecraft bot: the token goes to the Minecraft API, which checks it, saves it encrypted and keeps it running. */
 async function createMinecraft(interaction: ModalSubmitInteraction, token: string): Promise<void> {
     if (!(await canManageMinecraftBot(interaction.user.id))) {
-        return void await interaction.editReply({ content: "Only the bot owner and super users can set up the Minecraft bot — there's one for the whole deployment." });
+        return void await interaction.editReply({ content: L("Only the bot owner and super users can set up the Minecraft bot: there's one for everyone.", "تجهيز بوت ماينكرافت لمالك البوت والمستخدمين الخارقين فقط: هو واحد للكل.") });
     }
 
     const response = await enableMinecraftBot({
@@ -70,10 +71,10 @@ async function createMinecraft(interaction: ModalSubmitInteraction, token: strin
     const inServer = bot.botId ? await interaction.guild!.members.fetch(bot.botId).then(() => true, () => false) : false;
     await interaction.editReply({
         content: [
-            `⛏️ **${bot.username}** is online on the Minecraft API, and starts again on its own whenever the API restarts.`,
-            ...(inServer || !bot.inviteUrl ? [] : ["It isn't in this server yet — add it here:", bot.inviteUrl]),
+            L(`⛏️ **${bot.username}** is online on the Minecraft API, and starts again on its own whenever the API restarts.`, `⛏️ **${bot.username}** شغال على Minecraft API، ويرجع يشتغل لحاله إذا انعاد تشغيل الـ API.`),
+            ...(inServer || !bot.inviteUrl ? [] : [L("It isn't in this server yet. Add it here:", "مو موجود في السيرفر لين الحين. أضفه من هنا:"), bot.inviteUrl]),
             "",
-            "Post the account panel with `/minecraft panel`. Turn on **Message Content Intent** in the Developer Portal for the chat bridge and `!ip`.",
+            L("Post the account panel with `/minecraft panel`. Turn on **Message Content Intent** in the Developer Portal for the chat bridge and `!ip`.", "انشر لوحة الحساب بـ `/minecraft panel`. فعّل **Message Content Intent** في Developer Portal لربط الشات و `!ip`."),
         ].join("\n"),
         allowedMentions: { parse: [] },
     });
@@ -91,6 +92,6 @@ export const botCreateModalHandler: ComponentHandler<ModalSubmitInteraction> = {
 
         if (type === "music") return void await createMusic(interaction, token);
         if (type === "minecraft") return void await createMinecraft(interaction, token);
-        await interaction.editReply({ content: "Pick which bot to create." });
+        await interaction.editReply({ content: L("Pick which bot to create.", "اختر أي بوت تبي تنشئ.") });
     },
 };

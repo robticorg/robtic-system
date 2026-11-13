@@ -11,6 +11,7 @@ import { COLORS } from "@constants";
 import { listFeatureManifests, getFeatureManifest, isFeatureEnabled } from "@core/features";
 import { GuildFeatureRepository } from "@database/repositories";
 
+import { L } from "@utils";
 async function setEnabled(interaction: ChatInputCommandInteraction, enabled: boolean): Promise<void> {
     const key = interaction.options.getString("feature", true).trim().toLowerCase();
     const manifest = getFeatureManifest(key);
@@ -18,7 +19,7 @@ async function setEnabled(interaction: ChatInputCommandInteraction, enabled: boo
     if (!manifest) {
         await interaction.editReply({
             embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(
-                `❌ No feature called \`${key}\`. Run \`/feature list\` to see them.`
+                L(`❌ No feature called \`${key}\`. Run \`/feature list\` to see them.`, `❌ ما في نظام اسمه \`${key}\`. استخدم \`/feature list\` لتشوفها.`)
             )],
         });
         return;
@@ -29,7 +30,7 @@ async function setEnabled(interaction: ChatInputCommandInteraction, enabled: boo
     await interaction.editReply({
         embeds: [new EmbedBuilder()
             .setColor(COLORS.success)
-            .setDescription(`**${manifest.description}** is now **${enabled ? "enabled" : "disabled"}** in this server.`)],
+            .setDescription(L(`**${manifest.description}** is now **${enabled ? "enabled" : "disabled"}** in this server.`, `**${manifest.description}** صار **${enabled ? "مفعّل" : "مقفل"}** في هذا السيرفر.`))],
     });
 }
 
@@ -64,21 +65,21 @@ export default {
 
         if (!manifests.length) {
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.info).setDescription("No features are installed.")],
+                embeds: [new EmbedBuilder().setColor(COLORS.info).setDescription(L("No features are installed.", "ما في أنظمة مثبتة."))],
             });
             return;
         }
 
         const lines = await Promise.all(manifests.map(async manifest => {
             const on = await isFeatureEnabled(interaction.guildId!, manifest.key);
-            const source = manifest.activation === "default-on" ? "on by default" : "opt-in";
+            const source = manifest.activation === "default-on" ? L("on by default", "مفعّل افتراضياً") : L("opt-in", "يحتاج تفعيل");
             return `${on ? "🟢" : "⚪"} \`${manifest.key}\` — ${manifest.description} *(${source})*`;
         }));
 
         await interaction.editReply({
             embeds: [new EmbedBuilder()
                 .setColor(COLORS.info)
-                .setTitle("Features")
+                .setTitle(L("Features", "الأنظمة"))
                 .setDescription(lines.join("\n"))],
         });
     },
@@ -91,6 +92,6 @@ export default {
             .filter(manifest => manifest.key.includes(focused.value.toLowerCase()))
             .slice(0, 25);
 
-        await interaction.respond(matches.map(manifest => ({ name: `${manifest.key} — ${manifest.description}`, value: manifest.key })));
+        await interaction.respond(matches.map(manifest => ({ name: L(`${manifest.key} — ${manifest.description}`.slice(0, 100), `${manifest.key} — ${manifest.description}`.slice(0, 100)), value: manifest.key })));
     },
 } satisfies CommandConfig;

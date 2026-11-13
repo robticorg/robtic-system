@@ -13,6 +13,7 @@ import { listFeatureManifests } from "@core/features";
 import { commandUsageEntries } from "./command-usage";
 import { visibleCommands, isFromDisabledFeature, type HelpContext } from "./help-context";
 
+import { L } from "@utils";
 /**
  * Discord's real ceilings. The old builder respected neither: it emitted one field per command
  * carrying *every* usage line, then `.slice(0, 25)`. Configuration reached 6188 characters, over
@@ -109,7 +110,7 @@ export function buildOverviewEmbed(client: BotClient, context: HelpContext): Emb
 
     if (categories.length > 0) {
         parts.push(HELP.categoriesLine(
-            categories.map(c => HELP.categoryCount(`${emojiFor(c)} ${c}`, groups.get(c)?.length ?? 0))
+            categories.map(c => HELP.categoryCount(`${emojiFor(c)} ${HELP.categoryLabel(c)}`, groups.get(c)?.length ?? 0))
         ));
     }
 
@@ -142,8 +143,8 @@ function categoryLines(commands: CommandConfig[], context: HelpContext): string[
 
         const notes = [
             forms.length > 1 ? HELP.subcommandCount(forms.length) : "",
-            command.modalOnly ? "slash only" : "",
-            off ? "feature off" : "",
+            command.modalOnly ? L("slash only", "سلاش فقط") : "",
+            off ? L("feature off", "النظام مقفل") : "",
         ].filter(Boolean);
 
         const summary = commandDescription(command);
@@ -166,7 +167,7 @@ export function buildCategoryEmbed(
     const slice = commands.slice((current - 1) * COMMANDS_PER_PAGE, current * COMMANDS_PER_PAGE);
 
     const embed = new EmbedBuilder()
-        .setTitle(HELP.categoryTitle(displayName(client), `${emojiFor(category)} ${category}`))
+        .setTitle(HELP.categoryTitle(displayName(client), `${emojiFor(category)} ${HELP.categoryLabel(category)}`))
         .setColor(COLORS.info)
         .setFooter({ text: HELP.pageFooter(current, pages, commands.length) });
 
@@ -214,8 +215,8 @@ export function buildCategoryRow(
                 default: selected === HELP.overviewSelectValue || selected === undefined,
             },
             ...categories.slice(0, 24).map(category => ({
-                label: category,
-                description: `${groups.get(category)?.length ?? 0} commands`,
+                label: HELP.categoryLabel(category),
+                description: L(`${groups.get(category)?.length ?? 0} commands`, `${groups.get(category)?.length ?? 0} أمر`),
                 value: category,
                 emoji: emojiFor(category),
                 default: selected === category,

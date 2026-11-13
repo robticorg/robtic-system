@@ -10,6 +10,7 @@ import type { ComponentHandler } from "@typings/command";
 import { COLORS } from "@constants";
 import { StreakRewardRepository, StreakRewardClaimRepository } from "@database/repositories";
 
+import { L } from "@utils";
 export const streakRewardClaimHandler: ComponentHandler<ButtonInteraction> = {
     customId: /^streak_reward_claim_(\d+)_(\d+)$/,
 
@@ -20,20 +21,20 @@ export const streakRewardClaimHandler: ComponentHandler<ButtonInteraction> = {
         const threshold = Number(thresholdStr);
 
         if (interaction.user.id !== recipientId) {
-            await interaction.reply({ content: "هذه المكافأة ليست لك.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L("This reward isn't yours.", "هذي المكافأة مو لك."), flags: MessageFlags.Ephemeral });
             return;
         }
 
         const guildId = interaction.guildId!;
         const reward = await StreakRewardRepository.get(guildId, threshold);
         if (!reward) {
-            await interaction.reply({ content: "لم تعد هذه المكافأة متاحة.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L("This reward isn't available any more.", "هذي المكافأة ما عادت متاحة."), flags: MessageFlags.Ephemeral });
             return;
         }
 
         const claimed = await StreakRewardClaimRepository.markClaimed(guildId, recipientId, threshold);
         if (!claimed) {
-            await interaction.reply({ content: "لقد طالبت بهذه المكافأة بالفعل.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L("You already claimed this reward.", "استلمت هذي المكافأة من قبل."), flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -41,19 +42,19 @@ export const streakRewardClaimHandler: ComponentHandler<ButtonInteraction> = {
         if (user) {
             await user.send({
                 embeds: [new EmbedBuilder()
-                    .setTitle("🎁 تم استلام مكافأتك!")
+                    .setTitle(L("🎁 Reward claimed!", "🎁 تم استلام مكافأتك!"))
                     .setColor(COLORS.success)
-                    .setDescription(`مكافأتك مقابل **${threshold}** يوم تتابع:\n${reward.offer}`)
+                    .setDescription(L(`Your reward for a **${threshold}**-day streak:\n${reward.offer}`, `مكافأتك مقابل **${threshold}** يوم ستريك:\n${reward.offer}`))
                     .setTimestamp()],
             }).catch(() => null);
         }
 
-        await interaction.reply({ content: "✅ تمت المطالبة بالمكافأة! تحقق من رسائلك الخاصة.", flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: L("✅ Claimed! Check your DMs.", "✅ تم الاستلام! شيك على الخاص."), flags: MessageFlags.Ephemeral });
 
         const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setCustomId(`streak_reward_claimed_${recipientId}_${threshold}`)
-                .setLabel("تمت المطالبة")
+                .setLabel(L("Claimed", "تم الاستلام"))
                 .setStyle(ButtonStyle.Secondary)
                 .setEmoji("✅")
                 .setDisabled(true),

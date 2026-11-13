@@ -3,14 +3,22 @@ import type { FeatureSubcommandHandler } from "@typings/feature";
 import { COLORS, POINT_HISTORY_PAGE_SIZE, POINT_MESSAGES } from "@constants";
 import { PointHistoryRepository } from "@database/repositories";
 
-const SOURCE_LABEL: Record<string, string> = {
+import { L, bilingual } from "@utils";
+const SOURCE_LABEL = bilingual<Record<string, string>>({
     message: "💬 messages",
     combo: "🔁 combo",
     streak: "🔥 streak",
     voice: "🎙️ voice",
     admin: "🛠️ admin",
     conversion: "✨ converted to RC",
-};
+}, {
+    message: "💬 الرسائل",
+    combo: "🔁 الكومبو",
+    streak: "🔥 الستريك",
+    voice: "🎙️ الصوت",
+    admin: "🛠️ الإدارة",
+    conversion: "✨ تحويل إلى RC",
+});
 
 export const history: FeatureSubcommandHandler = async (interaction, _client) => {
     const guildId = interaction.guildId!;
@@ -32,9 +40,9 @@ export const history: FeatureSubcommandHandler = async (interaction, _client) =>
 
     await interaction.editReply({
         embeds: [new EmbedBuilder()
-            .setTitle("🎯 Your recent points")
+            .setTitle(L("🎯 Your recent points", "🎯 نقاطك الأخيرة"))
             .setColor(COLORS.info)
             .setDescription(lines.join("\n"))
-            .setFooter({ text: `Earned ${totals.earned} · spent ${totals.spent} · converted ${totals.converted}` })],
+            .setFooter({ text: L(`Earned ${totals.earned} · spent ${totals.spent} · converted ${totals.converted}`, `مكتسبة ${totals.earned} · مصروفة ${totals.spent} · محولة ${totals.converted}`) })],
     });
 };

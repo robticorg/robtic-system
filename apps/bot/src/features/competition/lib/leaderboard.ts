@@ -10,6 +10,7 @@ import { LINE_NAME } from "./entry-post";
 import type { CompetitionEmojis } from "./emojis";
 import type { LeaderboardRow } from "./stats";
 
+import { L } from "@utils";
 export const LEADERBOARD_REFRESH_MS = 5 * 60_000;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -22,16 +23,16 @@ export function buildLeaderboard(rows: LeaderboardRow[], refreshedAt: Date, emoj
     const lines = rows.length
         ? rows.map((r, i) => [
             `${MEDALS[i] ?? `**${i + 1}.**`} **#${r.number}** <@${r.userId}>`,
-            `${emojis.minidot} Votes: **${r.votes}** ${emojis.info} Invites: **${r.invites}**`,
+            L(`${emojis.minidot} Votes: **${r.votes}** ${emojis.info} Invites: **${r.invites}**`, `${emojis.minidot} الأصوات: **${r.votes}** ${emojis.info} الدعوات: **${r.invites}**`),
         ].join("\n"))
-        : ["No participants yet."];
+        : [L("No participants yet.", "ما في متسابقين لين الحين.")];
 
     const container = new ContainerBuilder()
         .addTextDisplayComponents(new TextDisplayBuilder().setContent("## 🏆 Leaderboard — Top 10"))
         .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small))
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(lines.join("\n\n")))
         .addSeparatorComponents(new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small))
-        .addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# Last refresh: <t:${Math.floor(refreshedAt.getTime() / 1000)}:R> · refreshes every 5 minutes`));
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(L(`-# Last refresh: <t:${Math.floor(refreshedAt.getTime() / 1000)}:R> · refreshes every 5 minutes`, `-# آخر تحديث: <t:${Math.floor(refreshedAt.getTime() / 1000)}:R> · يتحدث كل 5 دقائق`)));
 
     if (hasLine) container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(`attachment://${LINE_NAME}`)));
     return container;

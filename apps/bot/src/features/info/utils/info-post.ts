@@ -4,6 +4,7 @@ import { InfoPanelRepository } from "@database/repositories";
 import { Logger } from "@logger";
 import { buildInfoPanelMessage } from "./info-render";
 
+import { L } from "@utils";
 export type InfoPostSync = { ok: true; how: "edited" | "posted" } | { ok: false; problem: string };
 
 const GONE = new Set<number>([RESTJSONErrorCodes.UnknownMessage, RESTJSONErrorCodes.UnknownChannel]);
@@ -35,7 +36,7 @@ export async function syncInfoPanel(guild: Guild, panel: IInfoPanel, previousCha
         }
 
         const channel = await fetchTextChannel(guild, panel.channelId);
-        if (!channel) return { ok: false, problem: `I can't post in <#${panel.channelId}> — it's gone or not a text channel.` };
+        if (!channel) return { ok: false, problem: L(`I can't post in <#${panel.channelId}>: it's gone or not a text channel.`, `ما أقدر أنشر في <#${panel.channelId}>: محذوف أو مو روم كتابي.`) };
 
         const message = await channel.send(payload);
         await InfoPanelRepository.setPost(String(panel._id), message.channelId, message.id);
@@ -48,6 +49,6 @@ export async function syncInfoPanel(guild: Guild, panel: IInfoPanel, previousCha
         return { ok: true, how: "posted" };
     } catch (err) {
         Logger.warn(`Info panel ${String(panel._id)} could not be posted: ${err}`, "info");
-        return { ok: false, problem: `Discord refused the panel: ${(err as Error).message}` };
+        return { ok: false, problem: L(`Discord refused the panel: ${(err as Error).message}`, `ديسكورد رفض اللوحة: ${(err as Error).message}`) };
     }
 }

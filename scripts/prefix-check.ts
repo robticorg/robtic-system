@@ -7,6 +7,7 @@
  * on it crashes at the call rather than at load, so nothing catches it until someone types the
  * command — which is exactly how `!reason create` stayed broken.
  */
+import "./_english";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { ApplicationCommandOptionType } from "discord.js";

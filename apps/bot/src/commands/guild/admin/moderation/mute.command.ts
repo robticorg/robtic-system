@@ -8,18 +8,30 @@ import {
     type TextChannel,
 } from "discord.js";
 import type { BotClient } from "@core/bot-client";
-import { COLORS, MEMBER_PUNISHMENTS, PUNISHMENT_POINTS } from "@constants";
+import { COLORS, MEMBER_PUNISHMENTS } from "@constants";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
-import { errorText } from "@utils";
+import { L, currentLang, errorText } from "@utils";
 import { getUserLang, t } from "@bot/utils/lang";
 import { getLogChannel } from "@bot/utils/server-log";
-import { needsProof, buildProofModal, sendShortcutProofDM, awardPunishPoints } from "@bot/utils/moderation/punish-flow";
+import { needsProof, buildProofModal, openProofRequest, sendShortcutProofDM, awardPunishPoints } from "@bot/utils/moderation/punish-flow";
+import { punishBlocker } from "./warn.command";
+
+/** Discord's timeout ceiling is 28 days. */
+export const MUTE_MAX_HOURS = 28 * 24;
+const DEFAULT_HOURS = 24;
+
+/** Swaps the member's punishment-step role for the one their level now reaches. */
+async function applyLevelRole(member: GuildMember, roleId: string | null): Promise<void> {
+    const ladder = new Set<string>(Object.values(MEMBER_PUNISHMENTS).map(p => p.id));
+    for (const [, role] of member.roles.cache.filter(r => ladder.has(r.id))) await member.roles.remove(role).catch(() => null);
+    if (roleId) await member.roles.add(roleId).catch(() => null);
+}
 
 export async function executeMute(
     client: BotClient,
     guildId: string,
     targetId: string,
-    targetUsername: string,
+    _targetUsername: string,
     reason: string,
     reasonAr: string,
     moderatorId: string,
@@ -27,10 +39,7 @@ export async function executeMute(
     durationMs: number,
 ) {
     const expiresAt = new Date(Date.now() + durationMs);
-    const caseId = await PunishmentRepository.getNextCaseId(guildId);
-
-    await PunishmentRepository.create({
-        caseId,
+    const { caseId } = await PunishmentRepository.createCase({
         guildId,
         userId: targetId,
         moderatorId,
@@ -41,58 +50,48 @@ export async function executeMute(
         active: true,
     });
 
-    const newLevel = await PunishmentRepository.addPunishmentLevel(targetId, targetUsername, PUNISHMENT_POINTS.mute);
+    const newLevel = await PunishmentRepository.getPunishmentLevel(guildId, targetId);
     const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
 
+    let timedOut = false;
     if (member) {
-        const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
-        const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
-        for (const [, role] of rolesToRemove) {
-            await member.roles.remove(role).catch(() => null);
-        }
-        if (levelInfo.roleId) {
-            await member.roles.add(levelInfo.roleId).catch(() => null);
-        }
-        await member.timeout(durationMs, `Mute: ${reason}`).catch(() => null);
-        if (newLevel >= MEMBER_PUNISHMENTS.permBan.level) {
-            await member.roles.add(MEMBER_PUNISHMENTS.permBan.id).catch(() => null);
-        }
+        await applyLevelRole(member, levelInfo.roleId);
+        timedOut = await member.timeout(durationMs, `Mute: ${reason}`.slice(0, 512)).then(() => true, () => false);
+        if (newLevel >= MEMBER_PUNISHMENTS.permBan.level) await member.roles.add(MEMBER_PUNISHMENTS.permBan.id).catch(() => null);
     }
 
-    const durationHours = Math.round(durationMs / (60 * 60 * 1000));
+    const durationHours = Math.round(durationMs / 3_600_000);
 
     const user = await client.users.fetch(targetId).catch(() => null);
     if (user) {
         const lang = await getUserLang(member);
-        const localReason = lang === "ar" ? reasonAr : reason;
-
         const dmEmbed = new EmbedBuilder()
             .setTitle(t("moderation.mute_title", lang))
             .setColor(COLORS.moderation)
-            .setDescription(t("moderation.mute_desc", lang, { reason: localReason, duration: String(durationHours) }))
+            .setDescription(t("moderation.mute_desc", lang, { reason: lang === "ar" ? reasonAr : reason, duration: String(durationHours) }))
             .setTimestamp();
-
         await user.send({ embeds: [dmEmbed] }).catch(() => null);
     }
 
     const logEmbed = new EmbedBuilder()
-        .setTitle("🔇 User Muted")
+        .setTitle(L("🔇 Member muted", "🔇 تم إعطاء ميوت"))
         .setColor(COLORS.moderation)
         .addFields(
-            { name: "User", value: `<@${targetId}>`, inline: true },
-            { name: "Moderator", value: `<@${moderatorId}>`, inline: true },
-            { name: "Case", value: `\`${caseId}\``, inline: true },
-            { name: "Reason", value: reason },
-            { name: "Duration", value: `${durationHours} hour(s)`, inline: true },
-            { name: "Expires", value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>`, inline: true },
-            { name: "Punishment Level", value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
+            { name: L("Member", "العضو"), value: `<@${targetId}>`, inline: true },
+            { name: L("Moderator", "المشرف"), value: `<@${moderatorId}>`, inline: true },
+            { name: L("Case", "الحالة"), value: `\`${caseId}\``, inline: true },
+            { name: L("Reason", "السبب"), value: currentLang() === "ar" ? reasonAr : reason },
+            { name: L("Duration", "المدة"), value: L(`${durationHours} hour(s)`, `${durationHours} ساعة`), inline: true },
+            { name: L("Ends", "ينتهي"), value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>`, inline: true },
+            { name: L("Punishment level", "مستوى العقوبة"), value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
         )
         .setTimestamp();
+    if (member && !timedOut) {
+        logEmbed.setFooter({ text: L("⚠️ Discord refused the timeout. Check my role position and the Moderate Members permission.", "⚠️ رفض ديسكورد التايم أوت. تأكد من ترتيب رتبتي وصلاحية Moderate Members.") });
+    }
 
     const noticeChannel = await getLogChannel(client, "punishments_notice", guildId) as TextChannel | null;
-    if (noticeChannel) {
-        await noticeChannel.send({ embeds: [logEmbed] }).catch(() => null);
-    }
+    if (noticeChannel) await noticeChannel.send({ embeds: [logEmbed] }).catch(() => null);
 
     const moderator = await client.users.fetch(moderatorId).catch(() => null);
     await awardPunishPoints(guildId, moderatorId, moderator?.username ?? moderatorId, "mute");
@@ -109,216 +108,181 @@ export default {
         .addSubcommand(sub =>
             sub.setName("add")
                 .setDescription("Mute a user")
-                .addUserOption(opt =>
-                    opt.setName("target").setDescription("The user to mute").setRequired(true)
-                )
-                .addStringOption(opt =>
-                    opt.setName("reason").setDescription("Select a reason").setRequired(true).setAutocomplete(true)
-                )
+                .addUserOption(opt => opt.setName("target").setDescription("The user to mute").setRequired(true))
+                .addStringOption(opt => opt.setName("reason").setDescription("Select a reason").setRequired(true).setAutocomplete(true))
                 .addIntegerOption(opt =>
-                    opt.setName("duration").setDescription("Duration in hours (default: 24)").setRequired(false)
+                    opt.setName("duration").setDescription(`Duration in hours (default ${DEFAULT_HOURS}, up to ${MUTE_MAX_HOURS})`).setRequired(false).setMinValue(1).setMaxValue(MUTE_MAX_HOURS)
                 )
         )
         .addSubcommand(sub =>
             sub.setName("remove")
                 .setDescription("Unmute a user (does NOT remove punishment level)")
-                .addUserOption(opt =>
-                    opt.setName("target").setDescription("The user to unmute").setRequired(true)
-                )
-                .addStringOption(opt =>
-                    opt.setName("case").setDescription("The case ID to remove").setRequired(true).setAutocomplete(true)
-                )
-                .addStringOption(opt =>
-                    opt.setName("reason").setDescription("Reason for the unmute").setRequired(true)
-                )
+                .addUserOption(opt => opt.setName("target").setDescription("The user to unmute").setRequired(true))
+                .addStringOption(opt => opt.setName("case").setDescription("The case ID to remove").setRequired(true).setAutocomplete(true))
+                .addStringOption(opt => opt.setName("reason").setDescription("Reason for the unmute").setRequired(true).setMaxLength(400))
         )
         .addSubcommand(sub =>
             sub.setName("appeal")
                 .setDescription("Appeal a mute (removes punishment level points)")
-                .addUserOption(opt =>
-                    opt.setName("target").setDescription("The user to appeal for").setRequired(true)
-                )
-                .addStringOption(opt =>
-                    opt.setName("case").setDescription("The case ID to appeal").setRequired(true).setAutocomplete(true)
-                )
-                .addStringOption(opt =>
-                    opt.setName("reason").setDescription("Reason for the appeal").setRequired(true)
-                )
+                .addUserOption(opt => opt.setName("target").setDescription("The user to appeal for").setRequired(true))
+                .addStringOption(opt => opt.setName("case").setDescription("The case ID to appeal").setRequired(true).setAutocomplete(true))
+                .addStringOption(opt => opt.setName("reason").setDescription("Reason for the appeal").setRequired(true).setMaxLength(400))
         )
         .addSubcommand(sub =>
             sub.setName("list")
                 .setDescription("List all mutes for a user")
-                .addUserOption(opt =>
-                    opt.setName("target").setDescription("The user to check").setRequired(true)
-                )
+                .addUserOption(opt => opt.setName("target").setDescription("The user to check").setRequired(true))
         ),
 
     requiredPermission: 20,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+        const guild = interaction.guild;
+        const refuse = (content: string) => interaction.reply({ content: errorText(content), flags: MessageFlags.Ephemeral });
+        if (!guild) return void await refuse(L("This command can only be used in a server.", "هذا الأمر يعمل داخل السيرفر فقط."));
+
         const sub = interaction.options.getSubcommand();
         const target = interaction.options.getUser("target", true);
+        const guildId = guild.id;
+        const member = guild.members.cache.get(target.id) ?? await guild.members.fetch(target.id).catch(() => null);
+        const notFound = L("That mute case wasn't found for this member.", "ما لقيت حالة الميوت هذي لهذا العضو.");
 
         if (sub === "add") {
             const reasonKey = interaction.options.getString("reason", true);
-            const durationHours = interaction.options.getInteger("duration") ?? 24;
+            // A prefix command skips Discord's own min/max, so the range is checked here too.
+            const durationHours = interaction.options.getInteger("duration") ?? DEFAULT_HOURS;
             const modMember = interaction.member as GuildMember;
 
+            if (!Number.isInteger(durationHours) || durationHours < 1 || durationHours > MUTE_MAX_HOURS) {
+                return void await refuse(L(`The duration must be 1 to ${MUTE_MAX_HOURS} hours (Discord's limit is 28 days).`, `المدة لازم تكون من 1 إلى ${MUTE_MAX_HOURS} ساعة (حد ديسكورد 28 يوم).`));
+            }
+            if (!member) return void await refuse(L("That member isn't in this server.", "هذا العضو غير موجود في السيرفر."));
+            const blocked = punishBlocker(modMember, member, target.bot);
+            if (blocked) return void await refuse(blocked);
+            if (!member.moderatable) return void await refuse(L("I can't time out that member: they're an admin or ranked above me.", "ما أقدر أعطي هذا العضو تايم أوت: هو أدمن أو رتبته فوق رتبتي."));
+
             if (await needsProof(modMember)) {
-                if ((interaction as any).isPrefix) {
-                    const sent = await sendShortcutProofDM(client, interaction.user.id, "mute", interaction.guildId!, target.id, reasonKey, String(durationHours));
+                if ((interaction as { isPrefix?: boolean }).isPrefix) {
+                    const sent = await sendShortcutProofDM(client, interaction.user.id, "mute", guildId, target.id, reasonKey, String(durationHours));
                     await interaction.reply({
                         content: sent
-                            ? "📩 Check your DMs — submit proof there to finalize this mute."
-                            : "❌ Couldn't DM you to collect proof (check your privacy settings) — ask a Manager+ to run this instead.",
+                            ? L("📩 Check your DMs: send the proof there to finish this mute.", "📩 شيك على الخاص: أرسل الدليل هناك عشان يكتمل الميوت.")
+                            : errorText(L("I couldn't DM you for the proof (check your privacy settings). Ask a Manager+ to run it instead.", "ما قدرت أراسلك بالخاص للدليل (شيك إعدادات الخصوصية). اطلب من Manager+ ينفذه.")),
                     });
                     return;
                 }
-
-                await interaction.showModal(buildProofModal("mute", interaction.guildId!, target.id, reasonKey, interaction.user.id, String(durationHours)));
+                await interaction.showModal(buildProofModal(await openProofRequest({ guildId, type: "mute", targetId: target.id, reasonKey, moderatorId: interaction.user.id, extra: String(durationHours) }), "mute"));
                 return;
             }
 
             await interaction.deferReply();
-            const guildId = interaction.guildId!;
-            const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
-            const durationMs = durationHours * 60 * 60 * 1000;
-            const reasonDoc = await ReasonRepository.findByKey(reasonKey, interaction.guildId!);
+            const reasonDoc = await ReasonRepository.findByKey(reasonKey, guildId);
             const reason = reasonDoc?.label ?? reasonKey;
             const reasonAr = reasonDoc?.labelAr ?? reason;
 
-            const result = await executeMute(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, durationMs);
+            const result = await executeMute(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, durationHours * 3_600_000);
             await interaction.editReply({ embeds: [result.embed] });
             return;
         }
 
-        await interaction.deferReply();
-        const guildId = interaction.guildId!;
-        const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
-
-        if (sub === "remove") {
-            const caseId = interaction.options.getString("case", true);
+        if (sub === "remove" || sub === "appeal") {
+            const caseId = interaction.options.getString("case", true).trim().toUpperCase();
             const reason = interaction.options.getString("reason", true);
+            const punishment = await PunishmentRepository.findByCaseId(caseId, guildId);
+            if (!punishment || punishment.userId !== target.id || punishment.type !== "mute") return void await refuse(notFound);
 
-            const punishment = await PunishmentRepository.findByCaseId(caseId);
-            if (!punishment || punishment.userId !== target.id || punishment.type !== "mute") {
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ content: errorText("Mute case not found for this user."), flags: MessageFlags.Ephemeral });
+            if (sub === "remove") {
+                if (!punishment.active) return void await refuse(L("This mute already ended.", "هذا الميوت منتهي من قبل."));
+                await interaction.deferReply();
+                await PunishmentRepository.deactivate(caseId, guildId);
+                if (member) await member.timeout(null, `Unmute: ${reason}`.slice(0, 512)).catch(() => null);
+
+                const level = await PunishmentRepository.getPunishmentLevel(guildId, target.id);
+                await interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle(L("🔊 Mute removed", "🔊 تم فك الميوت"))
+                            .setColor(COLORS.success)
+                            .addFields(
+                                { name: L("Member", "العضو"), value: `<@${target.id}>`, inline: true },
+                                { name: L("Case", "الحالة"), value: `\`${caseId}\``, inline: true },
+                                { name: L("Reason", "السبب"), value: reason },
+                                { name: L("Punishment level", "مستوى العقوبة"), value: L(`\`${level}/100\` (unchanged)`, `\`${level}/100\` (بدون تغيير)`), inline: true },
+                            )
+                            .setFooter({ text: L("The level stays. Use /mute appeal to take its points back.", "المستوى ما تغير. استخدم /mute appeal لإرجاع النقاط.") })
+                            .setTimestamp(),
+                    ],
+                });
                 return;
             }
 
-            if (!punishment.active) {
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ content: errorText("This mute is already inactive."), flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            await PunishmentRepository.deactivate(caseId);
-
-            if (member) {
-                await member.timeout(null, `Unmute: ${reason}`).catch(() => null);
-            }
-
-            const level = await PunishmentRepository.getPunishmentLevel(target.id);
-            const embed = new EmbedBuilder()
-                .setTitle("🔊 User Unmuted (Remove)")
-                .setColor(COLORS.success)
-                .addFields(
-                    { name: "User", value: `<@${target.id}>`, inline: true },
-                    { name: "Case", value: `\`${caseId}\``, inline: true },
-                    { name: "Reason", value: reason },
-                    { name: "Punishment Level", value: `\`${level}/100\` (unchanged)`, inline: true },
-                )
-                .setFooter({ text: "Level was NOT removed. Use /mute appeal to remove level points." })
-                .setTimestamp();
-
-            await interaction.editReply({ embeds: [embed] });
-        }
-
-        if (sub === "appeal") {
-            const caseId = interaction.options.getString("case", true);
-            const reason = interaction.options.getString("reason", true);
-
-            const punishment = await PunishmentRepository.findByCaseId(caseId);
-            if (!punishment || punishment.userId !== target.id || punishment.type !== "mute") {
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ content: errorText("Mute case not found for this user."), flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            if (punishment.appealed) {
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ content: errorText("This mute has already been appealed."), flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            await PunishmentRepository.appeal(caseId, reason);
-            const newLevel = await PunishmentRepository.removePunishmentLevel(target.id, target.username, PUNISHMENT_POINTS.mute);
+            if (punishment.appealed) return void await refuse(L("This mute was already appealed.", "هذا الميوت تم استئنافه من قبل."));
+            await interaction.deferReply();
+            await PunishmentRepository.appeal(caseId, guildId, reason);
+            const newLevel = await PunishmentRepository.getPunishmentLevel(guildId, target.id);
             const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
-
             if (member) {
-                await member.timeout(null, `Appeal: ${reason}`).catch(() => null);
-                const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
-                const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
-                for (const [, role] of rolesToRemove) {
-                    await member.roles.remove(role).catch(() => null);
-                }
-                if (levelInfo.roleId) {
-                    await member.roles.add(levelInfo.roleId).catch(() => null);
-                }
+                await member.timeout(null, `Appeal: ${reason}`.slice(0, 512)).catch(() => null);
+                await applyLevelRole(member, levelInfo.roleId);
             }
 
-            const embed = new EmbedBuilder()
-                .setTitle("✅ Mute Appealed")
-                .setColor(COLORS.success)
-                .addFields(
-                    { name: "User", value: `<@${target.id}>`, inline: true },
-                    { name: "Case", value: `\`${caseId}\``, inline: true },
-                    { name: "Appeal Reason", value: reason },
-                    { name: "New Punishment Level", value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
-                )
-                .setTimestamp();
-
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle(L("✅ Mute appealed", "✅ تم استئناف الميوت"))
+                        .setColor(COLORS.success)
+                        .addFields(
+                            { name: L("Member", "العضو"), value: `<@${target.id}>`, inline: true },
+                            { name: L("Case", "الحالة"), value: `\`${caseId}\``, inline: true },
+                            { name: L("Appeal reason", "سبب الاستئناف"), value: reason },
+                            { name: L("New punishment level", "مستوى العقوبة الجديد"), value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
+                        )
+                        .setTimestamp(),
+                ],
+            });
+            return;
         }
 
         if (sub === "list") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
             const mutes = await PunishmentRepository.findAllByUserAndType(target.id, guildId, "mute");
-            const level = await PunishmentRepository.getPunishmentLevel(target.id);
+            const level = await PunishmentRepository.getPunishmentLevel(guildId, target.id);
 
             if (!mutes.length) {
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no mutes.`).setColor(COLORS.info)], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: L(`<@${target.id}> has no mutes.`, `<@${target.id}> ما عنده ميوتات.`), allowedMentions: { parse: [] } });
                 return;
             }
 
             const lines = mutes.slice(0, 15).map((m, i) => {
-                const status = m.appealed ? "~~Appealed~~" : m.active ? "🔴 Active" : "⚪ Inactive";
+                const status = m.appealed ? L("~~Appealed~~", "~~مستأنف~~") : m.active ? L("🔴 Active", "🔴 فعال") : L("⚪ Ended", "⚪ منتهي");
                 return `**${i + 1}.** \`${m.caseId}\` — ${status}\n> ${m.reason} — <t:${Math.floor(m.createdAt.getTime() / 1000)}:R>`;
             });
 
-            const embed = new EmbedBuilder()
-                .setTitle(`🔇 Mutes for ${target.username}`)
-                .setDescription(lines.join("\n\n"))
-                .setColor(COLORS.moderation)
-                .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${mutes.length} mute(s)` })
-                .setTimestamp();
-
-            await interaction.deleteReply().catch(() => {});
-            await interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle(L(`🔇 Mutes: ${target.username}`, `🔇 ميوتات: ${target.username}`))
+                        .setDescription(lines.join("\n\n"))
+                        .setColor(COLORS.moderation)
+                        .setFooter({ text: L(`Punishment level ${level}/100 · ${mutes.length} mute(s)`, `مستوى العقوبة ${level}/100 · ${mutes.length} ميوت`) })
+                        .setTimestamp(),
+                ],
+            });
         }
     },
 
     async autocomplete(interaction: AutocompleteInteraction, _client: BotClient) {
         const focused = interaction.options.getFocused(true);
         const sub = interaction.options.getSubcommand();
+        const query = focused.value.toLowerCase();
 
         if (focused.name === "reason" && sub === "add") {
             const reasons = await ReasonRepository.findByType("mute", interaction.guildId!);
+            const label = (r: { label: string; labelAr?: string }) => (currentLang() === "ar" && r.labelAr ? r.labelAr : r.label);
             const filtered = reasons
-                .filter(r => r.key.includes(focused.value.toLowerCase()) || r.label.toLowerCase().includes(focused.value.toLowerCase()))
+                .filter(r => r.key.includes(query) || r.label.toLowerCase().includes(query) || (r.labelAr ?? "").includes(focused.value))
                 .slice(0, 25);
-            await interaction.respond(filtered.map(r => ({ name: r.label, value: r.key })));
+            await interaction.respond(filtered.map(r => ({ name: label(r).slice(0, 100), value: r.key })));
         }
 
         if (focused.name === "case") {
@@ -326,17 +290,12 @@ export default {
             if (!targetId) return interaction.respond([]);
 
             const mutes = await PunishmentRepository.findAllByUserAndType(targetId, interaction.guildId!, "mute");
-            const available = mutes.filter(m => !m.appealed);
-            const filtered = available
-                .filter(m => m.caseId.toLowerCase().includes(focused.value.toLowerCase()) || m.reason.toLowerCase().includes(focused.value.toLowerCase()))
+            const filtered = mutes
+                .filter(m => !m.appealed)
+                .filter(m => m.caseId.toLowerCase().includes(query) || m.reason.toLowerCase().includes(query))
                 .slice(0, 25);
 
-            await interaction.respond(
-                filtered.map(m => ({
-                    name: `${m.caseId} — ${m.reason.slice(0, 80)}`,
-                    value: m.caseId,
-                }))
-            );
+            await interaction.respond(filtered.map(m => ({ name: `${m.caseId} — ${m.reason}`.slice(0, 100), value: m.caseId })));
         }
     },
 };

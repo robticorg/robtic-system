@@ -8,6 +8,7 @@ import { announceLeave } from "@bot/features/invites/functions/announce-leave";
 import { announceLevelUp, grantLevelRewards } from "@bot/services/community/xp";
 import { logToChannel, xpGainEmbed } from "@bot/utils/community/activity-log";
 
+import { inGuildLang } from "@bot/utils/lang";
 const CTX = "discord-outbox";
 
 export interface OutboxDeps {
@@ -55,7 +56,8 @@ export function startDiscordOutbox(client: Client): void {
     const worker = new Worker<DiscordOutboxJob>(
         QUEUES.discordOutbox,
         async job => {
-            const result = await processOutboxJob(job.data, {
+            // Queued work has no event behind it: the job's server decides the language.
+            const result = await inGuildLang(job.data.guildId, () => processOutboxJob(job.data, {
                 guild: id => client.guilds.cache.get(id),
                 announceJoin,
                 announceLeave,
@@ -63,7 +65,7 @@ export function startDiscordOutbox(client: Client): void {
                 announceLevelUp,
                 logXpGain: (username, memberId, xp, leveledUp, level) =>
                     logToChannel(client, "xp_gain", xpGainEmbed(username, memberId, xp, leveledUp, level)),
-            });
+            }));
             Logger.debug(`queue=${QUEUES.discordOutbox} job=${job.name} jobId=${job.id} requestId=${job.data.requestId} guildId=${job.data.guildId} ${result}`, CTX);
         },
         { connection: redisConnection(), concurrency: Math.max(1, Number(process.env.DISCORD_OUTBOX_CONCURRENCY) || 5) },

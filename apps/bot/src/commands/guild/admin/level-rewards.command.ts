@@ -7,11 +7,12 @@ import {
 import { LevelRewardRepository } from "@database/repositories";
 import { COLORS } from "@constants";
 
+import { L } from "@utils";
 /** "Message 10 + Voice 5" — what a level-reward role requires. */
 function describe(reward: { messageLevel: number | null; voiceLevel: number | null }): string {
     return [
-        reward.messageLevel ? `💬 Message **${reward.messageLevel}**` : "",
-        reward.voiceLevel ? `🎙️ Voice **${reward.voiceLevel}**` : "",
+        reward.messageLevel ? L(`💬 Message **${reward.messageLevel}**`, `💬 الرسائل **${reward.messageLevel}**`) : "",
+        reward.voiceLevel ? L(`🎙️ Voice **${reward.voiceLevel}**`, `🎙️ الصوت **${reward.voiceLevel}**`) : "",
     ].filter(Boolean).join(" + ");
 }
 
@@ -64,13 +65,13 @@ export default {
             const voiceLevel = interaction.options.getInteger("voice_level");
 
             if (!messageLevel && !voiceLevel) {
-                await interaction.editReply({ content: "Set a `message_level`, a `voice_level`, or both." });
+                await interaction.editReply({ content: L("Set a `message_level`, a `voice_level`, or both.", "حدد `message_level` أو `voice_level` أو الاثنين.") });
                 return;
             }
 
             const reward = await LevelRewardRepository.set(guildId, role.id, messageLevel || null, voiceLevel || null);
             await interaction.editReply({
-                content: `<@&${role.id}> will be granted at ${describe(reward)}.`,
+                content: L(`<@&${role.id}> will be granted at ${describe(reward)}.`, `<@&${role.id}> بتنعطى عند ${describe(reward)}.`),
                 allowedMentions: { parse: [] },
             });
         }
@@ -81,8 +82,8 @@ export default {
 
             await interaction.editReply({
                 content: removed
-                    ? `<@&${role.id}> is no longer a level reward.`
-                    : `<@&${role.id}> isn't a level reward.`,
+                    ? L(`<@&${role.id}> is no longer a level reward.`, `<@&${role.id}> ما عادت مكافأة مستوى.`)
+                    : L(`<@&${role.id}> isn't a level reward.`, `<@&${role.id}> ليست مكافأة مستوى.`),
                 allowedMentions: { parse: [] },
             });
         }
@@ -91,14 +92,14 @@ export default {
             const rewards = await LevelRewardRepository.getAll(guildId);
 
             if (rewards.length === 0) {
-                await interaction.editReply({ content: "No level rewards configured." });
+                await interaction.editReply({ content: L("No level rewards configured.", "ما في مكافآت مستويات.") });
                 return;
             }
 
             const lines = rewards.map(r => `${describe(r)} → <@&${r.roleId}>`);
 
             const embed = new EmbedBuilder()
-                .setTitle("Level Rewards")
+                .setTitle(L("Level rewards", "مكافآت المستويات"))
                 .setDescription(lines.join("\n"))
                 .setColor(COLORS.activity)
                 .setTimestamp();

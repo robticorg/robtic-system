@@ -3,6 +3,7 @@ import type { FeatureSubcommandHandler } from "@typings/feature";
 import { COLORS } from "@constants";
 import { StreakSettingsRepository } from "@database/repositories";
 
+import { L } from "@utils";
 /** Chooses which punishments end a streak. Omitted options are left alone. */
 export const breakOn: FeatureSubcommandHandler = async (interaction, _client) => {
     const guildId = interaction.guildId!;
@@ -18,12 +19,12 @@ export const breakOn: FeatureSubcommandHandler = async (interaction, _client) =>
 
     await interaction.editReply({
         embeds: [new EmbedBuilder()
-            .setTitle("Streak break triggers updated")
+            .setTitle(L("Streak break rules updated", "تم تحديث قواعد إنهاء الستريك"))
             .setColor(COLORS.success)
             .setDescription(
-                `**Timeout:** ${breakOnTimeout ? "ends the streak" : "no effect"}\n` +
-                `**Kick:** ${breakOnKick ? "ends the streak" : "no effect"}`
+                L(`**Timeout:** ${breakOnTimeout ? "ends the streak" : "no effect"}\n`, `**التايم أوت:** ${breakOnTimeout ? "ينهي الستريك" : "بدون تأثير"}\n`) +
+                L(`**Kick:** ${breakOnKick ? "ends the streak" : "no effect"}`, `**الطرد:** ${breakOnKick ? "ينهي الستريك" : "بدون تأثير"}`)
             )
-            .setFooter({ text: "/mute, /jail and warn auto-mutes all apply a timeout, so they follow the timeout setting." })],
+            .setFooter({ text: L("/mute, /jail and warn auto-mutes all apply a timeout, so they follow the timeout setting.", "/mute و /jail والميوت التلقائي من التحذير كلها تايم أوت، فتتبع إعداد التايم أوت.") })],
     });
 };

@@ -1,25 +1,40 @@
-/** DM text sent by the streak scheduler. */
-export const STREAK_DM_MESSAGES = {
-    expired: (lostStreak: number) =>
-        `💔 لقد انتهى تتابعك.\n\nالتتابع المفقود: ${lostStreak}\n\nيمكن لأحد المشرفين استرجاعه خلال 3 أيام.`,
-    expiringSoon: "⚠️ سينتهي تتابعك خلال أقل من ساعتين.\n\nأرسل رسالة واحدة في قناة التتابع للحفاظ عليه.",
-} as const;
+import { bilingual } from "@utils/lang-context";
 
-/** Public streak announcements. Arabic to match the rest of the streak surface. */
-export const STREAK_MESSAGES = {
+/** DM text sent by the streak scheduler. */
+export const STREAK_DM_MESSAGES = bilingual({
+    expired: (lostStreak: number) =>
+        `💔 Your streak has ended.\n\nStreak lost: ${lostStreak}\n\nA moderator can bring it back within 3 days.`,
+    expiringSoon: "⚠️ Your streak ends in less than two hours.\n\nSend one message in the streak channel to keep it.",
+}, {
+    expired: (lostStreak: number) =>
+        `💔 انتهى الستريك حقك.\n\nالستريك المفقود: ${lostStreak}\n\nيقدر أحد المشرفين يرجعه خلال 3 أيام.`,
+    expiringSoon: "⚠️ الستريك حقك بينتهي خلال أقل من ساعتين.\n\nأرسل رسالة وحدة في روم الستريك عشان تحافظ عليه.",
+});
+
+/** Public streak announcements. */
+export const STREAK_MESSAGES = bilingual({
     reached: (userId: string, current: number, best: number) =>
-        `🔥 <@${userId}> وصل إلى **${current}** يوم تتابع!` +
-        (current >= best ? ` — رقم قياسي جديد! 🏆` : ` (أفضل رقم: **${best}**)`) +
-        `\nعُد غداً لمواصلة تتابعك.`,
-} as const;
+        `🔥 <@${userId}> reached a **${current}**-day streak!` +
+        (current >= best ? " New record! 🏆" : ` (best: **${best}**)`) +
+        "\nCome back tomorrow to keep it going.",
+}, {
+    reached: (userId: string, current: number, best: number) =>
+        `🔥 <@${userId}> وصل إلى **${current}** يوم ستريك!` +
+        (current >= best ? " رقم قياسي جديد! 🏆" : ` (أفضل رقم: **${best}**)`) +
+        "\nارجع بكرة عشان تكمل الستريك.",
+});
 
 /** Public level-up announcements from the XP system. */
-export const LEVEL_UP_MESSAGES = {
+export const LEVEL_UP_MESSAGES = bilingual({
     /** Message and voice are separate levels, so the announcement names which one went up. */
+    reached: (userId: string, kind: "message" | "voice", level: number) => kind === "voice"
+        ? `🎙️ <@${userId}> reached **voice level ${level}**! Congrats 🎉`
+        : `📈 <@${userId}> reached **message level ${level}**! Congrats 🎉`,
+}, {
     reached: (userId: string, kind: "message" | "voice", level: number) => kind === "voice"
         ? `🎙️ <@${userId}> وصل إلى **مستوى الصوت ${level}**! تهانينا 🎉`
         : `📈 <@${userId}> وصل إلى **مستوى الرسائل ${level}**! تهانينا 🎉`,
-} as const;
+});
 
 /** Auto-managed `Streak N` role naming. */
 export const STREAK_ROLE = {

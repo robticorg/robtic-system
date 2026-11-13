@@ -6,11 +6,16 @@ import { syncPartnerPost } from "../utils/partner-post";
 import { grantPartnerRole, revokePartnerRole } from "../utils/partner-role";
 import { ROLE_NOTE } from "../utils/role-note";
 
-const SYNC_NOTE = {
+import { L, bilingual } from "@utils";
+const SYNC_NOTE = bilingual({
     edited: "Its post was updated.",
     posted: "Its old post was gone, so it was posted again.",
-    failed: "⚠️ Its post couldn't be updated — check the partner channel and my permissions, then run `/partner update`.",
-} as const;
+    failed: "⚠️ Its post couldn't be updated. Check the partner channel and my permissions, then run `/partner update`.",
+}, {
+    edited: "تم تحديث منشوره.",
+    posted: "منشوره القديم كان محذوف، فانرسل من جديد.",
+    failed: "⚠️ ما قدرت أحدث منشوره. تأكد من روم الشراكات وصلاحياتي، بعدها استخدم `/partner update`.",
+});
 
 /**
  * `/partner edit` submitted: store the new details (the logo only if a new one was uploaded), move
@@ -25,7 +30,7 @@ export const partnerEditModalHandler: ComponentHandler<ModalSubmitInteraction> =
         const partnerId = interaction.customId.split(":")[2]!;
 
         const before = await PartnerServerRepository.get(guild.id, partnerId);
-        if (!before) return void await interaction.editReply({ content: "This partner no longer exists." });
+        if (!before) return void await interaction.editReply({ content: L("This partner no longer exists.", "هذا الشريك ما عاد موجود.") });
 
         const form = await readPartnerForm(interaction, { imageRequired: false });
         if ("problem" in form) return void await interaction.editReply({ content: form.problem });
@@ -38,7 +43,7 @@ export const partnerEditModalHandler: ComponentHandler<ModalSubmitInteraction> =
             description,
             ...(image ? { image } : {}),
         });
-        if (!partner) return void await interaction.editReply({ content: "This partner no longer exists." });
+        if (!partner) return void await interaction.editReply({ content: L("This partner no longer exists.", "هذا الشريك ما عاد موجود.") });
 
         // Updated first, so the old representative's count no longer includes this partner.
         let roleNote = "";
@@ -49,7 +54,7 @@ export const partnerEditModalHandler: ComponentHandler<ModalSubmitInteraction> =
 
         const sync = await syncPartnerPost(guild, partner);
         await interaction.editReply({
-            content: [`**${name}** was updated. ${SYNC_NOTE[sync]}`, roleNote].filter(Boolean).join("\n") + inviteExpiryNote(invite),
+            content: [L(`**${name}** was updated. ${SYNC_NOTE[sync]}`, `تم تحديث **${name}**. ${SYNC_NOTE[sync]}`), roleNote].filter(Boolean).join("\n") + inviteExpiryNote(invite),
             allowedMentions: { parse: [] },
         });
     },

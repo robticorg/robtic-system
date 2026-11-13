@@ -4,6 +4,7 @@ import { detectRoleAuditEntry, recordSecurityEvent, sendAuditLog } from "../../u
 import { sendToServerLog } from "@bot/utils/server-log";
 import type { BotClient } from "@core/bot-client";
 
+import { L } from "@utils";
 export default {
     name: Events.GuildMemberUpdate,
     async execute(oldMember: GuildMember, newMember: GuildMember, client: BotClient) {
@@ -15,20 +16,20 @@ export default {
         const audit = await detectRoleAuditEntry(newMember.guild, newMember.id);
 
         const embed = new EmbedBuilder()
-            .setTitle("📘 Audit: Member Role Update")
+            .setTitle(L("📘 Member roles changed", "📘 تغيير رتب عضو"))
             .setColor(COLORS.warning)
             .addFields(
-                { name: "Target", value: `<@${newMember.id}> (${newMember.id})` },
+                { name: L("Target", "المستهدف"), value: `<@${newMember.id}> (${newMember.id})` },
                 {
-                    name: "Added Roles",
+                    name: L("Roles added", "رتب مضافة"),
                     value: added.size > 0 ? added.map((role) => `<@&${role.id}>`).join(", ") : "none",
                 },
                 {
-                    name: "Removed Roles",
+                    name: L("Roles removed", "رتب مسحوبة"),
                     value: removed.size > 0 ? removed.map((role) => `<@&${role.id}>`).join(", ") : "none",
                 },
-                { name: "Executor", value: audit?.executorId ? `<@${audit.executorId}> (${audit.executorId})` : "Unknown" },
-                { name: "Reason", value: audit?.reason ?? "No reason provided" },
+                { name: L("By", "بواسطة"), value: audit?.executorId ? `<@${audit.executorId}> (${audit.executorId})` : L("Unknown", "غير معروف") },
+                { name: L("Reason", "السبب"), value: audit?.reason ?? L("No reason given", "بدون سبب") },
             )
             .setTimestamp();
 

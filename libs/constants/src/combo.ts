@@ -1,3 +1,5 @@
+import { bilingual } from "@utils/lang-context";
+
 /** Named score tiers for the Combo System. Ordered ascending; must stay sorted for level lookups to work. */
 export const COMBO_LEVELS = [
     { name: "Bronze", minScore: 0 },
@@ -78,13 +80,18 @@ export const COMBO_DETECTION_RECENCY_TIERS = {
     slow: 120_000,
 } as const;
 
-/** Arabic heat status labels shown on combo embeds. */
-export const COMBO_HEAT_LABELS = {
+/** Heat status labels shown on combo embeds. */
+export const COMBO_HEAT_LABELS = bilingual({
+    veryActive: "Very active",
+    active: "Active",
+    cooling: "Cooling down",
+    cold: "Cold",
+}, {
     veryActive: "نشط جداً",
     active: "نشط",
     cooling: "يبرد",
     cold: "بارد",
-} as const;
+});
 
 export type ComboLeaderboardPeriod = "daily" | "weekly" | "monthly" | "alltime";
 export const COMBO_LEADERBOARD_PERIODS: ComboLeaderboardPeriod[] = ["daily", "weekly", "monthly", "alltime"];

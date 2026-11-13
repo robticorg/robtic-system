@@ -1,7 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import type { FeatureSubcommandHandler } from "@typings/feature";
 import { COLORS, STREAK_CONFIG } from "@constants";
-import { formatDuration } from "@utils";
+import { L, formatDuration } from "@utils";
 import { StreakSettingsRepository } from "@database/repositories";
 import { resolveStreakWindows } from "@core/streak";
 
@@ -19,20 +19,20 @@ export const settings: FeatureSubcommandHandler = async (interaction, _client) =
     const day = 24 * 60 * 60 * 1000;
 
     const embed = new EmbedBuilder()
-        .setTitle("إعدادات التتابع")
+        .setTitle(L("Streak settings", "إعدادات الستريك"))
         .addFields(
-            { name: "القنوات", value: config.channels.length ? config.channels.map(id => `<#${id}>`).join(", ") : "لا يوجد" },
-            { name: "التذكيرات", value: config.remindersEnabled ? "مفعّل" : "معطّل", inline: true },
-            { name: "الحد الأدنى لطول الرسالة", value: `${config.minMessageLength}`, inline: true },
-            { name: "مدة الحصول على التتابع", value: formatDuration(windows.claimDays * day), inline: true },
-            { name: "مدة انتهاء الصلاحية", value: formatDuration(windows.expireDays * day), inline: true },
-            { name: "حد التذكير", value: formatDuration(STREAK_CONFIG.reminderThresholdMs), inline: true },
-            { name: "مدة الاسترجاع", value: formatDuration(windows.returnWindowHours * 60 * 60 * 1000), inline: true },
-            { name: "ينتهي التتابع عند التايم اوت", value: (config.breakOnTimeout ?? true) ? "نعم" : "لا", inline: true },
-            { name: "ينتهي التتابع عند الطرد", value: config.breakOnKick ? "نعم" : "لا", inline: true },
+            { name: L("Channels", "الرومات"), value: config.channels.length ? config.channels.map(id => `<#${id}>`).join(", ") : L("None", "لا يوجد") },
+            { name: L("Reminders", "التذكيرات"), value: config.remindersEnabled ? L("On", "مفعّل") : L("Off", "معطّل"), inline: true },
+            { name: L("Shortest message that counts", "الحد الأدنى لطول الرسالة"), value: `${config.minMessageLength}`, inline: true },
+            { name: L("Claim every", "مدة الحصول على التتابع"), value: formatDuration(windows.claimDays * day), inline: true },
+            { name: L("Expires after", "مدة انتهاء الصلاحية"), value: formatDuration(windows.expireDays * day), inline: true },
+            { name: L("Reminder before", "التذكير قبل"), value: formatDuration(STREAK_CONFIG.reminderThresholdMs), inline: true },
+            { name: L("Return window", "مدة الاسترجاع"), value: formatDuration(windows.returnWindowHours * 60 * 60 * 1000), inline: true },
+            { name: L("A timeout ends the streak", "التايم أوت ينهي الستريك"), value: (config.breakOnTimeout ?? true) ? L("Yes", "نعم") : L("No", "لا"), inline: true },
+            { name: L("A kick ends the streak", "الطرد ينهي الستريك"), value: config.breakOnKick ? L("Yes", "نعم") : L("No", "لا"), inline: true },
             {
-                name: "رتب إرجاع التتابع",
-                value: config.returnRoleIds?.length ? config.returnRoleIds.map(id => `<@&${id}>`).join(", ") : "الإداريون فقط",
+                name: L("Roles that may return streaks", "رتب إرجاع الستريك"),
+                value: config.returnRoleIds?.length ? config.returnRoleIds.map(id => `<@&${id}>`).join(", ") : L("Administrators only", "الإدارة فقط"),
             },
         )
         .setColor(COLORS.info)

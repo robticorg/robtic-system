@@ -1,12 +1,12 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
+import { SlashCommandBuilder, type ChatInputCommandInteraction, type GuildMember } from "discord.js";
 import { MODERATION_ACTION_MESSAGES as MSG } from "@constants";
+import { getUserLang, t } from "@bot/utils/lang";
 import { openRolesSession, renderRolesPanel } from "@bot/utils/roles-view/roles-panel";
 
 /**
- * `roles` — every role on the server, 15 per page:
- * `N. @role | type | #order | N members`. The type and staff order come from the staff API
- * (`/internal/staff/role`); the order is shown only for staff roles. ◀ ▶ to page, 🔍 to search
- * by name or id, ⚙️ to filter (type, staff order range, minimum members, sort).
+ * `roles` — every role on the server, 10 per page, in Wolf Manager's layout: name, ID, mention,
+ * members, and the staff type and level (from the staff API, `/internal/staff/role`) for staff
+ * roles. < > to page, search by name or id, filter (type, staff level range, minimum members, sort).
  */
 export default {
     scope: "guild",
@@ -25,9 +25,10 @@ export default {
 
         await interaction.deferReply();
 
-        const session = await openRolesSession(guild, interaction.user.id);
+        const lang = await getUserLang(interaction.member as GuildMember | null);
+        const session = await openRolesSession(guild, interaction.user.id, lang);
         if (!session.rows.length) {
-            await interaction.editReply({ content: MSG.rolesListEmpty });
+            await interaction.editReply({ content: t("roles.empty", lang) });
             return;
         }
 

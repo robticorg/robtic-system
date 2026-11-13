@@ -4,6 +4,7 @@ import { recordSecurityEvent, sendAuditLog } from "../../utils/moderation/securi
 import type { BotClient } from "@core/bot-client";
 import { sendToServerLog } from "@bot/utils/server-log";
 
+import { L } from "@utils";
 export default {
     name: Events.ChannelDelete,
     async execute(channel: GuildChannel, client: BotClient) {
@@ -12,12 +13,12 @@ export default {
         const executorId = entry?.executor?.id;
 
         const embed = new EmbedBuilder()
-            .setTitle("📘 Audit: Channel Deleted")
+            .setTitle(L("📘 Channel deleted", "📘 حذف روم"))
             .setColor(COLORS.error)
             .addFields(
-                { name: "Channel", value: `${channel.name} (${channel.id})` },
-                { name: "Type", value: channel.type.toString(), inline: true },
-                { name: "Executor", value: executorId ? `<@${executorId}> (${executorId})` : "Unknown", inline: true },
+                { name: L("Channel", "الروم"), value: `${channel.name} (${channel.id})` },
+                { name: L("Type", "النوع"), value: channel.type.toString(), inline: true },
+                { name: L("By", "بواسطة"), value: executorId ? `<@${executorId}> (${executorId})` : L("Unknown", "غير معروف"), inline: true },
             )
             .setTimestamp();
 

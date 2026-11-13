@@ -3,6 +3,7 @@ import { COLORS, INVITES_CONFIG } from "@constants";
 import { invitesBackend } from "../functions/invites-backend";
 import { clampPage, pageCount } from "./invite-format";
 
+import { L } from "@utils";
 const PAGE_SIZE = INVITES_CONFIG.infoPageSize;
 
 /**
@@ -36,15 +37,15 @@ export async function buildInfoView(guildId: string, invokerId: string, target: 
 
     const lines = rows.map((row, i) => {
         const since = `<t:${Math.floor(Date.parse(row.joinedAt) / 1000)}:R>`;
-        const status = row.fake ? "Fake" : row.leftAt ? "Left Server" : "Available";
+        const status = row.fake ? L("Fake", "وهمي") : row.leftAt ? L("Left", "طلع") : L("In the server", "موجود");
         return `**${page * PAGE_SIZE + i + 1}.** <@${row.inviteeId}> · ${since} (${status})`;
     });
 
     const embed = new EmbedBuilder()
         .setColor(COLORS.default)
-        .setAuthor({ name: `${target.username}'s invites`, iconURL: target.displayAvatarURL({ size: 64 }) })
-        .setDescription(lines.length ? lines.join("\n") : `**${target.username}** hasn't invited anyone yet.`)
-        .setFooter({ text: `Page ${page + 1}/${pages} · ${joins} join${joins === 1 ? "" : "s"}` });
+        .setAuthor({ name: L(`${target.username}'s invites`, `دعوات ${target.username}`), iconURL: target.displayAvatarURL({ size: 64 }) })
+        .setDescription(lines.length ? lines.join("\n") : L(`**${target.username}** hasn't invited anyone yet.`, `**${target.username}** ما دعا أحد لين الحين.`))
+        .setFooter({ text: L(`Page ${page + 1}/${pages} · ${joins} join${joins === 1 ? "" : "s"}`, `صفحة ${page + 1}/${pages} · ${joins} دخول`) });
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
         pageButton(invokerId, target.id, page - 1, "prev", page === 0),

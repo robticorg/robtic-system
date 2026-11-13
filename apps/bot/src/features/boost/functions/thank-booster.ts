@@ -3,7 +3,7 @@ import { BOOST_CONFIG } from "@constants";
 import { getLineImage, isBrandedGuild } from "@core/assets";
 import { fetchPicture, renderCard, type CardLayoutDoc } from "@bot/utils/render-card";
 
-const DEFAULT_THANKS = "[users] thank you for boosting [server]!";
+const DEFAULT_THANKS = () => L("[users] thank you for boosting [server]!", "[users] شكراً على البوست لـ [server]!");
 
 /** Fills the server's thank-you: [users], [server], [count], [#123…] channel mentions. */
 export function fillBoostText(text: string, memberIds: readonly string[], server: string): string {
@@ -17,7 +17,7 @@ export function fillBoostText(text: string, memberIds: readonly string[], server
 
 /** The server's own thank-you: its text, a card per booster (if it designed one) and its line (if it chose to). */
 async function buildCustomThanks(guild: Guild, memberIds: readonly string[], config: NonNullable<Awaited<ReturnType<typeof ServerConfigRepository.find>>>["boostMessage"]) {
-    const text = fillBoostText(config?.text?.trim() || DEFAULT_THANKS, memberIds, guild.name);
+    const text = fillBoostText(config?.text?.trim() || DEFAULT_THANKS(), memberIds, guild.name);
     const files: AttachmentBuilder[] = [];
     const components: (TextDisplayBuilder | MediaGalleryBuilder)[] = [new TextDisplayBuilder().setContent(text)];
 
@@ -51,6 +51,7 @@ import { handleError, BotError } from "@core/handlers";
 import { buildBoostThanks } from "../utils/boost-message";
 import { createBoostBatcher } from "../utils/boost-batcher";
 
+import { L } from "@utils";
 async function resolveEmoji(guild: Guild): Promise<string> {
     const own = guild.emojis.cache.find(e => e.name === BOOST_CONFIG.emojiName);
     if (own) return own.toString();

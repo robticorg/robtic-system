@@ -1,24 +1,22 @@
+import { escapeMarkdown } from "discord.js";
 import type { StaffRoleInfo, StaffRoleType } from "@core/staff-api";
+import type { Lang } from "@typings/lang";
+import { t } from "@bot/utils/lang";
 
 /**
  * The `?roles` panel's rules — classification, filters, sorting, paging and the line format —
  * kept pure so they can be tested without Discord.
  */
 
-export const ROLES_PAGE_SIZE = 15;
+export const ROLES_PAGE_SIZE = 10;
 
 /** What a role is: its staff type from the staff API, or what Discord says about it. */
 export type RoleKind = StaffRoleType | "bot" | "booster" | "member";
 
-export const ROLE_KIND_LABELS: Record<RoleKind, string> = {
-    owner: "👑 Owner",
-    high: "⭐ High staff",
-    staff: "🛡️ Staff",
-    ship: "🚢 Ship",
-    bot: "🤖 Bot",
-    booster: "💎 Booster",
-    member: "👤 Member",
-};
+export const ROLE_KINDS: readonly RoleKind[] = ["owner", "high", "staff", "ship", "bot", "booster", "member"];
+
+/** "⭐ High staff", in the server's language. */
+export const kindLabel = (kind: RoleKind, lang: Lang = "en") => t(`roles.kind_${kind}`, lang);
 
 export interface RoleRow {
     id: string;
@@ -85,27 +83,34 @@ export function clampPage(page: number, total: number): number {
     return Math.min(Math.max(0, Math.floor(page) || 0), pageCount(total) - 1);
 }
 
-/** `N. <@&id> | type | #order | N members` — the order part only for staff roles. */
-export function roleLine(row: RoleRow, index: number): string {
+/**
+ * One role, the way Wolf Manager lists them, plus its staff type and level (from the staff API) when it has one:
+ *
+ *     **Moderator**
+ *     ID: `1566132299756474448`
+ *     @Moderator • 12 members • 🛡️ Staff #5
+ */
+export function roleBlock(row: RoleRow, lang: Lang = "en"): string {
+    const members = t(row.members === 1 ? "roles.members_one" : "roles.members_other", lang, { count: `${row.members}` });
+    const kind = row.kind === "member" ? [] : [`${kindLabel(row.kind, lang)}${row.order !== null ? ` #${row.order}` : ""}`];
     return [
-        `**${index + 1}.** <@&${row.id}>`,
-        ROLE_KIND_LABELS[row.kind],
-        ...(row.order !== null ? [`#${row.order}`] : []),
-        `${row.members} member${row.members === 1 ? "" : "s"}`,
-    ].join(" | ");
+        `**${escapeMarkdown(row.name) || "​"}**`,
+        `ID: \`${row.id}\``,
+        [`<@&${row.id}>`, members, ...kind].join(" • "),
+    ].join("\n");
 }
 
-/** The lines for one page, numbered across the whole (filtered) list. */
-export function pageLines(rows: readonly RoleRow[], page: number): string[] {
+/** The roles on one page of the (filtered) list. */
+export function pageRows(rows: readonly RoleRow[], page: number): RoleRow[] {
     const start = clampPage(page, rows.length) * ROLES_PAGE_SIZE;
-    return rows.slice(start, start + ROLES_PAGE_SIZE).map((row, i) => roleLine(row, start + i));
+    return rows.slice(start, start + ROLES_PAGE_SIZE);
 }
 
 /** "type: Staff, High staff · order 2–9 · ≥ 5 members · sorted by members" — empty when nothing is set. */
 export function describeFilter(filter: RoleFilter): string {
     const parts: string[] = [];
     if (filter.query) parts.push(`search: "${filter.query}"`);
-    if (filter.kinds?.length) parts.push(`type: ${filter.kinds.map(k => (k === "anyStaff" ? "any staff" : ROLE_KIND_LABELS[k].replace(/^\S+ /, ""))).join(", ")}`);
+    if (filter.kinds?.length) parts.push(`type: ${filter.kinds.map(k => (k === "anyStaff" ? "any staff" : kindLabel(k).replace(/^\S+ /, ""))).join(", ")}`);
     if (filter.orderMin !== undefined || filter.orderMax !== undefined) parts.push(`order ${filter.orderMin ?? "…"}–${filter.orderMax ?? "…"}`);
     if (filter.minMembers !== undefined) parts.push(`≥ ${filter.minMembers} members`);
     if (filter.sort && filter.sort !== "position") parts.push(`sorted by ${filter.sort}`);

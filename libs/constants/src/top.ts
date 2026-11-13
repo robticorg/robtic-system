@@ -20,21 +20,13 @@ export const TOP_CATEGORIES: TopCategory[] = [
 ];
 
 /**
- * What a bare `/top` shows, one page at a time.
- *
- * Three boards a page at most: any more and each one loses the rows that make it worth reading.
- * The order is deliberate — the two XP boards lead because "who is most active" is the question
- * people actually open this for, and the raw counters trail because they answer the same question
- * less well.
- *
- * `xp` (chat and voice combined) is reachable by name but not on a page: the split boards say
- * more.
+ * What a bare `/top` shows: the text and voice boards, five ranks each, paged together down the ranking. Every other
+ * board opens by name (`/top combo`), ten ranks a page.
  */
-export const TOP_PAGES: readonly (readonly TopCategory[])[] = [
-    ["messages-xp", "voice-xp"],
-    ["streak", "combo", "points"],
-    ["messages", "voice"],
-];
+export const TOP_OVERVIEW_BOARDS: readonly TopCategory[] = ["messages", "voice"];
+
+/** The `/top` accent (the bar down the side and the chart line) when a server hasn't picked one. */
+export const TOP_DEFAULT_ACCENT = "#e5212d";
 
 /** Emoji shown in each leaderboard's title. */
 export const TOP_CATEGORY_EMOJI: Record<TopCategory, string> = {

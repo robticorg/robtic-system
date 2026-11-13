@@ -3,6 +3,7 @@ import type { FeatureSubcommandHandler } from "@typings/feature";
 import { ServerConfigRepository } from "@database/repositories";
 import { partnerRoleProblem } from "../utils/partner-role";
 
+import { L } from "@utils";
 /**
  * `/partner role` — the role every partner representative gets. Refuses a role the bot couldn't
  * actually give. Existing representatives keep whatever role they already have; the new one is
@@ -14,7 +15,7 @@ export const role: FeatureSubcommandHandler = async (interaction, _client) => {
     const picked = interaction.options.getRole("role", true);
     const resolved = interaction.guild!.roles.cache.get(picked.id);
     if (!resolved) {
-        await interaction.editReply({ content: "I can't find that role." });
+        await interaction.editReply({ content: L("I can't find that role.", "ما لقيت هذي الرتبة.") });
         return;
     }
 
@@ -25,5 +26,5 @@ export const role: FeatureSubcommandHandler = async (interaction, _client) => {
     }
 
     await ServerConfigRepository.setPartnerRole(interaction.guildId!, resolved.id);
-    await interaction.editReply({ content: `Partner representatives will get ${resolved}.`, allowedMentions: { parse: [] } });
+    await interaction.editReply({ content: L(`Partner representatives will get ${resolved}.`, `ممثلين الشركاء بياخذون ${resolved}.`), allowedMentions: { parse: [] } });
 };

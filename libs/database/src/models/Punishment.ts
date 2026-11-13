@@ -18,7 +18,8 @@ export interface IPunishment extends Document {
 
 const punishmentSchema = new Schema<IPunishment>(
     {
-        caseId: { type: String, required: true, unique: true, index: true },
+        /** `CASE-00001`, numbered per server: unique within its server (see the index below), not across servers. */
+        caseId: { type: String, required: true },
         guildId: { type: String, required: true, index: true },
         userId: { type: String, required: true, index: true },
         moderatorId: { type: String, required: true },
@@ -37,6 +38,7 @@ const punishmentSchema = new Schema<IPunishment>(
     { timestamps: true }
 );
 
+punishmentSchema.index({ guildId: 1, caseId: 1 }, { unique: true });
 punishmentSchema.index({ guildId: 1, userId: 1, active: 1 });
 punishmentSchema.index({ expiresAt: 1, active: 1 });
 

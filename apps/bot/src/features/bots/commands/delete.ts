@@ -5,6 +5,7 @@ import { getMinecraftBot } from "../lib/minecraft-api";
 import { buildBotDeleteModal, type DeletableBot } from "../utils/forms";
 import { canManageMinecraftBot } from "../utils/can-manage-minecraft-bot";
 
+import { L } from "@utils";
 /**
  * `/bot delete` — opens a form listing the bots that exist now: this server's music bots, and the
  * Minecraft bot for whoever may manage it. The modal has to open within Discord's three seconds,
@@ -28,15 +29,15 @@ export const remove: FeatureSubcommandHandler = async (interaction, _client) => 
     if (minecraft?.ok && minecraft.data.configured) {
         bots.push({
             value: "minecraft",
-            label: minecraft.data.username ?? "Minecraft bot",
+            label: minecraft.data.username ?? L("Minecraft bot", "بوت ماينكرافت"),
             description: `Minecraft · ${minecraft.data.online ? "online" : "offline"}`,
             emoji: "⛏️",
         });
     }
 
     if (!bots.length) {
-        const unreachable = minecraft && !minecraft.ok ? `\n-# Couldn't check the Minecraft bot: ${minecraft.problem}` : "";
-        await interaction.reply({ content: `There are no bots to delete. Add one with \`/bot create\`.${unreachable}`, flags: MessageFlags.Ephemeral });
+        const unreachable = minecraft && !minecraft.ok ? L(`\n-# Couldn't check the Minecraft bot: ${minecraft.problem}`, `\n-# ما قدرت أتحقق من بوت ماينكرافت: ${minecraft.problem}`) : "";
+        await interaction.reply({ content: L(`There are no bots to delete. Add one with \`/bot create\`.${unreachable}`, `ما في بوتات تنحذف. أضف واحد بـ \`/bot create\`.${unreachable}`), flags: MessageFlags.Ephemeral });
         return;
     }
 

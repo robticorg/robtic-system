@@ -4,6 +4,7 @@ import { StreakRepository } from "@database/repositories";
 import { COLORS } from "@constants";
 import { applyStreakRole } from "../utils/streak-role";
 
+import { L } from "@utils";
 export const streakSyncConfirmHandler: ComponentHandler<ButtonInteraction> = {
     customId: /^streak-sync-(confirm|cancel)_(\d+)(?:_(\d+))?$/,
 
@@ -12,20 +13,20 @@ export const streakSyncConfirmHandler: ComponentHandler<ButtonInteraction> = {
         const [, action, initiatorId, sourceGuildId] = match ?? [];
 
         if (interaction.user.id !== initiatorId) {
-            await interaction.reply({ content: "هذا الزر ليس لك.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L("This button isn't yours.", "هذا الزر مو لك."), flags: MessageFlags.Ephemeral });
             return;
         }
 
         if (action === "cancel") {
-            await interaction.update({ content: "تم إلغاء المزامنة.", embeds: [], components: [] });
+            await interaction.update({ content: L("Sync cancelled.", "تم إلغاء المزامنة."), embeds: [], components: [] });
             return;
         }
 
-        await interaction.update({ content: "⏳ جارٍ المزامنة...", embeds: [], components: [] });
+        await interaction.update({ content: L("⏳ Syncing…", "⏳ جاري المزامنة..."), embeds: [], components: [] });
 
         const destGuild = interaction.guild;
         if (!destGuild || !sourceGuildId) {
-            await interaction.editReply({ content: "حدث خطأ أثناء المزامنة." });
+            await interaction.editReply({ content: L("Something went wrong while syncing.", "صار خطأ أثناء المزامنة.") });
             return;
         }
 
@@ -42,9 +43,9 @@ export const streakSyncConfirmHandler: ComponentHandler<ButtonInteraction> = {
         await interaction.editReply({
             content: "",
             embeds: [new EmbedBuilder()
-                .setTitle("✅ تمت المزامنة")
+                .setTitle(L("✅ Synced", "✅ تمت المزامنة"))
                 .setColor(COLORS.success)
-                .setDescription(`تمت مزامنة **${synced.length}** تتابع، وتحديث الأدوار لـ **${rolesApplied}** عضو موجود في هذا السيرفر.`)],
+                .setDescription(L(`Synced **${synced.length}** streaks and updated roles for **${rolesApplied}** members here.`, `تمت مزامنة **${synced.length}** ستريك وتحديث الرتب لـ **${rolesApplied}** عضو هنا.`))],
         });
     },
 };

@@ -4,6 +4,7 @@
  *
  *   bun --preload ./libs/shared/src/preload.ts scripts/info-check.ts
  */
+import "./_english";
 import { Types } from "mongoose";
 import { ComponentType } from "discord.js";
 import { buildInfoOptionModal, buildInfoPanelModal, normalizeEmoji } from "@bot/features/info/utils/info-form";

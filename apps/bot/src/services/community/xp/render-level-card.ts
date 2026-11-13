@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { createCanvas, GlobalFonts, loadImage, type Image, type SKRSContext2D } from "@napi-rs/canvas";
-import { LEVEL_CARD_CONFIG } from "@constants";
+import { LEVEL_CARD_CONFIG, LEVEL_CARD_KIND_LABELS } from "@constants";
 import type { XpKind } from "@core/xp";
 import type { LevelCardLayoutDoc } from "@database/models/XPSettings";
 
@@ -124,7 +124,7 @@ export async function renderLevelCard({ avatar, name, kind, level, layout }: Lev
     }
 
     drawText(ctx, name.trim() || "Member", slots.name, scale);
-    drawText(ctx, LEVEL_CARD_CONFIG.kindLabels[kind], slots.kind, scale);
+    drawText(ctx, LEVEL_CARD_KIND_LABELS[kind], slots.kind, scale);
     drawText(ctx, String(level), slots.level, scale);
 
     return canvas.toBuffer("image/jpeg", LEVEL_CARD_CONFIG.jpegQuality);

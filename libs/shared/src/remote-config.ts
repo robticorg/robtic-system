@@ -26,10 +26,17 @@ interface ConfigDoc {
   _id: string;
   env?: Record<string, string>;
   blacklist?: { guildId: string }[];
+  /** Emoji slot -> emoji, set in the admin console (Discord -> Emojis). Plain text, not encrypted. */
+  emojis?: Record<string, string>;
 }
 
 let blocked = new Set<string>();
 const listeners = new Set<(ids: string[]) => void>();
+
+let emojis: Record<string, string> = {};
+
+/** The emoji the admin console put in this slot, or undefined to use the bot's default. */
+export const getEmojiOverride = (key: string): string | undefined => emojis[key] || undefined;
 
 /** Whether the admin console blocked this server for this bot. */
 export const isGuildBlocked = (guildId: string): boolean => blocked.has(guildId);
@@ -75,16 +82,19 @@ if (URI && KEY && REMOTE) {
   const count = apply(doc);
   reloadEnv = async () => { const d = await read(); if (d) apply(d); };
   blocked = new Set((doc.blacklist ?? []).map((b) => b.guildId));
+  emojis = { ...(doc.emojis ?? {}) };
   console.log(`[remote-config] ${count} settings loaded for ${BOT}, ${blocked.size} blocked server(s).`);
 
   const timer = setInterval(async () => {
     try {
-      const next = new Set(((await read())?.blacklist ?? []).map((b) => b.guildId));
+      const fresh = await read();
+      emojis = { ...(fresh?.emojis ?? {}) };
+      const next = new Set((fresh?.blacklist ?? []).map((b) => b.guildId));
       const changed = next.size !== blocked.size || [...next].some((id) => !blocked.has(id));
       blocked = next;
       if (changed) for (const fn of listeners) fn([...next]);
     } catch (err) {
-      console.warn("[remote-config] could not refresh the blocked servers", err);
+      console.warn("[remote-config] could not refresh the blocked servers and emojis", err);
     }
   }, REFRESH_MS);
   timer.unref?.();

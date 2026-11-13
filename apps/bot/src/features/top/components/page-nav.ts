@@ -5,14 +5,15 @@ import { verifyInvoker } from "@bot/utils/interaction";
 import { renderTopPanel, type TopScope } from "../utils";
 
 /**
- * Page buttons on a `/top` panel.
+ * The `<` `>` buttons on a `/top` panel.
  *
- * The id carries everything the redraw needs — who opened it, which board, which page and which
- * period — because a component interaction arrives with no memory of the message it came from, and
- * reading state back out of the embed would be guesswork.
+ * The id carries everything the redraw needs (who opened it, which board, the target page, the period) because a
+ * component interaction arrives with no memory of the message it came from. The last part (p/n) only keeps the two
+ * buttons' ids apart when both point at the same page. Panels from before the redesign have no such part, so they
+ * don't match and get the usual "no longer available" answer instead of being redrawn into a different layout.
  */
 export const topPageHandler: ComponentHandler<ButtonInteraction> = {
-    customId: /^top:nav:\d+:[a-z-]+:\d+:(daily|weekly|monthly|alltime)$/,
+    customId: /^top:nav:\d+:[a-z-]+:\d+:(daily|weekly|monthly|alltime):[pn]$/,
 
     async run(interaction: ButtonInteraction) {
         const [, , invokerId, scope, page, period] = interaction.customId.split(":");

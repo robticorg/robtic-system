@@ -9,12 +9,11 @@ import { COLORS } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 import type { IServerRoles } from "@database/models/ServerConfig";
 
-const ROLE_LABELS: Record<string, string> = {
-    en: "English Role",
-    ar: "Arabic Role",
-    members: "Members Role",
-    bots: "Bots Role",
-};
+import { L, bilingual } from "@utils";
+const ROLE_LABELS = bilingual<Record<string, string>>(
+    { en: "English role", ar: "Arabic role", members: "Members role", bots: "Bots role" },
+    { en: "رتبة الإنجليزي", ar: "رتبة العربي", members: "رتبة الأعضاء", bots: "رتبة البوتات" },
+);
 
 const setRoleModalHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^set_role_modal_(en|ar|members|bots)$/,
@@ -32,7 +31,7 @@ const setRoleModalHandler: ComponentHandler<ModalSubmitInteraction> = {
         const role = guild?.roles.cache.get(roleId);
         if (!role) {
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setDescription(`❌ Role \`${roleId}\` not found in this server.`).setColor(COLORS.error)],
+                embeds: [new EmbedBuilder().setDescription(L(`❌ Role \`${roleId}\` not found in this server.`, `❌ الرتبة \`${roleId}\` غير موجودة في السيرفر.`)).setColor(COLORS.error)],
             });
             return;
         }
@@ -42,10 +41,10 @@ const setRoleModalHandler: ComponentHandler<ModalSubmitInteraction> = {
         await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
-                    .setTitle("✅ Role Configured")
+                    .setTitle(L("✅ Role set", "✅ تم ضبط الرتبة"))
                     .setColor(COLORS.success)
                     .addFields(
-                        { name: "Type", value: label, inline: true },
+                        { name: L("Type", "النوع"), value: label, inline: true },
                         { name: "Role", value: `<@&${roleId}>`, inline: true },
                     )
                     .setTimestamp()

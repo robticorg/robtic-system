@@ -4,7 +4,7 @@ import { isAcceptableMessage } from "@utils";
 import { MESSAGE_STATS_CONFIG } from "@constants";
 import { handleError, BotError } from "@core/handlers";
 import { awardMessagePoint } from "@core/points";
-import { messageBufferField } from "@core/activity";
+import { countHourlyMessage, messageBufferField } from "@core/activity";
 import { awardMessageMilestone } from "@core/staff-api";
 import { bufferMessage, isRedisConfigured } from "@queue";
 import { Logger } from "@logger";
@@ -34,6 +34,8 @@ export default {
         const content = message.content.trim();
         if (!isAcceptableMessage(content, MESSAGE_STATS_CONFIG.minMessageLength)) return;
         if (await isExcludedChannel(message.guild.id, message.channel.id)) return;
+
+        countHourlyMessage(message.guild.id, message.createdAt);
 
         try {
             if (isRedisConfigured()) {

@@ -3,6 +3,7 @@ import type { IShortcutDoc } from "@database/models";
 import { COLORS, SHORTCUT_DELETE_MODE_SHORT, type ShortcutDeleteMode } from "@constants";
 import { CHAT_UTIL_COMMANDS } from "../functions/run-chat-util";
 
+import { L } from "@utils";
 export const targetLabel = (command: string): string =>
     CHAT_UTIL_COMMANDS.has(command) ? `/chat ${command}` : `/${command}`;
 
@@ -16,10 +17,10 @@ export function buildShortcutListEmbed(shortcuts: IShortcutDoc[]): EmbedBuilder 
     });
 
     return new EmbedBuilder()
-        .setTitle("Shortcuts")
+        .setTitle(L("Shortcuts", "الاختصارات"))
         .setColor(COLORS.info)
-        .setDescription(lines.join("\n") || "No shortcuts defined.")
-        .setFooter({ text: "🔒 restricted · ⏸️ disabled · use /shortcut info <trigger> for detail" });
+        .setDescription(lines.join("\n") || L("No shortcuts yet.", "ما في اختصارات لين الحين."))
+        .setFooter({ text: L("🔒 restricted · ⏸️ off · /shortcut info <trigger> for more", "🔒 مقيد · ⏸️ مقفل · /shortcut info <الاختصار> للتفاصيل") });
 }
 
 /** Everything about one shortcut, including its restrictions and usage. */
@@ -28,23 +29,23 @@ export function buildShortcutInfoEmbed(shortcut: IShortcutDoc): EmbedBuilder {
         ids.length ? ids.map(mention).join(", ") : empty;
 
     return new EmbedBuilder()
-        .setTitle(`Shortcut — ${shortcut.trigger}`)
+        .setTitle(L(`Shortcut: ${shortcut.trigger}`, `الاختصار: ${shortcut.trigger}`))
         .setColor(shortcut.enabled ? COLORS.info : COLORS.warning)
         .addFields(
-            { name: "Runs", value: `\`${targetLabel(shortcut.command)}\``, inline: true },
-            { name: "Status", value: shortcut.enabled ? "Enabled" : "Disabled", inline: true },
-            { name: "Cleanup", value: SHORTCUT_DELETE_MODE_SHORT[shortcut.deleteMode as ShortcutDeleteMode], inline: true },
+            { name: L("Runs", "يشغل"), value: `\`${targetLabel(shortcut.command)}\``, inline: true },
+            { name: L("Status", "الحالة"), value: shortcut.enabled ? L("On", "مفعّل") : L("Off", "مقفل"), inline: true },
+            { name: L("Cleanup", "التنظيف"), value: SHORTCUT_DELETE_MODE_SHORT[shortcut.deleteMode as ShortcutDeleteMode], inline: true },
             {
-                name: "Fixed arguments",
-                value: shortcut.argsTemplate ? `\`${shortcut.argsTemplate}\`` : "None — the member's input is passed through as-is",
+                name: L("Fixed arguments", "قيم ثابتة"),
+                value: shortcut.argsTemplate ? `\`${shortcut.argsTemplate}\`` : L("None: what the member types is passed on as it is", "لا يوجد: اللي يكتبه العضو ينرسل مثل ما هو"),
             },
-            { name: "Allowed roles", value: list(shortcut.allowedRoleIds, id => `<@&${id}>`, "Anyone who can run the command") },
-            { name: "Channels", value: list(shortcut.channelIds, id => `<#${id}>`, "Every channel") },
+            { name: L("Allowed roles", "الرتب المسموحة"), value: list(shortcut.allowedRoleIds, id => `<@&${id}>`, L("Anyone who can run the command", "أي أحد يقدر يشغل الأمر")) },
+            { name: L("Channels", "الرومات"), value: list(shortcut.channelIds, id => `<#${id}>`, L("Every channel", "كل الرومات")) },
             {
-                name: "Used",
+                name: L("Used", "الاستخدام"),
                 value: shortcut.uses > 0
-                    ? `${shortcut.uses} time(s), last <t:${Math.floor((shortcut.lastUsedAt ?? shortcut.createdAt).getTime() / 1000)}:R>`
-                    : "Never",
+                    ? L(`${shortcut.uses} time(s), last <t:${Math.floor((shortcut.lastUsedAt ?? shortcut.createdAt).getTime() / 1000)}:R>`, `${shortcut.uses} مرة، آخرها <t:${Math.floor((shortcut.lastUsedAt ?? shortcut.createdAt).getTime() / 1000)}:R>`)
+                    : L("Never", "ولا مرة"),
             },
         );
 }

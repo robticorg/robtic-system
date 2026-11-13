@@ -5,6 +5,7 @@
  * appear for people outside the top five, and getting the separator wrong makes rank 40 read as
  * rank 6 — a bug nobody would report because it looks like a working list.
  */
+import "./_english";
 import { mock } from "bun:test";
 
 // The board is stubbed rather than read from Mongo: this is about the rendering rules, and a fake
@@ -17,7 +18,7 @@ mock.module("@core/leaderboard", () => ({
 }));
 
 const { buildRankPage } = await import("@bot/features/top/utils/rank-lines");
-const { TOP_PAGES, TOP_CATEGORIES, TOP_DISPLAY_LIMIT, TOP_DETAIL_LIMIT, TOP_CATEGORY_EMOJI } = await import("@constants");
+const { TOP_OVERVIEW_BOARDS, TOP_CATEGORIES, TOP_DISPLAY_LIMIT, TOP_DETAIL_LIMIT, TOP_CATEGORY_EMOJI } = await import("@constants");
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -80,14 +81,11 @@ const rankOf = (line: string) => Number(line.replace(/\*/g, "").split(".")[0]);
     check("a viewer ranked above the page is left off it", lines.every(l => rankOf(l) >= 21 || l === "…"), lines[lines.length - 1] ?? "");
 }
 
-// 7. The pages themselves.
+// 7. The overview.
 {
-    const flat = TOP_PAGES.flat();
-    check("every paged category is a real category", flat.every(c => TOP_CATEGORIES.includes(c)), flat.join(", "));
-    check("no category is on two pages", new Set(flat).size === flat.length);
-    check("no page holds more than three boards", TOP_PAGES.every(p => p.length <= 3), TOP_PAGES.map(p => p.length).join("/"));
+    check("the overview boards are real categories", TOP_OVERVIEW_BOARDS.every(c => TOP_CATEGORIES.includes(c)), TOP_OVERVIEW_BOARDS.join(", "));
+    check("the overview is text then voice", TOP_OVERVIEW_BOARDS.join(",") === "messages,voice");
     check("every category has an emoji", TOP_CATEGORIES.every(c => Boolean(TOP_CATEGORY_EMOJI[c])));
-    console.log(`      pages: ${TOP_PAGES.map(p => p.join(" | ")).join("  →  ")}`);
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

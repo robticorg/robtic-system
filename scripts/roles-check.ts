@@ -1,4 +1,5 @@
 /** Verifies the `roles` panel: line format, classification, filters, sorting, paging and the staff API client — no gateway. */
+import "./_english";
 import { ComponentType } from "discord.js";
 import {
     applyRoleFilter,
@@ -6,9 +7,9 @@ import {
     clampPage,
     describeFilter,
     pageCount,
-    pageLines,
+    pageRows,
     parseOptionalCount,
-    roleLine,
+    roleBlock,
     ROLES_PAGE_SIZE,
     type RoleRow,
 } from "@bot/utils/roles-view/roles-view";
@@ -23,10 +24,14 @@ const check = (name: string, ok: boolean, detail = "") => {
 
 const row = (over: Partial<RoleRow>): RoleRow => ({ id: "1", name: "Role", position: 1, members: 0, kind: "member", order: null, ...over });
 
-// Line format: N. <@&id> | type | #order | members — order only for staff.
+// Block format (Wolf Manager's): name, ID, then mention • members • type and level for staff.
 {
-    check("staff line has its order", roleLine(row({ id: "42", kind: "high", order: 5, members: 12 }), 0) === "**1.** <@&42> | ⭐ High staff | #5 | 12 members", roleLine(row({ id: "42", kind: "high", order: 5, members: 12 }), 0));
-    check("non-staff line skips the order", roleLine(row({ id: "7", kind: "member", members: 1 }), 2) === "**3.** <@&7> | 👤 Member | 1 member");
+    const staff = roleBlock(row({ id: "42", name: "Mod", kind: "high", order: 5, members: 12 }));
+    check("staff block has its type and level", staff === "**Mod**\nID: `42`\n<@&42> • 12 members • ⭐ High staff #5", JSON.stringify(staff));
+    const plain = roleBlock(row({ id: "7", name: "Fan", kind: "member", members: 1 }));
+    check("a plain role has no type", plain === "**Fan**\nID: `7`\n<@&7> • 1 member", JSON.stringify(plain));
+    check("markdown in a name is escaped", roleBlock(row({ name: "*Bold*" })).startsWith("**\\*Bold\\***"));
+    check("Arabic", roleBlock(row({ id: "9", name: "VIP", kind: "booster", members: 3 }), "ar").endsWith("3 عضو • 💎 بوستر"));
 }
 
 // Classification.
@@ -63,20 +68,20 @@ const row = (over: Partial<RoleRow>): RoleRow => ({ id: "1", name: "Role", posit
     check("no filter, no summary", describeFilter({}) === "");
 }
 
-// Paging: 15 per page, numbered across pages.
+// Paging: 10 per page.
 {
-    const many = Array.from({ length: 40 }, (_, i) => row({ id: String(i), position: 100 - i }));
-    check("15 per page", ROLES_PAGE_SIZE === 15 && pageLines(many, 0).length === 15);
-    check("40 roles is 3 pages", pageCount(40) === 3 && pageLines(many, 2).length === 10);
-    check("numbering continues on the next page", pageLines(many, 1)[0]!.startsWith("**16.**"));
-    check("page clamps", clampPage(9, 40) === 2 && clampPage(-1, 40) === 0 && pageCount(0) === 1);
+    const many = Array.from({ length: 45 }, (_, i) => row({ id: String(i), position: 100 - i }));
+    check("10 per page", ROLES_PAGE_SIZE === 10 && pageRows(many, 0).length === 10);
+    check("45 roles is 5 pages", pageCount(45) === 5 && pageRows(many, 4).length === 5);
+    check("the next page carries on", pageRows(many, 1)[0]!.id === "10");
+    check("page clamps", clampPage(9, 45) === 4 && clampPage(-1, 45) === 0 && pageCount(0) === 1);
     check("optional numbers", parseOptionalCount("") === undefined && parseOptionalCount(" 12 ") === 12 && parseOptionalCount("x") === null && parseOptionalCount("-1") === null);
 }
 
 // Ids and modals.
 {
     check("button ids match", ROLES_BUTTON_ID.test("roles:0a1b2c3d:next") && !ROLES_BUTTON_ID.test("roles:0a1b2c3d:delete"));
-    const session = { id: "0a1b2c3d", invokerId: "1", guildName: "G", rows: [], staffApiDown: false, filter: { query: "mod", kinds: ["high" as const], minMembers: 3 }, page: 0, expiresAt: 0 };
+    const session = { id: "0a1b2c3d", invokerId: "1", guildName: "G", lang: "en" as const, accent: 0, rows: [], staffApiDown: false, filter: { query: "mod", kinds: ["high" as const], minMembers: 3 }, page: 0, expiresAt: 0 };
     const search = buildRolesSearchModal(session).toJSON() as any;
     const filter = buildRolesFilterModal(session).toJSON() as any;
     check("search modal id matches its handler", ROLES_SEARCH_MODAL_ID.test(search.custom_id));

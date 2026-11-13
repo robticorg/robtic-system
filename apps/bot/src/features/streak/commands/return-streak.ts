@@ -6,6 +6,7 @@ import { resolveStreakWindows } from "@core/streak";
 import { canReturnStreaks } from "../functions/can-return-streaks";
 import { applyStreakRole } from "../utils/streak-role";
 
+import { L } from "@utils";
 /**
  * Gives a member their expired streak back.
  *
@@ -20,7 +21,7 @@ export const returnStreak: FeatureSubcommandHandler = async (interaction, _clien
     const actor = interaction.member as GuildMember | null;
 
     if (!actor) {
-        await interaction.editReply({ content: "This command only works in a server." });
+        await interaction.editReply({ content: L("This command only works in a server.", "هذا الأمر يعمل داخل السيرفر فقط.") });
         return;
     }
 
@@ -28,7 +29,7 @@ export const returnStreak: FeatureSubcommandHandler = async (interaction, _clien
 
     if (!canReturnStreaks(actor, settings?.returnRoleIds ?? [])) {
         await interaction.editReply({
-            content: "Only administrators, or a role assigned with `/streak-config return-role add`, can return a streak.",
+            content: L("Only administrators, or a role allowed on the dashboard, can return a streak.", "إرجاع الستريك للإدارة فقط، أو لرتبة مسموحة في لوحة التحكم."),
         });
         return;
     }
@@ -37,7 +38,7 @@ export const returnStreak: FeatureSubcommandHandler = async (interaction, _clien
     const recovery = await StreakRecoveryRepository.find(user.id, guildId);
 
     if (!recovery) {
-        await interaction.editReply({ content: `${user} has no streak waiting to be returned.` });
+        await interaction.editReply({ content: L(`${user} has no streak waiting to be returned.`, `${user} ما عنده ستريك ينتظر الإرجاع.`) });
         return;
     }
 
@@ -46,7 +47,7 @@ export const returnStreak: FeatureSubcommandHandler = async (interaction, _clien
 
     if (Date.now() > deadline) {
         await interaction.editReply({
-            content: `The ${returnWindowHours}h window to return ${user}'s streak has passed.`,
+            content: L(`The ${returnWindowHours}h window to return ${user}'s streak has passed.`, `انتهت مدة الـ ${returnWindowHours} ساعة لإرجاع ستريك ${user}.`),
         });
         return;
     }
@@ -59,8 +60,8 @@ export const returnStreak: FeatureSubcommandHandler = async (interaction, _clien
 
     await interaction.editReply({
         embeds: [new EmbedBuilder()
-            .setTitle("✅ Streak returned")
+            .setTitle(L("✅ Streak returned", "✅ تم إرجاع الستريك"))
             .setColor(COLORS.success)
-            .setDescription(`${user} is back to **${recovery.currentStreak}** days (best **${recovery.bestStreak}**).`)],
+            .setDescription(L(`${user} is back to **${recovery.currentStreak}** days (best **${recovery.bestStreak}**).`, `${user} رجع إلى **${recovery.currentStreak}** يوم (أفضل رقم **${recovery.bestStreak}**).`))],
     });
 };

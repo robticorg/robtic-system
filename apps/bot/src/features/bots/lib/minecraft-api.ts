@@ -1,4 +1,5 @@
-/**
+
+import { L } from "@utils";/**
  * The main bot's only line to the Minecraft project: its API's `/api/bot` endpoint, which owns the
  * Minecraft Discord bot — the token is checked, encrypted and run over there, never here.
  *
@@ -23,7 +24,7 @@ async function call<T>(method: "GET" | "POST" | "DELETE", body: unknown, timeout
     const base = process.env.MINECRAFT_API_URL?.trim().replace(/\/+$/, "");
     const secret = process.env.MINECRAFT_BOT_SECRET?.trim();
     if (!base || !secret) {
-        return { ok: false, problem: "The Minecraft bot isn't set up yet: `MINECRAFT_API_URL` or `MINECRAFT_BOT_SECRET` is missing from the bot's environment." };
+        return { ok: false, problem: L("The Minecraft bot isn't set up yet: `MINECRAFT_API_URL` or `MINECRAFT_BOT_SECRET` is missing from the bot's environment.", "بوت ماينكرافت غير مجهز: `MINECRAFT_API_URL` أو `MINECRAFT_BOT_SECRET` ناقص في إعدادات البوت.") };
     }
 
     try {
@@ -34,12 +35,12 @@ async function call<T>(method: "GET" | "POST" | "DELETE", body: unknown, timeout
             signal: AbortSignal.timeout(timeoutMs),
         });
         const envelope = await response.json().catch(() => null) as Envelope<T> | null;
-        if (!envelope) return { ok: false, problem: `The Minecraft API answered ${response.status} with no usable body.` };
-        if (!envelope.ok) return { ok: false, problem: `The Minecraft API refused: ${envelope.error.message}` };
+        if (!envelope) return { ok: false, problem: L(`The Minecraft API answered ${response.status} with no usable body.`, `Minecraft API رد بـ ${response.status} بدون بيانات.`) };
+        if (!envelope.ok) return { ok: false, problem: L(`The Minecraft API refused: ${envelope.error.message}`, `Minecraft API رفض: ${envelope.error.message}`) };
         return { ok: true, data: envelope.data };
     } catch (error) {
         const timedOut = error instanceof DOMException && error.name === "TimeoutError";
-        return { ok: false, problem: timedOut ? "The Minecraft API didn't answer in time — is it running?" : "I couldn't reach the Minecraft API — is it running?" };
+        return { ok: false, problem: timedOut ? L("The Minecraft API didn't answer in time. Is it running?", "Minecraft API ما رد بالوقت. هو شغال؟") : L("I couldn't reach the Minecraft API. Is it running?", "ما قدرت أوصل لـ Minecraft API. هو شغال؟") };
     }
 }
 

@@ -2,6 +2,7 @@
  * Message-counter flush checks — no Redis, no MongoDB: the store is in memory and mirrors the
  * repositories' batch-id guards, so crash-and-retry behaves exactly like production.
  */
+import "./_english";
 import { UnrecoverableError } from "bullmq";
 import { periodKeyFor } from "@utils";
 import {

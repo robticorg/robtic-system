@@ -1,4 +1,5 @@
 import { ClientManager } from "@core/client-manager";
+import { accentFor, installHouseStyle } from "@core/style";
 import { connectDatabase } from "@database/connection";
 import { Logger } from "@logger";
 import { SUPER_ADMIN_ID } from "@constants";
@@ -27,6 +28,9 @@ await migrateLevelSplit();
 if (!SUPER_ADMIN_ID) {
     Logger.warn("BOT_OWNER_ID is not set — no user holds the owner bypass. Admin-scoped commands are reachable only by /whitelist super users.");
 }
+
+// Every message the bot sends uses the house style (Components V2 containers in the server's colour).
+installHouseStyle(accentFor);
 
 const manager = ClientManager.getInstance();
 manager.setBotModulesRoot(import.meta.dir);

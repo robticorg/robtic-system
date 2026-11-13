@@ -4,14 +4,20 @@ import { COLORS, TOP_DETAIL_LIMIT } from "@constants";
 import { PeriodicStatRepository, VoiceRepository } from "@database/repositories";
 import { formatVoiceDuration } from "../utils/format-duration";
 
+import { L, bilingual } from "@utils";
 type Board = "total" | "weekly" | "monthly" | "xp";
 
-const TITLE: Record<Board, string> = {
+const TITLE = bilingual<Record<Board, string>>({
     total: "🎙️ Most voice time — all time",
     weekly: "🎙️ Most voice time — this week",
     monthly: "🎙️ Most voice time — this month",
     xp: "🎙️ Most voice XP — all time",
-};
+}, {
+    total: "🎙️ أكثر وقت صوتي — كل الوقت",
+    weekly: "🎙️ أكثر وقت صوتي — هذا الأسبوع",
+    monthly: "🎙️ أكثر وقت صوتي — هذا الشهر",
+    xp: "🎙️ أكثر خبرة صوت — كل الوقت",
+});
 
 /**
  * Reads whichever store owns the board.
@@ -51,7 +57,7 @@ export const top: FeatureSubcommandHandler = async (interaction, _client) => {
         embeds: [new EmbedBuilder()
             .setTitle(TITLE[board])
             .setColor(COLORS.activity)
-            .setDescription(lines.join("\n") || "No voice activity recorded yet.")
+            .setDescription(lines.join("\n") || L("No voice activity yet.", "ما في نشاط صوتي لين الحين."))
             .setTimestamp()],
     });
 };

@@ -4,6 +4,7 @@ import { COLORS } from "@constants";
 import { ShortcutRepository } from "@database/repositories";
 import { resolveTrigger } from "../utils/resolve-trigger";
 
+import { L } from "@utils";
 /** Pauses a shortcut without losing its arguments and restrictions. */
 export const toggle: FeatureSubcommandHandler = async (interaction, _client) => {
     const trigger = await resolveTrigger(interaction.guildId!, interaction.options.getString("trigger", true));
@@ -15,7 +16,7 @@ export const toggle: FeatureSubcommandHandler = async (interaction, _client) => 
         embeds: [new EmbedBuilder()
             .setColor(shortcut ? COLORS.success : COLORS.error)
             .setDescription(shortcut
-                ? `**${shortcut.trigger}** is now **${enabled ? "enabled" : "disabled"}**.`
-                : `No shortcut called **${trigger}**.`)],
+                ? L(`**${shortcut.trigger}** is now **${enabled ? "enabled" : "disabled"}**.`, `**${shortcut.trigger}** صار **${enabled ? "مفعّل" : "مقفل"}**.`)
+                : L(`No shortcut called **${trigger}**.`, `ما في اختصار اسمه **${trigger}**.`))],
     });
 };

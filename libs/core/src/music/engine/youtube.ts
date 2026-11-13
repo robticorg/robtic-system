@@ -8,6 +8,7 @@ import { StreamType } from "@discordjs/voice";
 import ytSearch from "yt-search";
 import { Logger } from "@logger";
 
+import { L } from "@utils";
 /**
  * YouTube: search with yt-search, stream with the official yt-dlp binary. Shared by every music
  * bot — one binary, downloaded once.
@@ -154,6 +155,6 @@ export async function searchVideos(query: string, limit: number): Promise<Track[
         thumbnail: v.thumbnail ?? v.image,
         author: v.author?.name || "YouTube",
     }));
-    if (!videos.length) throw new Error("ملقتش الأغنية على YouTube");
+    if (!videos.length) throw new Error(L("Couldn't find that song on YouTube", "ما لقيت الأغنية على YouTube"));
     return videos;
 }

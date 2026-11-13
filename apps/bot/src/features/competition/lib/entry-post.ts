@@ -14,6 +14,7 @@ import {
 import type { ICompetitionBot, ICompetitionEntry } from "./models";
 import { buttonEmoji, type CompetitionEmojis } from "./emojis";
 
+import { L } from "@utils";
 export const VOTE_ID = "comp:vote:";
 export const COUNT_ID = "comp:count:";
 export const UNVOTE_ID = "comp:unvote:";
@@ -58,7 +59,7 @@ export function buildEntryPost(entry: EntryLike, state: CompetitionState, votes:
                 .setCustomId(`${VOTE_ID}${entry.number}`)
                 .setStyle(ButtonStyle.Secondary)
                 .setEmoji(buttonEmoji(emojis.add))
-                .setLabel("| تـصـويـت"),
+                .setLabel(L("| Vote", "| تـصـويـت")),
         );
         if (!state.hideCounts) {
             row.addComponents(
@@ -66,7 +67,7 @@ export function buildEntryPost(entry: EntryLike, state: CompetitionState, votes:
                     .setCustomId(`${COUNT_ID}${entry.number}`)
                     .setStyle(ButtonStyle.Secondary)
                     .setEmoji(buttonEmoji(emojis.info))
-                    .setLabel(`| ${votes} Votes`)
+                    .setLabel(L(`| ${votes} Votes`, `| ${votes} صوت`))
                     .setDisabled(true),
             );
         }

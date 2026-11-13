@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { getModerationSecurityConfig, resolveLogChannel, detectBanAuditEntry, recordSecurityEvent } from "../../utils/moderation/security";
 import { memberBanEmbed } from "../../utils/moderation/embed";
 
+import { L } from "@utils";
 export default {
     name: Events.GuildBanAdd,
     async execute(ban: any, client: BotClient) {
@@ -12,7 +13,7 @@ export default {
         if (!channelId) return;
         const channel = await resolveLogChannel(ban.guild, channelId);
         if (!channel) return;
-        await channel.send({ embeds: [memberBanEmbed(ban, audit?.executorId, ban.reason ?? audit?.reason ?? "No reason provided")] }).catch(() => null);
+        await channel.send({ embeds: [memberBanEmbed(ban, audit?.executorId, ban.reason ?? audit?.reason ?? L("No reason given", "بدون سبب"))] }).catch(() => null);
 
         if (audit?.executorId) {
             await recordSecurityEvent({

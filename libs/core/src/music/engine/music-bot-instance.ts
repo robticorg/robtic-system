@@ -28,6 +28,8 @@ import { Logger } from "@logger";
 import { generateBanner } from "./banner";
 import { formatDuration, getAudio, searchVideos, type AudioSource, type Track } from "./youtube";
 
+import { ServerConfigRepository } from "@database/repositories";
+import { L, DEFAULT_LANG, runWithLang } from "@utils";
 export interface MusicBotSettings {
     botId: string;
     name: string;
@@ -99,8 +101,12 @@ export class MusicBotInstance {
 
         this.client.once("clientReady", () => this.onReady().catch(e => this.warn("ready", e)));
         this.client.on("guildCreate", guild => this.enforceGuild(guild));
-        this.client.on("messageCreate", message => this.onMessage(message).catch(e => this.warn("message", e)));
-        this.client.on("interactionCreate", interaction => this.onInteraction(interaction).catch(e => this.warn("interaction", e)));
+        // A music bot is its own client, outside the main bot's event loader, so it picks its server's language here.
+        const inLang = <T>(fn: () => Promise<T>) => ServerConfigRepository.getLanguage(this.settings.guildId)
+            .catch(() => null)
+            .then(lang => runWithLang(lang ?? DEFAULT_LANG, fn));
+        this.client.on("messageCreate", message => void inLang(() => this.onMessage(message)).catch(e => this.warn("message", e)));
+        this.client.on("interactionCreate", interaction => void inLang(() => this.onInteraction(interaction)).catch(e => this.warn("interaction", e)));
         this.client.on("error", e => this.warn("client", e));
     }
 
@@ -292,7 +298,7 @@ export class MusicBotInstance {
                 await this.nowMessage?.edit({
                     embeds: [new EmbedBuilder()
                         .setColor(0xed4245)
-                        .setDescription(`❌ تعذر تشغيل **${track.title}**\n\n${String((error as Error).message || error).slice(0, 1500)}`)],
+                        .setDescription(L(`❌ Couldn't play **${track.title}**\n\n${String((error as Error).message || error).slice(0, 1500)}`, `❌ تعذر تشغيل **${track.title}**\n\n${String((error as Error).message || error).slice(0, 1500)}`))],
                     files: [],
                     components: [],
                 }).catch(() => null);
@@ -334,21 +340,21 @@ export class MusicBotInstance {
 
     private controlRows() {
         const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder().setCustomId("skip").setLabel("تخطي ⏭️").setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId("prev").setLabel("السابق ⏮️").setStyle(ButtonStyle.Secondary).setDisabled(this.history.length === 0),
-            new ButtonBuilder().setCustomId("play").setLabel("تشغيل ▶️").setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId("skip").setLabel(L("Skip ⏭️", "تخطي ⏭️")).setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("prev").setLabel(L("Back ⏮️", "السابق ⏮️")).setStyle(ButtonStyle.Secondary).setDisabled(this.history.length === 0),
+            new ButtonBuilder().setCustomId("play").setLabel(L("Play ▶️", "تشغيل ▶️")).setStyle(ButtonStyle.Success),
         );
         const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder().setCustomId("stop").setLabel("توقف ⏹️").setStyle(ButtonStyle.Danger),
-            new ButtonBuilder().setCustomId("vdown").setLabel("تقليل صوت 🔉").setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId("vup").setLabel("زيادة صوت 🔊").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("stop").setLabel(L("Pause ⏹️", "توقف ⏹️")).setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId("vdown").setLabel(L("Quieter 🔉", "تقليل صوت 🔉")).setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("vup").setLabel(L("Louder 🔊", "زيادة صوت 🔊")).setStyle(ButtonStyle.Secondary),
         );
 
         const options = (this.suggestions.length ? this.suggestions : this.current ? [this.current] : [])
             .filter(song => song?.id)
             .slice(0, MUSIC_CONFIG.suggestionCount)
             .map((song, index) => ({
-                label: String(song.title || `نتيجة ${index + 1}`).slice(0, 100),
+                label: String(song.title || L(`Result ${index + 1}`, `نتيجة ${index + 1}`)).slice(0, 100),
                 description: String(song.author || "YouTube").slice(0, 100),
                 value: String(song.id),
             }));
@@ -358,7 +364,7 @@ export class MusicBotInstance {
             rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId("search_suggestions")
-                    .setPlaceholder("Suggested videos — pick one to add to queue")
+                    .setPlaceholder(L("Suggested videos: pick one to add to the queue", "فيديوهات مقترحة: اختر واحد لإضافته للقائمة"))
                     .addOptions(options),
             ));
         }
@@ -367,7 +373,7 @@ export class MusicBotInstance {
 
     private makeEmbed(): EmbedBuilder {
         const c = this.current;
-        if (!c) return new EmbedBuilder().setColor(MUSIC_CONFIG.embedColor).setDescription("لا يوجد شيء يعمل حاليًا.");
+        if (!c) return new EmbedBuilder().setColor(MUSIC_CONFIG.embedColor).setDescription(L("Nothing is playing right now.", "لا يوجد شيء يعمل حاليًا."));
         return new EmbedBuilder()
             .setColor(MUSIC_CONFIG.embedColor)
             .setAuthor({ name: String(c.author || "YouTube").slice(0, 256) })
@@ -414,9 +420,10 @@ export class MusicBotInstance {
         if (message.channelId !== this.settings.voiceChannelId) return;
 
         const content = message.content.trim();
-        const startsWith = (p: string) => content === p || content.startsWith(`${p} `);
+        const lower = content.toLowerCase();
+        const startsWith = (p: string) => lower === p || lower.startsWith(`${p} `);
 
-        if (MUSIC_CONFIG.stopPrefixes.some(p => content === p)) {
+        if (MUSIC_CONFIG.stopPrefixes.some(p => lower === p)) {
             if (!this.inMyVoice(message.member?.voice.channelId)) return;
             if (!this.current || this.manualStop || this.player.state.status !== AudioPlayerStatus.Playing) return;
 
@@ -436,7 +443,7 @@ export class MusicBotInstance {
                 await this.nowMessage.delete().catch(() => null);
                 this.nowMessage = null;
             }
-            await message.reply("⏹️ تم إيقاف التشغيل ومسح القائمة.").catch(() => null);
+            await message.reply(L("⏹️ Stopped and cleared the queue.", "⏹️ تم إيقاف التشغيل ومسح القائمة.")).catch(() => null);
             return;
         }
 
@@ -446,13 +453,13 @@ export class MusicBotInstance {
             const raw = content.slice(volumeHit.length).trim();
             const value = Number(raw);
             if (!Number.isFinite(value) || !/^\d+(?:\.\d+)?$/.test(raw)) {
-                await message.reply(`اكتب مستوى الصوت من 0 إلى ${MUSIC_CONFIG.maxVolume}. مثال: \`صوت 70\``).catch(() => null);
+                await message.reply(L(`Give a volume from 0 to ${MUSIC_CONFIG.maxVolume}, like \`volume 70\``, `اكتب مستوى الصوت من 0 إلى ${MUSIC_CONFIG.maxVolume}. مثال: \`صوت 70\``)).catch(() => null);
                 return;
             }
             this.volume = Math.max(0, Math.min(MUSIC_CONFIG.maxVolume, value));
             this.activeResource?.volume?.setVolume(this.volume / 100);
             await this.renderNowPlaying().catch(() => null);
-            await message.reply(`🔊 مستوى الصوت: **${this.volume}%**`).catch(() => null);
+            await message.reply(L(`🔊 Volume: **${this.volume}%**`, `🔊 مستوى الصوت: **${this.volume}%**`)).catch(() => null);
             return;
         }
 
@@ -461,7 +468,7 @@ export class MusicBotInstance {
 
         const query = content.slice(hit.length).trim();
         if (!query) {
-            await message.reply("اكتب اسم الأغنية بعد الأمر. مثال: `ش عزرائيل`").catch(() => null);
+            await message.reply(L("Write the song after the command, like `play never gonna give you up`", "اكتب اسم الأغنية بعد الأمر. مثال: `ش عزرائيل`")).catch(() => null);
             return;
         }
 
@@ -476,7 +483,7 @@ export class MusicBotInstance {
                 if (this.manualStop) this.current = null;
                 await this.next();
             } else {
-                await message.reply(`➕ اتضافت: **${first.title}**`).catch(() => null);
+                await message.reply(L(`➕ Added: **${first.title}**`, `➕ اتضافت: **${first.title}**`)).catch(() => null);
             }
         } catch (e) {
             this.warn("play command", e);
@@ -490,7 +497,7 @@ export class MusicBotInstance {
 
         const voiceChannelId = interaction.inCachedGuild() ? interaction.member.voice.channelId : null;
         if (!this.inMyVoice(voiceChannelId)) {
-            await interaction.reply({ content: "يجب أن تكون في نفس الروم الصوتية لاستخدام التحكم!", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: L("Join the same voice channel to use the controls.", "يجب أن تكون في نفس الروم الصوتية لاستخدام التحكم!"), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
@@ -549,7 +556,7 @@ export class MusicBotInstance {
                 }
                 this.stopProgress();
                 await this.nowMessage?.edit({
-                    embeds: [this.makeEmbed().setDescription("⏹️ تم إيقاف الأغنية مؤقتًا. اضغط تشغيل للمتابعة.")],
+                    embeds: [this.makeEmbed().setDescription(L("⏹️ Paused. Press Play to carry on.", "⏹️ تم إيقاف الأغنية مؤقتًا. اضغط تشغيل للمتابعة."))],
                     components: this.controlRows(),
                 }).catch(() => null);
                 return;

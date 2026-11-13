@@ -8,12 +8,11 @@ import {
 } from "discord.js";
 import type { BotClient } from "@core/bot-client";
 
-const ROLE_LABELS: Record<string, string> = {
-    en: "English Role",
-    ar: "Arabic Role",
-    members: "Members Role",
-    bots: "Bots Role",
-};
+import { L, bilingual } from "@utils";
+const ROLE_LABELS = bilingual<Record<string, string>>(
+    { en: "English role", ar: "Arabic role", members: "Members role", bots: "Bots role" },
+    { en: "رتبة الإنجليزي", ar: "رتبة العربي", members: "رتبة الأعضاء", bots: "رتبة البوتات" },
+);
 
 export default {
     scope: "guild",
@@ -42,16 +41,16 @@ export default {
 
         const modal = new ModalBuilder()
             .setCustomId(`set_role_modal_${type}`)
-            .setTitle(`Set ${label}`);
+            .setTitle(L(`Set ${label}`.slice(0, 45), `ضبط ${label}`.slice(0, 45)));
 
         modal.addComponents(
             new ActionRowBuilder<TextInputBuilder>().addComponents(
                 new TextInputBuilder()
                     .setCustomId("role_id")
-                    .setLabel("Role ID")
+                    .setLabel(L("Role ID", "آيدي الرتبة"))
                     .setStyle(TextInputStyle.Short)
                     .setRequired(true)
-                    .setPlaceholder("Enter the role ID (numbers only)")
+                    .setPlaceholder(L("Enter the role ID (numbers only)", "آيدي الرتبة (أرقام فقط)"))
                     .setMinLength(17)
                     .setMaxLength(20)
             ),

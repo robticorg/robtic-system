@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { COLORS, DEFAULT_PREFIX } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
+import { L } from "@utils";
 export default {
     scope: "guild",
     category: "Configuration",
@@ -21,7 +22,7 @@ export default {
         const prefix = interaction.options.getString("prefix", true).trim();
         if (!prefix || /\s/.test(prefix)) {
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setDescription("❌ Prefix can't be empty or contain spaces.").setColor(COLORS.error)],
+                embeds: [new EmbedBuilder().setDescription(L("❌ Prefix can't be empty or contain spaces.", "❌ البادئة ما تكون فاضية ولا فيها مسافات.")).setColor(COLORS.error)],
             });
             return;
         }
@@ -30,9 +31,9 @@ export default {
 
         await interaction.editReply({
             embeds: [new EmbedBuilder()
-                .setTitle("✅ Prefix Updated")
+                .setTitle(L("✅ Prefix updated", "✅ تم تغيير البادئة"))
                 .setColor(COLORS.success)
-                .setDescription(`Text commands in this server now use \`${prefix}\` (e.g. \`${prefix}profile\`). Default is \`${DEFAULT_PREFIX}\` when unset.`)],
+                .setDescription(L(`Text commands in this server now use \`${prefix}\` (e.g. \`${prefix}profile\`). Default is \`${DEFAULT_PREFIX}\` when unset.`, `الأوامر الكتابية في السيرفر صارت تبدأ بـ \`${prefix}\` (مثل \`${prefix}profile\`). الافتراضي \`${DEFAULT_PREFIX}\`.`))],
         });
     },
 };

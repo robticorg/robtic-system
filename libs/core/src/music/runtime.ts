@@ -4,6 +4,7 @@ import { Logger } from "@logger";
 import { MusicBotInstance } from "./engine/music-bot-instance";
 import { decryptToken, musicTokenKey } from "./token-crypto";
 
+import { L } from "@utils";
 const CTX = "music";
 
 /**
@@ -42,7 +43,7 @@ export async function startMusicBot(record: IMusicBot): Promise<{ ok: true } | {
     } catch (err) {
         running.delete(record.botId);
         await instance.destroy().catch(() => null);
-        return { ok: false, problem: `Discord refused to log it in (${(err as Error).message}) — the token may have been reset` };
+        return { ok: false, problem: L(`Discord refused to log it in (${(err as Error).message}) — the token may have been reset`, `ديسكورد رفض تسجيل الدخول (${(err as Error).message}). يمكن التوكن تغير`) };
     }
 }
 

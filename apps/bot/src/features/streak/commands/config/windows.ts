@@ -4,6 +4,7 @@ import { COLORS, STREAK_LIMITS } from "@constants";
 import { StreakSettingsRepository } from "@database/repositories";
 import { resolveStreakWindows } from "@core/streak";
 
+import { L } from "@utils";
 const clamp = (value: number, { min, max }: { min: number; max: number }): number =>
     Math.max(min, Math.min(max, Math.round(value)));
 
@@ -27,17 +28,17 @@ export const windows: FeatureSubcommandHandler = async (interaction, _client) =>
     await StreakSettingsRepository.setWindows(guildId, claimDays, expireDays, returnWindowHours);
 
     const adjusted = expireDays !== requestedExpire
-        ? `\n\n⚠️ Expiry raised to **${expireDays}** days so it stays above the claim window.`
+        ? L(`\n\n⚠️ Expiry raised to **${expireDays}** days so it stays above the claim window.`, `\n\n⚠️ تم رفع مدة الانتهاء إلى **${expireDays}** يوم عشان تكون أطول من مدة الاستلام.`)
         : "";
 
     await interaction.editReply({
         embeds: [new EmbedBuilder()
-            .setTitle("Streak windows updated")
+            .setTitle(L("Streak windows updated", "تم تحديث مدد الستريك"))
             .setColor(COLORS.success)
             .setDescription(
-                `**Claim every:** ${claimDays} day(s)\n` +
-                `**Expires after:** ${expireDays} day(s) without a claim\n` +
-                `**Staff can return for:** ${returnWindowHours}h after expiry${adjusted}`
+                L(`**Claim every:** ${claimDays} day(s)\n`, `**الاستلام كل:** ${claimDays} يوم\n`) +
+                L(`**Expires after:** ${expireDays} day(s) without a claim\n`, `**ينتهي بعد:** ${expireDays} يوم بدون استلام\n`) +
+                L(`**Staff can return for:** ${returnWindowHours}h after expiry${adjusted}`, `**الإدارة تقدر ترجعه خلال:** ${returnWindowHours} ساعة بعد الانتهاء${adjusted}`)
             )],
     });
 };

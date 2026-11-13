@@ -2,11 +2,13 @@ import {
     SlashCommandBuilder,
     PermissionFlagsBits,
     EmbedBuilder,
+    MessageFlags,
     type ChatInputCommandInteraction,
     type GuildMember,
 } from "discord.js";
 import type { BotClient } from "@core/bot-client";
-import { COLORS, MODERATION_ACTION_MESSAGES as MSG } from "@constants";
+import { AUDIT_MESSAGES as AUDIT, COLORS, MODERATION_ACTION_MESSAGES as MSG } from "@constants";
+import { L } from "@utils";
 import { recordSecurityEvent, sendAuditLog } from "@bot/utils/moderation/security";
 import { canActOn } from "@bot/utils/moderation/hierarchy";
 
@@ -28,7 +30,7 @@ export default {
             opt.setName("target").setDescription("The user to ban").setRequired(true)
         )
         .addStringOption(opt =>
-            opt.setName("reason").setDescription("Why they are being banned").setRequired(false)
+            opt.setName("reason").setDescription("Why they are being banned").setRequired(false).setMaxLength(400)
         ),
 
     requiredPermission: 60,
@@ -36,48 +38,30 @@ export default {
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         const guild = interaction.guild;
         if (!guild) {
-            await interaction.reply({ content: MSG.guildOnly });
+            await interaction.reply({ content: MSG.guildOnly, flags: MessageFlags.Ephemeral });
             return;
         }
 
         const target = interaction.options.getUser("target", true);
-        const reason = interaction.options.getString("reason") ?? "No reason provided";
+        const reason = interaction.options.getString("reason")?.trim() || AUDIT.noReasonProvided;
+        const refuse = (content: string) => interaction.reply({ content, flags: MessageFlags.Ephemeral });
 
-        if (target.id === interaction.user.id) {
-            await interaction.reply({ content: MSG.selfTarget("ban") });
-            return;
-        }
-        if (target.id === client.user?.id) {
-            await interaction.reply({ content: MSG.botTarget("ban") });
-            return;
-        }
-
-        if (!guild.members.me?.permissions.has(PermissionFlagsBits.BanMembers)) {
-            await interaction.reply({ content: MSG.banMissingPermission });
-            return;
-        }
+        if (target.id === interaction.user.id) return void await refuse(MSG.banSelf);
+        if (target.id === client.user?.id) return void await refuse(MSG.banBot);
+        if (!guild.members.me?.permissions.has(PermissionFlagsBits.BanMembers)) return void await refuse(MSG.banMissingPermission);
 
         const existingBan = await guild.bans.fetch(target.id).catch(() => null);
-        if (existingBan) {
-            await interaction.reply({ content: MSG.alreadyBanned(target.id) });
-            return;
-        }
+        if (existingBan) return void await refuse(MSG.alreadyBanned(target.id));
 
         const member = guild.members.cache.get(target.id) ?? await guild.members.fetch(target.id).catch(() => null);
         if (member) {
-            if (!canActOn(interaction.member as GuildMember, member)) {
-                await interaction.reply({ content: MSG.banAboveExecutor });
-                return;
-            }
-            if (!member.bannable) {
-                await interaction.reply({ content: MSG.banNotBannable });
-                return;
-            }
+            if (!canActOn(interaction.member as GuildMember, member)) return void await refuse(MSG.banAboveExecutor);
+            if (!member.bannable) return void await refuse(MSG.banNotBannable);
         }
 
         await interaction.deferReply();
 
-        const banned = await guild.bans.create(target.id, { reason: `${interaction.user.tag}: ${reason}` }).catch(() => null);
+        const banned = await guild.bans.create(target.id, { reason: `${interaction.user.tag}: ${reason}`.slice(0, 512) }).catch(() => null);
         if (!banned) {
             await interaction.editReply({ content: MSG.banFailed });
             return;
@@ -89,13 +73,13 @@ export default {
             guild,
             "member_ban",
             new EmbedBuilder()
-                .setTitle("📘 Audit: Member Ban")
+                .setTitle(AUDIT.memberBanTitle)
                 .setColor(COLORS.moderation)
                 .addFields(
-                    { name: "Target", value: `<@${target.id}> (${target.id})` },
-                    { name: "Executor", value: `<@${interaction.user.id}> (${interaction.user.id})` },
-                    { name: "Reason", value: reason },
-                    { name: "Source", value: "/ban", inline: true },
+                    { name: AUDIT.targetFieldName, value: `<@${target.id}> (${target.id})` },
+                    { name: AUDIT.executorFieldName, value: `<@${interaction.user.id}> (${interaction.user.id})` },
+                    { name: AUDIT.reasonFieldName, value: reason },
+                    { name: L("Source", "المصدر"), value: "/ban", inline: true },
                 )
                 .setTimestamp(),
         );

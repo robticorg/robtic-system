@@ -13,20 +13,17 @@ import {
 import type { ComponentHandler } from "@typings/command";
 import { COLORS } from "@constants";
 import { UserRepository } from "@database/repositories";
+import { L, currentLang } from "@utils";
 import { t, type Lang } from "@bot/utils/lang";
 
+const NOT_YOURS = () => L("This isn't your settings panel.", "هذي لوحة إعدادات شخص ثاني.");
+
+/**
+ * The profile settings buttons: display name and privacy. The bot's language is the server's (dashboard → General),
+ * so there is no language button here any more.
+ */
 export function buildProfileSettingsRow(userId: string, lang: Lang, privateProfile: boolean): ActionRowBuilder<ButtonBuilder> {
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`profile_settings_lang_en_${userId}`)
-            .setLabel(t("settings.button_lang_en", lang))
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(lang === "en"),
-        new ButtonBuilder()
-            .setCustomId(`profile_settings_lang_ar_${userId}`)
-            .setLabel(t("settings.button_lang_ar", lang))
-            .setStyle(ButtonStyle.Primary)
-            .setDisabled(lang === "ar"),
         new ButtonBuilder()
             .setCustomId(`profile_settings_edit_name_${userId}`)
             .setLabel(t("settings.button_edit_name", lang))
@@ -44,31 +41,21 @@ export async function buildSettingsEmbed(user: User, lang: Lang): Promise<EmbedB
     return new EmbedBuilder()
         .setTitle(`⚙️ ${t("settings.title", lang, { user: user.username })}`)
         .addFields(
-            { name: t("settings.language_field", lang), value: lang === "ar" ? "العربية" : "English", inline: true },
             { name: t("settings.display_name_field", lang), value: displayName ?? t("settings.display_name_unset", lang), inline: true },
             { name: t("settings.private_profile_field", lang), value: privateProfile ? t("settings.private_profile_on", lang) : t("settings.private_profile_off", lang), inline: true },
         )
         .setColor(COLORS.default);
 }
 
+/** Language buttons on panels opened before the change: they point to the server setting instead. */
 const profileSettingsLangHandler: ComponentHandler<ButtonInteraction> = {
     customId: /^profile_settings_lang_(en|ar)_\d+$/,
 
     async run(interaction: ButtonInteraction) {
-        const parts = interaction.customId.split("_");
-        const newLang = parts[3] as Lang;
-        const userId = parts[4];
-
-        if (interaction.user.id !== userId) {
-            await interaction.reply({ content: "This isn't your settings panel.", flags: MessageFlags.Ephemeral }).catch(() => null);
-            return;
-        }
-
-        await UserRepository.setPreferredLang(userId, interaction.user.username, newLang);
-
-        const privateProfile = await UserRepository.getPrivateProfile(userId);
-        const embed = await buildSettingsEmbed(interaction.user, newLang);
-        await interaction.update({ embeds: [embed], components: [buildProfileSettingsRow(userId, newLang, privateProfile)] });
+        await interaction.reply({
+            content: L("The bot's language is set for the whole server by an admin on the dashboard (General → Language).", "لغة البوت تنضبط للسيرفر كامل من لوحة التحكم (عام ← اللغة) بواسطة الإدارة."),
+            flags: MessageFlags.Ephemeral,
+        }).catch(() => null);
     },
 };
 
@@ -77,19 +64,16 @@ export const profileSettingsPrivacyHandler: ComponentHandler<ButtonInteraction> 
 
     async run(interaction: ButtonInteraction) {
         const userId = interaction.customId.replace("profile_settings_privacy_", "");
-
         if (interaction.user.id !== userId) {
-            await interaction.reply({ content: "This isn't your settings panel.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: NOT_YOURS(), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
-        const current = await UserRepository.getPrivateProfile(userId);
-        const newValue = !current;
+        const newValue = !(await UserRepository.getPrivateProfile(userId));
         await UserRepository.setPrivateProfile(userId, interaction.user.username, newValue);
 
-        const lang = await UserRepository.getPreferredLang(userId) ?? "en";
-        const embed = await buildSettingsEmbed(interaction.user, lang);
-        await interaction.update({ embeds: [embed], components: [buildProfileSettingsRow(userId, lang, newValue)] });
+        const lang = currentLang();
+        await interaction.update({ embeds: [await buildSettingsEmbed(interaction.user, lang)], components: [buildProfileSettingsRow(userId, lang, newValue)] });
     },
 };
 
@@ -98,29 +82,27 @@ export const profileSettingsEditNameHandler: ComponentHandler<ButtonInteraction>
 
     async run(interaction: ButtonInteraction) {
         const userId = interaction.customId.replace("profile_settings_edit_name_", "");
-
         if (interaction.user.id !== userId) {
-            await interaction.reply({ content: "This isn't your settings panel.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: NOT_YOURS(), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
-        const modal = new ModalBuilder()
-            .setCustomId(`profile_settings_name_modal_${userId}`)
-            .setTitle("Edit Display Name");
-
-        modal.addComponents(
-            new ActionRowBuilder<TextInputBuilder>().addComponents(
-                new TextInputBuilder()
-                    .setCustomId("display_name")
-                    .setLabel("Display Name")
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true)
-                    .setMaxLength(32)
-                    .setPlaceholder("How the bot should refer to you"),
-            ),
+        await interaction.showModal(
+            new ModalBuilder()
+                .setCustomId(`profile_settings_name_modal_${userId}`)
+                .setTitle(L("Edit display name", "تعديل الاسم"))
+                .addComponents(
+                    new ActionRowBuilder<TextInputBuilder>().addComponents(
+                        new TextInputBuilder()
+                            .setCustomId("display_name")
+                            .setLabel(L("Display name", "الاسم"))
+                            .setStyle(TextInputStyle.Short)
+                            .setRequired(true)
+                            .setMaxLength(32)
+                            .setPlaceholder(L("How the bot should call you", "كيف يناديك البوت")),
+                    ),
+                ),
         );
-
-        await interaction.showModal(modal);
     },
 };
 

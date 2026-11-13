@@ -7,6 +7,7 @@ import { Logger } from "@logger";
 import { announceLevelUp } from "./announce-level-up";
 import { grantLevelRewards } from "./grant-level-rewards";
 
+import { L } from "@utils";
 export interface XpGainResult {
     xp: number;
     leveledUp: boolean;
@@ -58,7 +59,7 @@ export async function applyXpGain(
             userId: discordId,
             type: "level_up",
             amount: newLevel,
-            details: `${kind === "message" ? "Message" : "Voice"} level ${previousLevel} → ${newLevel}`,
+            details: L(`${kind === "message" ? "Message" : "Voice"} level ${previousLevel} → ${newLevel}`, `مستوى ${kind === "message" ? "الرسائل" : "الصوت"} ${previousLevel} ← ${newLevel}`),
         });
 
         const levels = {

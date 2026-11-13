@@ -7,7 +7,8 @@ import { buildInfoOptionModal, buildInfoPanelModal } from "../utils/info-form";
 import { INFO_MAX_OPTIONS } from "../utils/info-render";
 import { syncInfoPanel } from "../utils/info-post";
 
-const NO_PANEL = "No such info panel — pick one from the list.";
+import { L } from "@utils";
+const NO_PANEL = () => L("No such info panel — pick one from the list.", "ما في لوحة بهذا الاسم: اختر من القائمة.");
 
 /** The forms check again on submit: a command's permission check doesn't cover the modal it opened. */
 export async function canManageInfo(member: GuildMember | null): Promise<boolean> {
@@ -22,7 +23,7 @@ export const create: FeatureSubcommandHandler = async interaction => {
 /** `/info update panel:` — the same form, prefilled. */
 export const update: FeatureSubcommandHandler = async interaction => {
     const panel = await InfoPanelRepository.get(interaction.guildId!, interaction.options.getString("panel", true));
-    if (!panel) return void await interaction.reply({ content: NO_PANEL, flags: MessageFlags.Ephemeral });
+    if (!panel) return void await interaction.reply({ content: NO_PANEL(), flags: MessageFlags.Ephemeral });
     await interaction.showModal(buildInfoPanelModal(panel));
 };
 
@@ -30,23 +31,23 @@ export const update: FeatureSubcommandHandler = async interaction => {
 export const remove: FeatureSubcommandHandler = async interaction => {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const panel = await InfoPanelRepository.delete(interaction.guildId!, interaction.options.getString("panel", true));
-    if (!panel) return void await interaction.editReply({ content: NO_PANEL });
+    if (!panel) return void await interaction.editReply({ content: NO_PANEL() });
 
     let note = "";
     if (panel.messageId) {
         const channel = await interaction.guild!.channels.fetch(panel.channelId).catch(() => null);
         const deleted = channel?.isTextBased() ? await channel.messages.delete(panel.messageId).then(() => true, () => false) : false;
-        if (!deleted) note = " Its message couldn't be deleted — remove it by hand if it's still there.";
+        if (!deleted) note = L(" Its message couldn't be deleted: remove it by hand if it's still there.", " ما قدرت أحذف رسالتها: احذفها يدوي إذا باقية.");
     }
-    await interaction.editReply({ content: `The info panel was deleted.${note}` });
+    await interaction.editReply({ content: L(`The info panel was deleted.${note}`, `تم حذف اللوحة.${note}`) });
 };
 
 /** `/option add panel:` — the choice form. */
 export const optionAdd: FeatureSubcommandHandler = async interaction => {
     const panel = await InfoPanelRepository.get(interaction.guildId!, interaction.options.getString("panel", true));
-    if (!panel) return void await interaction.reply({ content: NO_PANEL, flags: MessageFlags.Ephemeral });
+    if (!panel) return void await interaction.reply({ content: NO_PANEL(), flags: MessageFlags.Ephemeral });
     if (panel.options.length >= INFO_MAX_OPTIONS) {
-        return void await interaction.reply({ content: `This panel already has ${INFO_MAX_OPTIONS} options — Discord's limit.`, flags: MessageFlags.Ephemeral });
+        return void await interaction.reply({ content: L(`This panel already has ${INFO_MAX_OPTIONS} options: Discord's limit.`, `اللوحة فيها ${INFO_MAX_OPTIONS} خيارات: هذا حد ديسكورد.`), flags: MessageFlags.Ephemeral });
     }
     await interaction.showModal(buildInfoOptionModal(panel));
 };
@@ -59,16 +60,16 @@ export const optionRemove: FeatureSubcommandHandler = async interaction => {
     const optionId = interaction.options.getString("option", true);
 
     const before = await InfoPanelRepository.getLight(guildId, panelId);
-    if (!before) return void await interaction.editReply({ content: NO_PANEL });
+    if (!before) return void await interaction.editReply({ content: NO_PANEL() });
     const option = before.options.find(o => o.optionId === optionId);
-    if (!option) return void await interaction.editReply({ content: "That panel has no such option — pick one from the list." });
+    if (!option) return void await interaction.editReply({ content: L("That panel has no such option: pick one from the list.", "ما في خيار بهذا الاسم في اللوحة: اختر من القائمة.") });
 
     const panel = await InfoPanelRepository.removeOption(guildId, panelId, optionId);
-    if (!panel) return void await interaction.editReply({ content: NO_PANEL });
+    if (!panel) return void await interaction.editReply({ content: NO_PANEL() });
 
     const sync = await syncInfoPanel(interaction.guild!, panel);
     await interaction.editReply({
-        content: `Removed **${option.label}**.${sync.ok ? "" : ` ⚠️ The panel message wasn't updated: ${sync.problem}`}`,
+        content: L(`Removed **${option.label}**.${sync.ok ? "" : ` ⚠️ The panel message wasn't updated: ${sync.problem}`}`, `تم حذف **${option.label}**.${sync.ok ? "" : ` ⚠️ ما تحدثت رسالة اللوحة: ${sync.problem}`}`),
         allowedMentions: { parse: [] },
     });
 };

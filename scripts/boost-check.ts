@@ -1,4 +1,5 @@
 /** Verifies the boost thank-you wording, layout, 30-minute batching and manifest — no database, no gateway. */
+import "./_english";
 import { ComponentType } from "discord.js";
 import { BOOST_CONFIG } from "@constants";
 import { boostThanksMessage, buildBoostThanks } from "@bot/features/boost/utils/boost-message";

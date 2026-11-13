@@ -7,6 +7,7 @@ import {
 import { ActivityRepository } from "@database/repositories";
 import { COLORS } from "@constants";
 
+import { L } from "@utils";
 export default {
     scope: "guild",
     access: "general",
@@ -24,7 +25,7 @@ export default {
     async run(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
 
-        const page = interaction.options.getInteger("page") ?? 1;
+        const page = Math.max(1, Math.floor(interaction.options.getInteger("page") ?? 1));
         const perPage = 10;
         const guildId = interaction.guildId!;
 
@@ -33,20 +34,20 @@ export default {
 
         if (pageData.length === 0) {
             await interaction.deleteReply().catch(() => {});
-            await interaction.followUp({ content: "No data for this page.", flags: MessageFlags.Ephemeral });
+            await interaction.followUp({ content: L("No data for this page.", "ما في بيانات في هذي الصفحة."), flags: MessageFlags.Ephemeral });
             return;
         }
 
         const lines = pageData.map((user, i) => {
             const rank = (page - 1) * perPage + i + 1;
-            return `**${rank}.** <@${user.discordId}> — 💬 Lv ${user.messageLevel ?? 0} · 🎙️ Lv ${user.voiceLevel ?? 0} | ${user.totalXP} XP`;
+            return L(`**${rank}.** <@${user.discordId}> — 💬 Lv ${user.messageLevel ?? 0} · 🎙️ Lv ${user.voiceLevel ?? 0} | ${user.totalXP} XP`, `**${rank}.** <@${user.discordId}> — 💬 مستوى ${user.messageLevel ?? 0} · 🎙️ مستوى ${user.voiceLevel ?? 0} | ${user.totalXP} خبرة`);
         });
 
         const embed = new EmbedBuilder()
-            .setTitle("🏆 XP Leaderboard")
+            .setTitle(L("🏆 XP leaderboard", "🏆 توب الخبرة"))
             .setDescription(lines.join("\n"))
             .setColor(COLORS.activity)
-            .setFooter({ text: `Page ${page}` })
+            .setFooter({ text: L(`Page ${page}`, `صفحة ${page}`) })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });

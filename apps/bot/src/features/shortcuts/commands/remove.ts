@@ -4,6 +4,7 @@ import { COLORS } from "@constants";
 import { ShortcutRepository } from "@database/repositories";
 import { resolveTrigger, knownTriggers } from "../utils/resolve-trigger";
 
+import { L } from "@utils";
 export const remove: FeatureSubcommandHandler = async (interaction, _client) => {
     const guildId = interaction.guildId!;
     const typed = interaction.options.getString("trigger", true);
@@ -14,7 +15,7 @@ export const remove: FeatureSubcommandHandler = async (interaction, _client) => 
     if (!removed) {
         await interaction.editReply({
             embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(
-                `No shortcut called **${typed.trim()}**.\n${await knownTriggers(guildId)}`
+                L(`No shortcut called **${typed.trim()}**.\n${await knownTriggers(guildId)}`, `ما في اختصار اسمه **${typed.trim()}**.\n${await knownTriggers(guildId)}`)
             )],
         });
         return;
@@ -23,6 +24,6 @@ export const remove: FeatureSubcommandHandler = async (interaction, _client) => 
     await interaction.editReply({
         embeds: [new EmbedBuilder()
             .setColor(COLORS.success)
-            .setDescription(`Removed **${removed.trigger}** — it no longer runs \`${removed.command}\`.`)],
+            .setDescription(L(`Removed **${removed.trigger}**: it no longer runs \`${removed.command}\`.`, `تم حذف **${removed.trigger}**: ما عاد يشغل \`${removed.command}\`.`))],
     });
 };

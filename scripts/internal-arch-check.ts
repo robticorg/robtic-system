@@ -3,6 +3,7 @@
  * the API handler runs without a socket, the worker processor with in-memory stores, the client
  * against a fake fetch.
  */
+import "./_english";
 import { UnrecoverableError } from "bullmq";
 import { ApiError } from "@sdk";
 import { createInternalHandler } from "@internal-api";

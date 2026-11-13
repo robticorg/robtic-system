@@ -12,6 +12,7 @@ import { ActivityRepository, StreakRepository } from "@database/repositories";
 import { isGuildOperator, isStaff } from "@bot/utils/access";
 import { getStaffActivity, getSupportStats } from "@bot/utils/staff-activity";
 
+import { L } from "@utils";
 /** Administrators (and whitelisted super users, via isGuildOperator) may run bulk member lookups. */
 function isAllowed(member: GuildMember): boolean {
     return isGuildOperator(member) || member.permissions.has(PermissionFlagsBits.Administrator);
@@ -156,20 +157,20 @@ async function runStaffUserCheck(
 
     const staffData = await getStaffActivity(targetId, guildId);
     const supportStats = await getSupportStats(targetId);
-    const avgResponse = supportStats.avgResponseMs > 0 ? `${Math.round(supportStats.avgResponseMs / 1000)}s` : "N/A";
+    const avgResponse = supportStats.avgResponseMs > 0 ? `${Math.round(supportStats.avgResponseMs / 1000)}s` : L("N/A", "غير متوفر");
 
     const embed = new EmbedBuilder()
         .setTitle(CHECK_MESSAGES.staffUserTitle(username))
         .addFields(
-            { name: "Support Points", value: `${staffData.supportPoints}`, inline: true },
-            { name: "Public Chat Points", value: `${staffData.publicChatPoints}`, inline: true },
-            { name: "Staff Chat Points", value: `${staffData.staffChatPoints}`, inline: true },
-            { name: "Moderation Points", value: `${staffData.moderationPoints}`, inline: true },
+            { name: L("Support points", "نقاط الدعم"), value: `${staffData.supportPoints}`, inline: true },
+            { name: L("Public chat points", "نقاط الشات العام"), value: `${staffData.publicChatPoints}`, inline: true },
+            { name: L("Staff chat points", "نقاط شات الإدارة"), value: `${staffData.staffChatPoints}`, inline: true },
+            { name: L("Moderation points", "نقاط الإشراف"), value: `${staffData.moderationPoints}`, inline: true },
             { name: "Penalties", value: `${staffData.penalties}`, inline: true },
-            { name: "Total Staff Points", value: `**${staffData.totalStaffPoints}**`, inline: true },
-            { name: "Sessions Claimed", value: `${supportStats.totalClaimed}`, inline: true },
-            { name: "Sessions Resolved", value: `${supportStats.totalResolved}`, inline: true },
-            { name: "Avg Response Time", value: avgResponse, inline: true },
+            { name: L("Total staff points", "مجموع نقاط الإدارة"), value: `**${staffData.totalStaffPoints}**`, inline: true },
+            { name: L("Sessions claimed", "الجلسات المستلمة"), value: `${supportStats.totalClaimed}`, inline: true },
+            { name: L("Sessions resolved", "الجلسات المحلولة"), value: `${supportStats.totalResolved}`, inline: true },
+            { name: L("Average response time", "متوسط وقت الرد"), value: avgResponse, inline: true },
         )
         .setColor(COLORS.default)
         .setTimestamp();

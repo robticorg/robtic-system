@@ -8,6 +8,7 @@ import type { BotClient } from "@core/bot-client";
 import { COLORS, SUPER_ADMIN_ID } from "@constants";
 import { SuperUserRepository } from "@database/repositories";
 
+import { L } from "@utils";
 export default {
     category: "Admin",
     scope: "admin",
@@ -37,7 +38,7 @@ export default {
         if (interaction.user.id !== SUPER_ADMIN_ID) {
             await interaction.reply({
                 embeds: [new EmbedBuilder()
-                    .setDescription("❌ You are not authorized to use this command.")
+                    .setDescription(L("❌ You are not authorized to use this command.", "❌ ليس لديك صلاحية هذا الأمر."))
                     .setColor(COLORS.error)],
                 flags: MessageFlags.Ephemeral,
             });
@@ -54,9 +55,9 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setTitle("✅ Super User Added")
+                    .setTitle(L("✅ Super user added", "✅ تمت إضافة مستخدم خارق"))
                     .setColor(COLORS.success)
-                    .setDescription(`${user} (\`${user.id}\`) can now use any command in any server.`)],
+                    .setDescription(L(`${user} (\`${user.id}\`) can now use any command in any server.`, `${user} (\`${user.id}\`) صار يقدر يستخدم أي أمر في أي سيرفر.`))],
             });
             return;
         }
@@ -67,9 +68,9 @@ export default {
 
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setTitle("✅ Super User Removed")
+                    .setTitle(L("✅ Super user removed", "✅ تم حذف المستخدم الخارق"))
                     .setColor(COLORS.success)
-                    .setDescription(`${user} (\`${user.id}\`) no longer has super user access.`)],
+                    .setDescription(L(`${user} (\`${user.id}\`) no longer has super user access.`, `${user} (\`${user.id}\`) ما عاد عنده صلاحية المستخدم الخارق.`))],
             });
             return;
         }
@@ -78,16 +79,16 @@ export default {
         if (!superUsers.length) {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setDescription("No super users are whitelisted.")
+                    .setDescription(L("No super users are whitelisted.", "ما في مستخدمين خارقين."))
                     .setColor(COLORS.info)],
             });
             return;
         }
 
         const embed = new EmbedBuilder()
-            .setTitle("Super User Whitelist")
+            .setTitle(L("Super users", "المستخدمين الخارقين"))
             .setColor(COLORS.info)
-            .setDescription(superUsers.map(u => `• <@${u.userId}> (\`${u.userId}\`) — added by <@${u.addedBy}>`).join("\n"));
+            .setDescription(superUsers.map(u => L(`• <@${u.userId}> (\`${u.userId}\`) — added by <@${u.addedBy}>`, `• <@${u.userId}> (\`${u.userId}\`) — أضافه <@${u.addedBy}>`)).join("\n"));
 
         await interaction.editReply({ embeds: [embed] });
     },

@@ -39,7 +39,7 @@ export interface ComboStore {
     restart(guildId: string, a: string, b: string, at: Date): Promise<ICombo | null>;
     applyMessage(input: ComboMessageInput, scoreGain: number, heat: number, durationDeltaMs: number): Promise<ICombo | null>;
     scoreRange(guildId: string): Promise<{ min: number; max: number }>;
-    punishmentLevel(userId: string): Promise<number>;
+    punishmentLevel(guildId: string, userId: string): Promise<number>;
     addPoints(input: ComboMessageInput, scoreGain: number): Promise<number>;
     liveRecords(guildId: string, pair: ICombo): Promise<void>;
 }
@@ -52,7 +52,7 @@ export const repositoryComboStore: ComboStore = {
         i.guildId, i.authorId, i.partnerId, i.authorId, scoreGain, heat, durationDeltaMs, i.wordCount, i.characterCount, i.at, i.messageId,
     ),
     scoreRange: g => getScoreRange(g),
-    punishmentLevel: u => PunishmentRepository.getPunishmentLevel(u),
+    punishmentLevel: (g, u) => PunishmentRepository.getPunishmentLevel(g, u),
     addPoints: async (i, scoreGain) => {
         const { comboPerPoint } = await getPointRates(i.guildId);
         return PointsRepository.addProgressOnce(i.guildId, i.authorId, i.username, "combo", scoreGain, comboPerPoint, `combo-${i.messageId}`);
@@ -99,7 +99,7 @@ export async function applyComboMessage(
     const { min, max } = await store.scoreRange(guildId);
     let scoreGain = Math.round(min + (max - min) * input.confidence);
 
-    if ((await store.punishmentLevel(authorId)) >= COMBO_CONFIG.punishmentGateThreshold) {
+    if ((await store.punishmentLevel(guildId, authorId)) >= COMBO_CONFIG.punishmentGateThreshold) {
         scoreGain = Math.max(1, Math.round(scoreGain * COMBO_CONFIG.punishmentGateMultiplier));
     }
 

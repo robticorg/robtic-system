@@ -16,6 +16,7 @@ import { randomUUID } from "node:crypto";
 import { INFO_BUTTON_STYLES, INFO_PANEL_TYPES, type IInfoOption, type IInfoPanel, type InfoButtonStyle, type InfoPanelType } from "@database/models";
 import { Logger } from "@logger";
 
+import { L, bilingual } from "@utils";
 /**
  * The info panel form (`/info create`, and prefilled for `/info update`) and the choice form
  * (`/option add`).
@@ -38,8 +39,8 @@ const F = {
     style: "info-option-style",
 } as const;
 
-const TYPE_LABEL: Record<InfoPanelType, string> = { buttons: "Buttons", menu: "Menu" };
-const STYLE_LABEL: Record<InfoButtonStyle, string> = { primary: "Blue", secondary: "Grey", success: "Green", danger: "Red" };
+const TYPE_LABEL = bilingual<Record<InfoPanelType, string>>({ buttons: "Buttons", menu: "Menu" }, { buttons: "أزرار", menu: "قائمة" });
+const STYLE_LABEL = bilingual<Record<InfoButtonStyle, string>>({ primary: "Blue", secondary: "Grey", success: "Green", danger: "Red" }, { primary: "أزرق", secondary: "رمادي", success: "أخضر", danger: "أحمر" });
 
 const IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 const IMAGE_EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
@@ -70,24 +71,24 @@ export function buildInfoPanelModal(panel?: IInfoPanel): ModalBuilder {
 
     const modal = new ModalBuilder()
         .setCustomId(panel ? `info:update:${String(panel._id)}` : INFO_CREATE_MODAL_ID)
-        .setTitle(panel ? "Update Info Panel" : "Create Info Panel")
+        .setTitle(panel ? L("Update info panel", "تعديل لوحة المعلومات") : L("Create info panel", "إنشاء لوحة معلومات"))
         .addLabelComponents(
-            new LabelBuilder().setLabel("Channel").setDescription("Where the panel is posted").setChannelSelectMenuComponent(channel),
-            new LabelBuilder().setLabel("Description").setDescription("The panel's text — markdown works").setTextInputComponent(description),
+            new LabelBuilder().setLabel(L("Channel", "الروم")).setDescription(L("Where the panel is posted", "وين تنشر اللوحة")).setChannelSelectMenuComponent(channel),
+            new LabelBuilder().setLabel(L("Description", "الوصف")).setDescription(L("The panel's text (markdown works)", "نص اللوحة (الماركداون يشتغل)")).setTextInputComponent(description),
             new LabelBuilder()
-                .setLabel("Type")
-                .setDescription("How members pick a choice")
+                .setLabel(L("Type", "النوع"))
+                .setDescription(L("How members pick a choice", "كيف يختار الأعضاء"))
                 .setRadioGroupComponent(radio(F.type, INFO_PANEL_TYPES, TYPE_LABEL, panel?.type ?? "buttons")),
             new LabelBuilder()
-                .setLabel(panel?.image ? "New image (optional)" : "Image (optional)")
-                .setDescription(panel?.image ? "Leave empty to keep the current one. PNG, JPG, GIF or WEBP, 8 MB max." : "Shown above the text. PNG, JPG, GIF or WEBP, 8 MB max.")
+                .setLabel(panel?.image ? L("New image (optional)", "صورة جديدة (اختياري)") : L("Image (optional)", "صورة (اختياري)"))
+                .setDescription(panel?.image ? L("Leave empty to keep the current one. PNG, JPG, GIF or WEBP, 8 MB max.", "اتركها فاضية للإبقاء على الحالية. PNG أو JPG أو GIF أو WEBP، حتى 8 ميقا.") : L("Shown above the text. PNG, JPG, GIF or WEBP, 8 MB max.", "تظهر فوق النص. PNG أو JPG أو GIF أو WEBP، حتى 8 ميقا."))
                 .setFileUploadComponent(new FileUploadBuilder().setCustomId(F.image).setRequired(false).setMinValues(0).setMaxValues(1)),
         );
 
     if (panel?.image) {
         modal.addLabelComponents(
             new LabelBuilder()
-                .setLabel("Remove the current image")
+                .setLabel(L("Remove the current image", "حذف الصورة الحالية"))
                 .setCheckboxComponent(new CheckboxBuilder().setCustomId(F.removeImage).setDefault(false)),
         );
     }
@@ -104,10 +105,10 @@ export interface InfoPanelFormValues {
 
 export async function readInfoPanelForm(interaction: ModalSubmitInteraction): Promise<{ values: InfoPanelFormValues } | { problem: string }> {
     const channel = interaction.fields.getSelectedChannels(F.channel, true).first();
-    if (!channel) return { problem: "Pick a channel." };
+    if (!channel) return { problem: L("Pick a channel.", "اختر روم.") };
 
     const description = interaction.fields.getTextInputValue(F.description).trim();
-    if (!description) return { problem: "The description can't be empty." };
+    if (!description) return { problem: L("The description can't be empty.", "الوصف ما يكون فاضي.") };
 
     const typeValue = interaction.fields.getRadioGroup(F.type) ?? "buttons";
     const type: InfoPanelType = (INFO_PANEL_TYPES as readonly string[]).includes(typeValue) ? typeValue as InfoPanelType : "buttons";
@@ -117,15 +118,15 @@ export async function readInfoPanelForm(interaction: ModalSubmitInteraction): Pr
     const upload = interaction.fields.getUploadedFiles(F.image)?.first();
     if (upload) {
         const ext = IMAGE_EXT[upload.contentType?.split(";")[0]?.trim() ?? ""];
-        if (!ext) return { problem: "The image must be a PNG, JPG, GIF or WEBP file." };
-        if (upload.size > IMAGE_MAX_BYTES) return { problem: "That image is too large — 8 MB at most." };
+        if (!ext) return { problem: L("The image must be a PNG, JPG, GIF or WEBP file.", "الصورة لازم تكون PNG أو JPG أو GIF أو WEBP.") };
+        if (upload.size > IMAGE_MAX_BYTES) return { problem: L("That image is too large: 8 MB at most.", "الصورة كبيرة: الحد 8 ميقا.") };
         try {
             const response = await fetch(upload.url);
             if (!response.ok) throw new Error(`download failed (${response.status})`);
             values.image = { data: Buffer.from(await response.arrayBuffer()), name: `info-image.${ext}` };
         } catch (err) {
             Logger.warn(`Info panel image could not be downloaded: ${err}`, "info");
-            return { problem: "I couldn't read that image — try uploading it again." };
+            return { problem: L("I couldn't read that image. Try uploading it again.", "ما قدرت أقرأ الصورة. ارفعها مرة ثانية.") };
         }
     } else if (hasField(interaction, F.removeImage) && interaction.fields.getCheckbox(F.removeImage)) {
         values.image = null;
@@ -147,27 +148,27 @@ function hasField(interaction: ModalSubmitInteraction, customId: string): boolea
 export function buildInfoOptionModal(panel: IInfoPanel): ModalBuilder {
     return new ModalBuilder()
         .setCustomId(`info:option:${String(panel._id)}`)
-        .setTitle("Add Option")
+        .setTitle(L("Add an option", "إضافة خيار"))
         .addLabelComponents(
             new LabelBuilder()
-                .setLabel("Title")
-                .setDescription("Shown on the button, or as the menu entry")
+                .setLabel(L("Title", "العنوان"))
+                .setDescription(L("Shown on the button, or as the menu entry", "يظهر على الزر، أو كخيار في القائمة"))
                 .setTextInputComponent(new TextInputBuilder().setCustomId(F.label).setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(80)),
             new LabelBuilder()
-                .setLabel("Answer")
-                .setDescription("What a member sees (only them) when they pick it")
+                .setLabel(L("Answer", "الرد"))
+                .setDescription(L("What a member sees (only them) when they pick it", "اللي يشوفه العضو (هو فقط) لما يختاره"))
                 .setTextInputComponent(new TextInputBuilder().setCustomId(F.reply).setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(4000)),
             new LabelBuilder()
-                .setLabel("Menu description (optional)")
-                .setDescription("The small line under the entry — menu panels only")
+                .setLabel(L("Menu description (optional)", "وصف القائمة (اختياري)"))
+                .setDescription(L("The small line under the entry (menu panels only)", "السطر الصغير تحت الخيار (القوائم فقط)"))
                 .setTextInputComponent(new TextInputBuilder().setCustomId(F.menuDescription).setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(100)),
             new LabelBuilder()
-                .setLabel("Emoji (optional)")
+                .setLabel(L("Emoji (optional)", "إيموجي (اختياري)"))
                 .setDescription("A normal emoji like 📌, or a server emoji like <:name:123…>")
                 .setTextInputComponent(new TextInputBuilder().setCustomId(F.emoji).setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(64)),
             new LabelBuilder()
-                .setLabel("Button colour")
-                .setDescription("Button panels only")
+                .setLabel(L("Button colour", "لون الزر"))
+                .setDescription(L("Button panels only", "لوحات الأزرار فقط"))
                 .setRadioGroupComponent(radio(F.style, INFO_BUTTON_STYLES, STYLE_LABEL, "primary")),
         );
 }
@@ -189,8 +190,8 @@ export function readInfoOptionForm(interaction: ModalSubmitInteraction): { optio
     const emojiInput = interaction.fields.getTextInputValue(F.emoji).trim();
     const styleValue = interaction.fields.getRadioGroup(F.style) ?? "primary";
 
-    if (!label) return { problem: "The title can't be empty." };
-    if (!reply) return { problem: "The answer can't be empty." };
+    if (!label) return { problem: L("The title can't be empty.", "العنوان ما يكون فاضي.") };
+    if (!reply) return { problem: L("The answer can't be empty.", "الرد ما يكون فاضي.") };
 
     const emoji = emojiInput ? normalizeEmoji(emojiInput) : null;
     if (emojiInput && !emoji) return { problem: "That emoji isn't valid — use one emoji like 📌, or a server emoji like `<:name:123456789012345678>`." };

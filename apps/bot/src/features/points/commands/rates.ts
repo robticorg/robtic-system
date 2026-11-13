@@ -3,27 +3,28 @@ import type { FeatureSubcommandHandler } from "@typings/feature";
 import { COLORS } from "@constants";
 import { getPointRates } from "@core/points";
 
+import { L } from "@utils";
 export const rates: FeatureSubcommandHandler = async (interaction, _client) => {
     const r = await getPointRates(interaction.guildId!);
 
     const lines = [
-        `• **1** point per **${r.messagesPerPoint}** messages`,
-        `• **1** point per **${r.comboPerPoint}** combo score`,
-        `• **1** point per **${r.voiceMinutesPerPoint}** minutes of active voice`,
+        L(`• **1** point per **${r.messagesPerPoint}** messages`, `• **1** نقطة لكل **${r.messagesPerPoint}** رسالة`),
+        L(`• **1** point per **${r.comboPerPoint}** combo score`, `• **1** نقطة لكل **${r.comboPerPoint}** من نقاط الكومبو`),
+        L(`• **1** point per **${r.voiceMinutesPerPoint}** minutes of active voice`, `• **1** نقطة لكل **${r.voiceMinutesPerPoint}** دقيقة صوت نشط`),
         r.streakRewards.length
-            ? `• Streak rewards: ${r.streakRewards.map(x => `**${x.streak}**d → **${x.points}**`).join(", ")}`
-            : "• No streak rewards configured",
+            ? L(`• Streak rewards: ${r.streakRewards.map(x => `**${x.streak}**d → **${x.points}**`).join(", ")}`, `• مكافآت الستريك: ${r.streakRewards.map(x => `**${x.streak}** يوم ← **${x.points}**`).join("، ")}`)
+            : L("• No streak rewards yet", "• ما في مكافآت ستريك"),
     ];
 
     const conversion = r.conversionEnabled
-        ? `**${r.pointsPerRc}** points → **1** RC (minimum **${r.minConversionPoints}** points per conversion)`
-        : "Converting to RC is switched off here.";
+        ? L(`**${r.pointsPerRc}** points → **1** RC (minimum **${r.minConversionPoints}** points per conversion)`, `**${r.pointsPerRc}** نقطة ← **1** RC (أقل تحويل **${r.minConversionPoints}** نقطة)`)
+        : L("Converting to RC is switched off here.", "تحويل النقاط إلى RC مقفل هنا.");
 
     await interaction.editReply({
         embeds: [new EmbedBuilder()
-            .setTitle("🎯 How points are earned")
+            .setTitle(L("🎯 How points are earned", "🎯 كيف تنكسب النقاط"))
             .setColor(COLORS.info)
             .setDescription(lines.join("\n"))
-            .addFields({ name: "RC conversion", value: conversion })],
+            .addFields({ name: L("RC conversion", "التحويل إلى RC"), value: conversion })],
     });
 };

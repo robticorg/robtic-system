@@ -3,6 +3,7 @@ import type { FeatureSubcommandHandler } from "@typings/feature";
 import { MUSIC_CONFIG } from "@constants";
 import { listMusicBots, musicBotInviteUrl } from "@core/music";
 
+import { L } from "@utils";
 /** `/music list` — this server's music bots, their channels, and whether each is running. */
 export const list: FeatureSubcommandHandler = async (interaction, _client) => {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -10,7 +11,7 @@ export const list: FeatureSubcommandHandler = async (interaction, _client) => {
     const bots = await listMusicBots(interaction.guildId!);
 
     if (!bots.length) {
-        await interaction.editReply({ content: "No music bots yet. Add one with `/bot create`." });
+        await interaction.editReply({ content: L("No music bots yet. Add one with `/bot create`.", "ما في بوتات موسيقى لين الحين. أضف واحد بـ `/bot create`.") });
         return;
     }
 
@@ -26,7 +27,7 @@ export const list: FeatureSubcommandHandler = async (interaction, _client) => {
     await interaction.editReply({
         embeds: [new EmbedBuilder()
             .setColor(MUSIC_CONFIG.embedColor)
-            .setTitle(`🎵 Music bots (${bots.length}/${MUSIC_CONFIG.maxBotsPerGuild})`)
+            .setTitle(L(`🎵 Music bots (${bots.length}/${MUSIC_CONFIG.maxBotsPerGuild})`, `🎵 بوتات الموسيقى (${bots.length}/${MUSIC_CONFIG.maxBotsPerGuild})`))
             .setDescription(lines.join("\n").slice(0, 4000))],
         allowedMentions: { parse: [] },
     });

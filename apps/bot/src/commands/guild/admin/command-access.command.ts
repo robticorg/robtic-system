@@ -11,6 +11,7 @@ import { COLORS, SUPER_ADMIN_ID } from "@constants";
 import { CommandAccessRepository, ServerConfigRepository, StaffTierRepository } from "@database/repositories";
 import { isGuildOperator } from "@bot/utils/access";
 
+import { L } from "@utils";
 export default {
     scope: "guild",
     access: "admin",
@@ -67,7 +68,7 @@ export default {
         const member = interaction.member as GuildMember | null;
         if (interaction.user.id !== SUPER_ADMIN_ID && !(member && isGuildOperator(member))) {
             await interaction.reply({
-                embeds: [new EmbedBuilder().setDescription("❌ You are not authorized to use this command.").setColor(COLORS.error)],
+                embeds: [new EmbedBuilder().setDescription(L("❌ You are not authorized to use this command.", "❌ ليس لديك صلاحية هذا الأمر.")).setColor(COLORS.error)],
                 flags: MessageFlags.Ephemeral,
             });
             return;
@@ -89,8 +90,8 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setColor(COLORS.success)
-                    .setTitle("Bot administrator roles")
-                    .setDescription(roleIds.length ? roleIds.map(id => `<@&${id}>`).join(", ") : "None. Only server Administrators pass admin-access commands.")],
+                    .setTitle(L("Bot administrator roles", "رتب مشرفي البوت"))
+                    .setDescription(roleIds.length ? roleIds.map(id => `<@&${id}>`).join(", ") : L("None. Only server Administrators pass admin-access commands.", "لا يوجد. أوامر الإدارة للأدمن فقط."))],
             });
             return;
         }
@@ -106,7 +107,7 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setColor(COLORS.success)
-                    .setDescription(`\`/${commandName}\` roles: ${entry.allowedRoleIds.length ? entry.allowedRoleIds.map(id => `<@&${id}>`).join(", ") : "none"}`)],
+                    .setDescription(L(`\`/${commandName}\` roles: ${entry.allowedRoleIds.length ? entry.allowedRoleIds.map(id => `<@&${id}>`).join(", ") : "none"}`, `رتب \`/${commandName}\`: ${entry.allowedRoleIds.length ? entry.allowedRoleIds.map(id => `<@&${id}>`).join("، ") : "لا يوجد"}`))],
             });
             return;
         }
@@ -116,7 +117,7 @@ export default {
             const tier = await StaffTierRepository.get(guildId, category);
             if (!tier) {
                 await interaction.editReply({
-                    embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(`❌ No staff-tier with key \`${category}\` exists. See \`/staff-tier list\`.`)],
+                    embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(L(`❌ No staff-tier with key \`${category}\` exists. See \`/staff-tier list\`.`, `❌ ما في رتبة إدارة بالمفتاح \`${category}\`.`))],
                 });
                 return;
             }
@@ -128,18 +129,18 @@ export default {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
                     .setColor(COLORS.success)
-                    .setDescription(`\`/${commandName}\` categories: ${entry.allowedCategoryKeys.length ? entry.allowedCategoryKeys.map(k => `\`${k}\``).join(", ") : "none"}`)],
+                    .setDescription(L(`\`/${commandName}\` categories: ${entry.allowedCategoryKeys.length ? entry.allowedCategoryKeys.map(k => `\`${k}\``).join(", ") : "none"}`, `فئات \`/${commandName}\`: ${entry.allowedCategoryKeys.length ? entry.allowedCategoryKeys.map(k => `\`${k}\``).join("، ") : "لا يوجد"}`))],
             });
             return;
         }
 
         const entry = await CommandAccessRepository.getForCommand(guildId, commandName);
         const embed = new EmbedBuilder()
-            .setTitle(`Access Grants — /${commandName}`)
+            .setTitle(L(`Access: /${commandName}`, `الصلاحيات: /${commandName}`))
             .setColor(COLORS.info)
             .addFields(
-                { name: "Roles", value: entry?.allowedRoleIds.length ? entry.allowedRoleIds.map(id => `<@&${id}>`).join(", ") : "None" },
-                { name: "Categories", value: entry?.allowedCategoryKeys.length ? entry.allowedCategoryKeys.map(k => `\`${k}\``).join(", ") : "None" },
+                { name: L("Roles", "الرتب"), value: entry?.allowedRoleIds.length ? entry.allowedRoleIds.map(id => `<@&${id}>`).join(", ") : L("None", "لا يوجد") },
+                { name: L("Categories", "الفئات"), value: entry?.allowedCategoryKeys.length ? entry.allowedCategoryKeys.map(k => `\`${k}\``).join(", ") : L("None", "لا يوجد") },
             );
 
         await interaction.editReply({ embeds: [embed] });

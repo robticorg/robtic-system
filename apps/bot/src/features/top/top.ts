@@ -4,9 +4,9 @@ import { TOP_CATEGORIES } from "@constants";
 /**
  * The leaderboards.
  *
- * Bare `/top` shows every board's top five side by side; naming a category shows that one in depth
- * — top ten, plus where the caller sits. That replaced a category dropdown, which made the panel
- * stateful in a way that was easy to leave pointing at the wrong board.
+ * Bare `/top` shows the text and voice boards, five ranks a page, with the server's activity chart
+ * (Wolf Manager's layout); naming a board shows it ten ranks a page. The caller's own rank shows
+ * either way. `#top day|week|month|all` picks the period.
  *
  * `default-on` because it only reads data other features already collect.
  */
@@ -27,6 +27,17 @@ export const topFeature = defineFeature({
                     description: "Show just this board, in depth. Leave empty for all of them.",
                     type: "string",
                     choices: TOP_CATEGORIES.map(c => ({ name: c, value: c })),
+                },
+                {
+                    name: "period",
+                    description: "Today (default), this week, this month or all time.",
+                    type: "string",
+                    choices: [
+                        { name: "today", value: "day" },
+                        { name: "this week", value: "week" },
+                        { name: "this month", value: "month" },
+                        { name: "all time", value: "all" },
+                    ],
                 },
             ],
         },

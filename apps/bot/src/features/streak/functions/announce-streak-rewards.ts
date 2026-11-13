@@ -12,6 +12,7 @@ import { COLORS } from "@constants";
 import { Logger } from "@logger";
 import { getLogChannel } from "@bot/utils/server-log";
 
+import { L } from "@utils";
 const CTX = "main:streak";
 
 /**
@@ -34,15 +35,15 @@ export async function announceStreakRewards(guild: Guild, user: User, guildId: s
         if (!logChannel) continue;
 
         const embed = new EmbedBuilder()
-            .setTitle("🎁 مكافأة تتابع جديدة!")
+            .setTitle(L("🎁 New streak reward!", "🎁 مكافأة ستريك جديدة!"))
             .setColor(COLORS.activity)
-            .setDescription(`<@${user.id}> وصل إلى **${reward.threshold}** يوم تتابع متواصل! 🔥\nالمكافأة: ${reward.offer}`)
+            .setDescription(L(`<@${user.id}> reached a **${reward.threshold}**-day streak! 🔥\nReward: ${reward.offer}`, `<@${user.id}> وصل إلى **${reward.threshold}** يوم ستريك متواصل! 🔥\nالمكافأة: ${reward.offer}`))
             .setTimestamp();
 
         const button = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setCustomId(`streak_reward_claim_${user.id}_${reward.threshold}`)
-                .setLabel("مطالبة بالمكافأة")
+                .setLabel(L("Claim reward", "استلام المكافأة"))
                 .setStyle(ButtonStyle.Success)
                 .setEmoji("🎁"),
         );

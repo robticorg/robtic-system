@@ -3,6 +3,7 @@ import { Logger } from "@logger";
 import { CompetitionBot, type ICompetitionBot } from "./models";
 import { CompetitionBotInstance } from "./instance";
 
+import { L } from "@utils";
 const CTX = "competition";
 /** A bot not connected for this long is logged in again from scratch. */
 const OFFLINE_LIMIT_MS = 2 * 60_000;
@@ -38,7 +39,7 @@ export async function startCompetitionBot(record: ICompetitionBot): Promise<{ ok
         return { ok: true };
     } catch (err) {
         // Stays in the registry: the watchdog keeps trying, so a Discord outage doesn't take it down for good.
-        return { ok: false, problem: `Discord refused to log it in (${(err as Error).message})` };
+        return { ok: false, problem: L(`Discord refused to log it in (${(err as Error).message})`, `ديسكورد رفض تسجيل الدخول (${(err as Error).message})`) };
     }
 }
 

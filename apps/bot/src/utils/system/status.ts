@@ -1,7 +1,7 @@
 import type { ClientManager } from "@core/client-manager";
 import { COLORS } from "@constants";
 import { buildSystemStatusEmbed, configureStatusPanel, getConfiguredStatusPanel, registerStatusClient } from "@core/status/status";
-import { formatDuration } from "@utils";
+import { L, formatDuration } from "@utils";
 import { EmbedBuilder, type ChatInputCommandInteraction } from "discord.js";
 
 export async function systemStatus(interaction: ChatInputCommandInteraction, manager: ClientManager) {
@@ -12,18 +12,18 @@ export async function systemStatus(interaction: ChatInputCommandInteraction, man
 
     if (selectedChannel) {
         if (!interaction.guildId) {
-            await interaction.editReply({ content: "This command can only be used in a guild." });
+            await interaction.editReply({ content: L("This command can only be used in a server.", "هذا الأمر يعمل داخل السيرفر فقط.") });
             return;
         }
 
         try {
             await configureStatusPanel(interaction.guildId, selectedChannel.id, interaction.user.id, interaction.client);
             await interaction.editReply({
-                content: `✅ Status panel has been configured in <#${selectedChannel.id}> and will auto-update on bot/server/database events.`,
+                content: L(`✅ Status panel set in <#${selectedChannel.id}>. It updates by itself.`, `✅ تم ضبط لوحة الحالة في <#${selectedChannel.id}>. تتحدث تلقائياً.`),
             });
         } catch (error) {
             await interaction.editReply({
-                content: `❌ Failed to configure status panel: ${String(error)}`,
+                content: L(`❌ Couldn't set the status panel: ${String(error)}`, `❌ ما قدرت أضبط لوحة الحالة: ${String(error)}`),
             });
         }
         return;
@@ -33,14 +33,14 @@ export async function systemStatus(interaction: ChatInputCommandInteraction, man
         const configuredPanel = await getConfiguredStatusPanel(interaction.guildId);
         if (!configuredPanel) {
             await interaction.editReply({
-                content: "No status channel configured. Use `/system status channel:#your-channel` first.",
+                content: L("No status channel yet. Use `/system status channel:#your-channel` first.", "ما في روم حالة. استخدم `/system status channel:#الروم` أول."),
             });
             return;
         }
 
         const liveEmbed = await buildSystemStatusEmbed();
         await interaction.editReply({
-            content: `Current status panel: <#${configuredPanel.channelId}>`,
+            content: L(`Current status panel: <#${configuredPanel.channelId}>`, `لوحة الحالة الحالية: <#${configuredPanel.channelId}>`),
             embeds: [liveEmbed],
         });
         return;
@@ -49,7 +49,7 @@ export async function systemStatus(interaction: ChatInputCommandInteraction, man
     const status = manager.getStatus();
 
     const embed = new EmbedBuilder()
-        .setTitle("🖥️ System Status")
+        .setTitle(L("🖥️ System status", "🖥️ حالة النظام"))
         .setColor(COLORS.info)
         .setTimestamp()
         .addFields({

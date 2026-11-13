@@ -2,6 +2,7 @@
  * Queued message-XP checks — no Redis, no MongoDB, no Discord: the store is in memory and mirrors
  * the repositories' guards (job-key snapshot, period batch ids, unique log keys, `$max` levels).
  */
+import "./_english";
 import { UnrecoverableError } from "bullmq";
 import { applyMessageXp, calculateLevel, type Levels, type MessageXpInput, type MessageXpStore } from "@core/xp";
 import { jobIds, type DiscordOutboxJob, type MessageXpJob } from "@queue";

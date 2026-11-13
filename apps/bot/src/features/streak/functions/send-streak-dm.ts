@@ -2,14 +2,15 @@ import { EmbedBuilder, type User } from "discord.js";
 import type { IStreak } from "@database/models";
 import { COLORS } from "@constants";
 
+import { L } from "@utils";
 export async function sendStreakDM(user: User, streak: IStreak): Promise<void> {
     const embed = new EmbedBuilder()
-        .setTitle("🔥 تم تحديث التتابع اليومي!")
+        .setTitle(L("🔥 Daily streak updated!", "🔥 تم تحديث الستريك اليومي!"))
         .addFields(
-            { name: "التتابع الحالي", value: `${streak.currentStreak}`, inline: true },
-            { name: "أفضل تتابع", value: `${streak.bestStreak}`, inline: true },
+            { name: L("Current streak", "الستريك الحالي"), value: `${streak.currentStreak}`, inline: true },
+            { name: L("Best streak", "أفضل ستريك"), value: `${streak.bestStreak}`, inline: true },
         )
-        .setDescription("التتابع القادم متاح غداً.")
+        .setDescription(L("Your next streak opens tomorrow.", "الستريك القادم متاح بكرة."))
         .setColor(COLORS.activity)
         .setTimestamp();
 

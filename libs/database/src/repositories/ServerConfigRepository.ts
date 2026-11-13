@@ -6,7 +6,21 @@ const prefixCache = new Map<string, { prefix: string | null; expiresAt: number }
 const BOT_ADMIN_ROLES_CACHE_TTL_MS = 60_000;
 const botAdminRolesCache = new Map<string, { roleIds: string[]; expiresAt: number }>();
 
+const LANGUAGE_CACHE_TTL_MS = 60_000;
+const languageCache = new Map<string, { language: "en" | "ar" | null; expiresAt: number }>();
+
 export class ServerConfigRepository {
+    /** The server's chosen language, or null when it never chose. Read on every reply, so cached like the prefix. */
+    static async getLanguage(guildId: string): Promise<"en" | "ar" | null> {
+        const cached = languageCache.get(guildId);
+        if (cached && cached.expiresAt > Date.now()) return cached.language;
+
+        const config = await ServerConfig.findOne({ guildId }, { language: 1 }).lean();
+        const language = config?.language === "en" || config?.language === "ar" ? config.language : null;
+        languageCache.set(guildId, { language, expiresAt: Date.now() + LANGUAGE_CACHE_TTL_MS });
+        return language;
+    }
+
     static async find(guildId: string): Promise<IServerConfig | null> {
         return ServerConfig.findOne({ guildId });
     }

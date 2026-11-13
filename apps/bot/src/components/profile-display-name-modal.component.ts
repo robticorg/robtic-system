@@ -9,6 +9,7 @@ import { UserRepository } from "@database/repositories";
 import { getUserLang, t } from "@bot/utils/lang";
 import type { GuildMember } from "discord.js";
 
+import { L } from "@utils";
 const profileDisplayNameModalHandler: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^profile_settings_name_modal_\d+$/,
 
@@ -17,7 +18,7 @@ const profileDisplayNameModalHandler: ComponentHandler<ModalSubmitInteraction> =
 
         const userId = interaction.customId.replace("profile_settings_name_modal_", "");
         if (interaction.user.id !== userId) {
-            await interaction.editReply({ content: "This isn't your settings panel." });
+            await interaction.editReply({ content: L("This isn't your settings panel.", "هذي لوحة إعدادات شخص ثاني.") });
             return;
         }
 

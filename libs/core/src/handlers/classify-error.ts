@@ -1,5 +1,6 @@
 import { DiscordAPIError } from "discord.js";
 
+import { L } from "@utils";
 export type ErrorCategory = "interaction_expired" | "discord_api" | "database" | "unknown";
 
 export interface ClassifiedError {
@@ -31,7 +32,7 @@ export function classifyError(err: unknown): ClassifiedError {
             category: "discord_api",
             label: "DISCORD API",
             detail: `Discord error ${code}: ${err.message}`,
-            userMessage: "Discord rejected that action — please try again.",
+            userMessage: L("Discord rejected that action — please try again.", "ديسكورد رفض الإجراء. حاول مرة ثانية."),
         };
     }
 
@@ -40,7 +41,7 @@ export function classifyError(err: unknown): ClassifiedError {
             category: "database",
             label: "DATABASE",
             detail: err.stack ?? `${err.name}: ${err.message}`,
-            userMessage: "The database didn't respond in time — please try again in a moment.",
+            userMessage: L("The database didn't respond in time — please try again in a moment.", "قاعدة البيانات ما ردت بالوقت. حاول بعد شوي."),
         };
     }
 
@@ -49,7 +50,7 @@ export function classifyError(err: unknown): ClassifiedError {
             category: "unknown",
             label: "UNKNOWN",
             detail: err.stack ?? err.message,
-            userMessage: "Something went wrong while running that command.",
+            userMessage: L("Something went wrong while running that command.", "صار خطأ أثناء تنفيذ الأمر."),
         };
     }
 
@@ -57,6 +58,6 @@ export function classifyError(err: unknown): ClassifiedError {
         category: "unknown",
         label: "UNKNOWN",
         detail: String(err),
-        userMessage: "Something went wrong while running that command.",
+        userMessage: L("Something went wrong while running that command.", "صار خطأ أثناء تنفيذ الأمر."),
     };
 }

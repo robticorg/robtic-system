@@ -1,8 +1,8 @@
 /**
  * Publishes slash commands without starting the bot: no gateway login, no event listeners.
  *
- * The bot also publishes on startup, but that only happens when its container is recreated, and a
- * failure there is logged and forgotten. The deploy workflow runs this after every push so a
+ * The bot also publishes every time it starts (events/client-ready.event.ts), but a failure there is
+ * only logged. The deploy workflow runs this after every push so a
  * failed or skipped registration shows up as a red job instead of stale commands.
  *
  *   bun --preload ./libs/shared/src/preload.ts apps/bot/src/register-commands.ts

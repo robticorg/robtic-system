@@ -76,13 +76,16 @@ export default {
             return;
         }
 
-        await interaction.deferReply();
-
         const subcommand = interaction.options.getSubcommand();
         const guild = interaction.guild;
 
         const named = interaction.options.getChannel("channel");
         const channel = (named ?? interaction.channel) as GuildTextBasedChannel;
+
+        // Clearing this channel would delete the bot's own "thinking…" reply with everything else, and the command
+        // would then fail to answer. A private reply isn't in the channel, so it survives.
+        const clearingHere = subcommand === "clear" && channel.id === interaction.channelId;
+        await interaction.deferReply(clearingHere ? { flags: MessageFlags.Ephemeral } : undefined);
 
         let msg: string | null = null;
 
@@ -109,13 +112,8 @@ export default {
             }
 
             if (msg) {
-                await interaction.editReply({ content: `${emoji.info} ${msg}` }).then(() => {
-                    if (subcommand === "clear") {
-                        setTimeout(() => {
-                            interaction.deleteReply().catch(() => { });
-                        }, 5000);
-                    }
-                });
+                await interaction.editReply({ content: msg });
+                if (subcommand === "clear" && !clearingHere) setTimeout(() => void interaction.deleteReply().catch(() => {}), 5000);
             } else {
                 await interaction.deleteReply().catch(() => { });
                 await interaction.followUp({ content: `${emoji.info} ${CHAT_MESSAGES.unknownSubcommand}`, flags: MessageFlags.Ephemeral });

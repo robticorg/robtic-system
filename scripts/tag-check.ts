@@ -1,4 +1,5 @@
 /** Verifies the server-tag role across servers with stubbed guilds and repositories — no database, no gateway. */
+import "./_english";
 import { AllowedGuildRepository, ServerConfigRepository } from "@database/repositories";
 import { syncGuildTagRoles, syncMemberTagRole, syncUserTagRoles, wearsWhitelistedTag } from "@bot/features/tag/functions/tag-roles";
 import { tagFeature } from "@bot/features/tag/tag";

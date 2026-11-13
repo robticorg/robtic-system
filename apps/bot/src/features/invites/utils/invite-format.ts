@@ -1,6 +1,7 @@
 import { escapeMarkdown } from "discord.js";
 import { BP_SCALE } from "@constants";
 
+import { L } from "@utils";
 /** Moved to the invite domain (`@core/invites`); re-exported for existing callers. */
 export { fakeWindowStart, inviteTotal } from "@core/invites";
 
@@ -11,8 +12,11 @@ export { fakeWindowStart, inviteTotal } from "@core/invites";
  */
 
 
+/** Arabic words for the English ones `plural` is called with. */
+const AR_WORDS: Record<string, string> = { invite: "دعوة", join: "دخول" };
+
 export function plural(count: number, word: string): string {
-    return `${count} ${word}${count === 1 ? "" : "s"}`;
+    return L(`${count} ${word}${count === 1 ? "" : "s"}`, `${count} ${AR_WORDS[word] ?? word}`);
 }
 
 /** Basis points → "4%" / "2.5%". */
@@ -22,28 +26,28 @@ export function formatBonusPercent(bp: number): string {
 }
 
 export function vanityJoinMessage(memberId: string, vanityCode: string): string {
-    return `**<@${memberId}>** has arrived by using the vanity invite **${escapeMarkdown(vanityCode)}**.`;
+    return L(`**<@${memberId}>** has arrived by using the vanity invite **${escapeMarkdown(vanityCode)}**.`, `**<@${memberId}>** دخل برابط السيرفر الخاص **${escapeMarkdown(vanityCode)}**.`);
 }
 
 export function invitedJoinMessage(memberId: string, inviterName: string, inviterTotal: number): string {
-    return `**<@${memberId}>** just joined. They were invited by **${escapeMarkdown(inviterName)}** who now has **${plural(inviterTotal, "invite")} !**`;
+    return L(`**<@${memberId}>** just joined. They were invited by **${escapeMarkdown(inviterName)}**, who now has **${plural(inviterTotal, "invite")}!**`, `**<@${memberId}>** دخل للتو. دعاه **${escapeMarkdown(inviterName)}** وصار عنده **${plural(inviterTotal, "invite")}!**`);
 }
 
 export function unknownJoinMessage(memberId: string): string {
-    return `**<@${memberId}>** just joined, but I couldn't tell which invite they used.`;
+    return L(`**<@${memberId}>** just joined, but I couldn't tell which invite they used.`, `**<@${memberId}>** دخل للتو، بس ما عرفت أي دعوة استخدم.`);
 }
 
 
 export function invitedLeaveMessage(memberName: string, inviterName: string): string {
-    return `**${escapeMarkdown(memberName)}** has left. They were invited by **${escapeMarkdown(inviterName)}**.`;
+    return L(`**${escapeMarkdown(memberName)}** has left. They were invited by **${escapeMarkdown(inviterName)}**.`, `**${escapeMarkdown(memberName)}** طلع. كان دعاه **${escapeMarkdown(inviterName)}**.`);
 }
 
 export function vanityLeaveMessage(memberName: string): string {
-    return `**${escapeMarkdown(memberName)}** has left. They were invited using a vanity invite.`;
+    return L(`**${escapeMarkdown(memberName)}** has left. They were invited using a vanity invite.`, `**${escapeMarkdown(memberName)}** طلع. كان داخل برابط السيرفر الخاص.`);
 }
 
 export function unknownLeaveMessage(memberName: string): string {
-    return `**${escapeMarkdown(memberName)}** has left but I haven't registered who invited them.`;
+    return L(`**${escapeMarkdown(memberName)}** has left, but I don't know who invited them.`, `**${escapeMarkdown(memberName)}** طلع، بس ما أعرف مين دعاه.`);
 }
 
 export interface TicketQuery {

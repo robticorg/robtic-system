@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { COLORS } from "@constants";
 import { ServerConfigRepository } from "@database/repositories";
 
+import { L } from "@utils";
 export default {
     scope: "guild",
     category: "Configuration",
@@ -23,9 +24,9 @@ export default {
 
         await interaction.editReply({
             embeds: [new EmbedBuilder()
-                .setTitle("✅ Commands Channel Set")
+                .setTitle(L("✅ Commands channel set", "✅ تم ضبط روم الأوامر"))
                 .setColor(COLORS.success)
-                .setDescription(`Non-command messages in <#${channel.id}> will now be removed automatically. Any message starting with a symbol (this bot's or another bot's prefix) is left alone.`)],
+                .setDescription(L(`Non-command messages in <#${channel.id}> will now be removed automatically. Any message starting with a symbol (this bot's or another bot's prefix) is left alone.`, `رسائل غير الأوامر في <#${channel.id}> بتنحذف تلقائياً. أي رسالة تبدأ برمز (بادئة هذا البوت أو بوت ثاني) تبقى.`))],
         });
     },
 };

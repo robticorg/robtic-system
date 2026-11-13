@@ -14,6 +14,7 @@ import { toggle } from "./commands/toggle";
 import { roleAdd, roleRemove, channelAdd, channelRemove, clearRestrictions } from "./commands/restrict/edit-restriction";
 import { CHAT_UTIL_COMMANDS } from "./functions/run-chat-util";
 
+import { L } from "@utils";
 /** Keyed `group:subcommand`, with a bare name when there is no group. */
 const handlers: Record<string, FeatureSubcommandHandler> = {
     add,
@@ -52,7 +53,7 @@ export default buildFeatureCommands(shortcutsFeature, {
                     .slice(0, 25);
 
                 await interaction.respond(targets.map(c => ({
-                    name: CHAT_UTIL_COMMANDS.has(c) ? `${c} (channel utility)` : `/${c}`,
+                    name: CHAT_UTIL_COMMANDS.has(c) ? L(`${c} (channel utility)`, `${c} (أداة روم)`) : `/${c}`,
                     value: c,
                 })));
                 return;

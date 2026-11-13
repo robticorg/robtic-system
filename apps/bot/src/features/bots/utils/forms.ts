@@ -9,6 +9,7 @@ import {
     TextInputStyle,
 } from "discord.js";
 
+import { L } from "@utils";
 export const BOT_CREATE_MODAL_ID = "bots:create";
 export const BOT_DELETE_MODAL_ID = "bots:delete";
 
@@ -35,10 +36,10 @@ export type BotType = keyof typeof BOT_TYPES;
 export function buildBotCreateModal(): ModalBuilder {
     return new ModalBuilder()
         .setCustomId(BOT_CREATE_MODAL_ID)
-        .setTitle("Create Bot")
+        .setTitle(L("Create a bot", "إنشاء بوت"))
         .addLabelComponents(
             new LabelBuilder()
-                .setLabel("Which bot")
+                .setLabel(L("Which bot", "أي بوت"))
                 .setStringSelectMenuComponent(new StringSelectMenuBuilder()
                     .setCustomId(BOT_FIELDS.type)
                     .setMinValues(1)
@@ -50,8 +51,8 @@ export function buildBotCreateModal(): ModalBuilder {
                         .setEmoji(type.emoji)
                         .setDescription(type.description)))),
             new LabelBuilder()
-                .setLabel("Bot token")
-                .setDescription("From the Developer Portal → your bot → Reset Token. Stored encrypted.")
+                .setLabel(L("Bot token", "توكن البوت"))
+                .setDescription(L("From the Developer Portal → your bot → Reset Token. Stored encrypted.", "من Developer Portal ← البوت ← Reset Token. ينحفظ مشفر."))
                 .setTextInputComponent(new TextInputBuilder()
                     .setCustomId(BOT_FIELDS.token)
                     .setStyle(TextInputStyle.Short)
@@ -59,8 +60,8 @@ export function buildBotCreateModal(): ModalBuilder {
                     .setMinLength(50)
                     .setMaxLength(100)),
             new LabelBuilder()
-                .setLabel("Bot name (music)")
-                .setDescription("Its nickname in this server — music bots only")
+                .setLabel(L("Bot name (music)", "اسم البوت (موسيقى)"))
+                .setDescription(L("Its nickname in this server (music bots only)", "لقبه في السيرفر (بوتات الموسيقى فقط)"))
                 .setTextInputComponent(new TextInputBuilder()
                     .setCustomId(BOT_FIELDS.name)
                     .setStyle(TextInputStyle.Short)
@@ -68,8 +69,8 @@ export function buildBotCreateModal(): ModalBuilder {
                     .setMaxLength(32)
                     .setPlaceholder("Robtic Music")),
             new LabelBuilder()
-                .setLabel("Voice channel (music)")
-                .setDescription("Where a music bot stays 24/7 and plays — its only channel")
+                .setLabel(L("Voice channel (music)", "الروم الصوتي (موسيقى)"))
+                .setDescription(L("Where a music bot stays 24/7 and plays: its only channel", "وين يبقى بوت الموسيقى 24/7 ويشغل: رومه الوحيد"))
                 .setChannelSelectMenuComponent(new ChannelSelectMenuBuilder()
                     .setCustomId(BOT_FIELDS.channel)
                     .setChannelTypes(ChannelType.GuildVoice)
@@ -91,11 +92,11 @@ export interface DeletableBot {
 export function buildBotDeleteModal(bots: readonly DeletableBot[]): ModalBuilder {
     return new ModalBuilder()
         .setCustomId(BOT_DELETE_MODAL_ID)
-        .setTitle("Delete Bot")
+        .setTitle(L("Delete a bot", "حذف بوت"))
         .addLabelComponents(
             new LabelBuilder()
-                .setLabel("Which bot")
-                .setDescription("It goes offline, leaves, and its saved token is deleted")
+                .setLabel(L("Which bot", "أي بوت"))
+                .setDescription(L("It goes offline, leaves, and its saved token is deleted", "يصير أوفلاين ويطلع وينحذف التوكن"))
                 .setStringSelectMenuComponent(new StringSelectMenuBuilder()
                     .setCustomId(BOT_FIELDS.target)
                     .setMinValues(1)

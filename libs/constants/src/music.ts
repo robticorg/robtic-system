@@ -6,9 +6,9 @@ import type { PermissionsString } from "discord.js";
  */
 export const MUSIC_CONFIG = {
     /** Text triggers, typed in the voice channel's chat by someone in that voice channel. */
-    playPrefixes: ["ش", "شغل"],
-    stopPrefixes: ["وقف"],
-    volumePrefixes: ["صوت"],
+    playPrefixes: ["ش", "شغل", "play"],
+    stopPrefixes: ["وقف", "stop"],
+    volumePrefixes: ["صوت", "volume", "vol"],
     defaultVolume: 100,
     maxVolume: 150,
     volumeStep: 10,

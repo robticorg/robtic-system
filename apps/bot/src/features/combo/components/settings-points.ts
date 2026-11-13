@@ -16,6 +16,7 @@ import { buildSettingsEmbed } from "../utils/combo-embeds";
 import { buildComboNavRow, buildComboSettingsRow, buildComboPointsButtonRow, verifyInvoker, isComboAdmin } from "../utils/combo-components";
 import { invalidateScoreRangeCache } from "../functions/combo";
 
+import { L } from "@utils";
 export const comboSettingsPointsOpenHandler: ComponentHandler<ButtonInteraction> = {
     customId: /^combo:settings-points-open:\d+$/,
 
@@ -25,7 +26,7 @@ export const comboSettingsPointsOpenHandler: ComponentHandler<ButtonInteraction>
 
         const member = interaction.member as GuildMember | null;
         if (!(await isComboAdmin(interaction.user.id, member))) {
-            await interaction.reply({ content: "ليس لديك صلاحية لتغيير إعدادات الكومبو.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: L("You can't change the combo settings.", "ليس لديك صلاحية لتغيير إعدادات الكومبو."), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
@@ -35,13 +36,13 @@ export const comboSettingsPointsOpenHandler: ComponentHandler<ButtonInteraction>
 
         const modal = new ModalBuilder()
             .setCustomId(`combo:settings-points-modal:${invokerId}`)
-            .setTitle("نقاط الكومبو لكل رسالة");
+            .setTitle(L("Combo points per message", "نقاط الكومبو لكل رسالة"));
 
         modal.addComponents(
             new ActionRowBuilder<TextInputBuilder>().addComponents(
                 new TextInputBuilder()
                     .setCustomId("min_score")
-                    .setLabel("الحد الأدنى للنقاط")
+                    .setLabel(L("Lowest points", "الحد الأدنى للنقاط"))
                     .setStyle(TextInputStyle.Short)
                     .setRequired(true)
                     .setValue(`${min}`),
@@ -49,7 +50,7 @@ export const comboSettingsPointsOpenHandler: ComponentHandler<ButtonInteraction>
             new ActionRowBuilder<TextInputBuilder>().addComponents(
                 new TextInputBuilder()
                     .setCustomId("max_score")
-                    .setLabel("الحد الأقصى للنقاط")
+                    .setLabel(L("Highest points", "الحد الأقصى للنقاط"))
                     .setStyle(TextInputStyle.Short)
                     .setRequired(true)
                     .setValue(`${max}`),
@@ -66,19 +67,19 @@ export const comboSettingsPointsModalHandler: ComponentHandler<ModalSubmitIntera
     async run(interaction: ModalSubmitInteraction, _client: BotClient) {
         const invokerId = interaction.customId.split(":")[2];
         if (interaction.user.id !== invokerId) {
-            await interaction.reply({ content: "هذه ليست قائمة الكومبو الخاصة بك.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: L("This isn't your combo menu.", "هذه ليست قائمة الكومبو الخاصة بك."), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
         const member = interaction.member as GuildMember | null;
         if (!(await isComboAdmin(interaction.user.id, member))) {
-            await interaction.reply({ content: "ليس لديك صلاحية لتغيير إعدادات الكومبو.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: L("You can't change the combo settings.", "ليس لديك صلاحية لتغيير إعدادات الكومبو."), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
         const guild = interaction.guild;
         if (!guild) {
-            await interaction.reply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: L("This can only be used in a server.", "لا يمكن استخدام هذا الأمر إلا داخل سيرفر."), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
@@ -89,7 +90,7 @@ export const comboSettingsPointsModalHandler: ComponentHandler<ModalSubmitIntera
 
         if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < min) {
             await interaction.reply({
-                content: "قيم غير صالحة — تأكد أن الحد الأدنى رقم موجب وأن الحد الأقصى أكبر منه أو يساويه.",
+                content: L("Those numbers don't work: the lowest must be above zero and the highest at least as big.", "قيم غير صالحة: الحد الأدنى لازم يكون رقم موجب والحد الأقصى أكبر منه أو يساويه."),
                 flags: MessageFlags.Ephemeral,
             }).catch(() => null);
             return;

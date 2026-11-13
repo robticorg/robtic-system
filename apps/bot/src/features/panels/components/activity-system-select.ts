@@ -3,6 +3,7 @@ import type { ComponentHandler } from "@typings/command";
 import { getLineImage } from "@core/assets";
 import { ACTIVITY_OPTIONS } from "../definitions/activity-system";
 
+import { L } from "@utils";
 export const activitySystemSelectHandler: ComponentHandler<StringSelectMenuInteraction> = {
     customId: "activity_system_select",
 
@@ -11,7 +12,7 @@ export const activitySystemSelectHandler: ComponentHandler<StringSelectMenuInter
         const option = ACTIVITY_OPTIONS.find(o => o.value === value);
 
         if (!option) {
-            await interaction.reply({ content: "This option is no longer available.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L("This option is no longer available.", "هذا الخيار ما عاد متاح."), flags: MessageFlags.Ephemeral });
             return;
         }
 

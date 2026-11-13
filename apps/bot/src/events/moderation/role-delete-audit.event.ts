@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { COLORS } from "@constants";
 import { sendToServerLog } from "@bot/utils/server-log";
 
+import { L } from "@utils";
 export default {
     name: Events.GuildRoleDelete,
     async execute(role: Role, client: BotClient) {
@@ -11,11 +12,11 @@ export default {
         const executorId = entry?.executor?.id;
 
         const embed = new EmbedBuilder()
-            .setTitle("📘 Audit: Role Deleted")
+            .setTitle(L("📘 Role deleted", "📘 حذف رتبة"))
             .setColor(COLORS.error)
             .addFields(
-                { name: "Role", value: `${role.name} (\`${role.id}\`)` },
-                { name: "Executor", value: executorId ? `<@${executorId}> (${executorId})` : "Unknown", inline: true },
+                { name: L("Role", "الرتبة"), value: `${role.name} (\`${role.id}\`)` },
+                { name: L("By", "بواسطة"), value: executorId ? `<@${executorId}> (${executorId})` : L("Unknown", "غير معروف"), inline: true },
             )
             .setTimestamp();
 

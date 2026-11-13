@@ -7,6 +7,7 @@ import {
     ActionRowBuilder,
 } from "discord.js";
 
+import { L } from "@utils";
 export default {
     scope: "guild",
     access: "general",
@@ -25,13 +26,13 @@ export default {
 
         const modal = new ModalBuilder()
             .setCustomId(`note_create_${targetUser.id}`)
-            .setTitle(`Add Note: ${targetUser.username}`);
+            .setTitle(L(`Add a note: ${targetUser.username}`.slice(0, 45), `إضافة ملاحظة: ${targetUser.username}`.slice(0, 45)));
 
         const contentInput = new TextInputBuilder()
             .setCustomId("note_content")
-            .setLabel("Note")
+            .setLabel(L("Note", "ملاحظة"))
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("Write your note about this user...")
+            .setPlaceholder(L("Write your note about this user...", "اكتب ملاحظتك عن هذا العضو..."))
             .setRequired(true)
             .setMaxLength(1000);
 

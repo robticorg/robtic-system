@@ -6,6 +6,7 @@
  * select handler's `.catch(() => null)` swallows the rejection, so the menu just stops responding.
  * Configuration reached 6188 characters before the views were split and paged.
  */
+import "./_english";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { EmbedBuilder } from "discord.js";

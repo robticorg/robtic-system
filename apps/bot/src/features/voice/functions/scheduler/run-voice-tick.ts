@@ -9,6 +9,7 @@ import { getSession, startSession } from "../session-store";
 import { evaluateEligibility } from "../evaluate-eligibility";
 import { grantVoiceXp, rollVoiceXp } from "../grant-voice-xp";
 
+import { inGuildLang } from "@bot/utils/lang";
 const CTX = "voice";
 const TICK_SECONDS = VOICE_CONFIG.tickIntervalMs / 1000;
 const TICK_MINUTES = TICK_SECONDS / 60;
@@ -33,7 +34,7 @@ export async function runVoiceTick(client: Client): Promise<void> {
             const settings = await VoiceSettingsRepository.getCached(guild.id);
             if (!settings.enabled) continue;
 
-            await tickGuild(guild, settings, tickAt);
+            await inGuildLang(guild.id, () => tickGuild(guild, settings, tickAt));
         } catch (err) {
             Logger.warn(`Voice tick failed for ${guild.id}: ${err}`, CTX);
         }

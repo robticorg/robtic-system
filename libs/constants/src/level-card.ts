@@ -1,3 +1,5 @@
+import { bilingual } from "@utils/lang-context";
+
 /** The level-up card: the template image and where the member's avatar, name, level type and level are drawn. */
 export const LEVEL_CARD_CONFIG = {
     /** Template, relative to the repo root (4500×1217). Every position below is in its own pixels. */
@@ -17,5 +19,7 @@ export const LEVEL_CARD_CONFIG = {
     kind: { centerX: 2250, centerY: 618, fontSize: 56, color: "#4da3ff" },
     /** The level number, in the right circle above the template's "LVL". */
     level: { centerX: 3026, centerY: 540, maxWidth: 250, fontSize: 130, minFontSize: 60, color: "#ffffff" },
-    kindLabels: { message: "Message Level", voice: "Voice Level" },
 } as const;
+
+/** "Message Level" / "Voice Level", under the name on the card. */
+export const LEVEL_CARD_KIND_LABELS = bilingual({ message: "Message Level", voice: "Voice Level" }, { message: "مستوى الرسائل", voice: "مستوى الصوت" });

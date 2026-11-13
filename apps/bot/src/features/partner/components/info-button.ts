@@ -3,6 +3,7 @@ import type { ComponentHandler } from "@typings/command";
 import { PartnerServerRepository } from "@database/repositories";
 import { buildPartnerInfo, PARTNER_INFO_ID } from "../utils/partner-views";
 
+import { L } from "@utils";
 /** The Information button under a partner banner — anyone may press it; the answer is only theirs. */
 export const partnerInfoHandler: ComponentHandler<ButtonInteraction> = {
     customId: PARTNER_INFO_ID,
@@ -12,7 +13,7 @@ export const partnerInfoHandler: ComponentHandler<ButtonInteraction> = {
         const partner = await PartnerServerRepository.get(interaction.guildId!, partnerId);
 
         if (!partner) {
-            await interaction.reply({ content: "This partner is no longer listed.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L("This partner is no longer listed.", "هذا الشريك ما عاد موجود."), flags: MessageFlags.Ephemeral });
             return;
         }
 

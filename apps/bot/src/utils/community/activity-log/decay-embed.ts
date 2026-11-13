@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { COLORS, COMMUNITY_MESSAGES } from "@constants";
 
+import { L } from "@utils";
 type Levels = { messageLevel: number; voiceLevel: number };
 
 export function decayEmbed(
@@ -16,11 +17,11 @@ export function decayEmbed(
         .setColor(levelDown ? COLORS.error : COLORS.warning)
         .setTitle(levelDown ? COMMUNITY_MESSAGES.levelDownDecayTitle : COMMUNITY_MESSAGES.xpDecayTitle)
         .addFields(
-            { name: "User", value: `<@${userId}>`, inline: true },
-            { name: "💬 Message XP Lost", value: `-${loss.messageLoss}`, inline: true },
-            { name: "🎙️ Voice XP Lost", value: `-${loss.voiceLoss}`, inline: true },
-            { name: "Message Level", value: level(before.messageLevel, after.messageLevel), inline: true },
-            { name: "Voice Level", value: level(before.voiceLevel, after.voiceLevel), inline: true },
+            { name: L("User", "العضو"), value: `<@${userId}>`, inline: true },
+            { name: L("💬 Message XP lost", "💬 خبرة رسائل مفقودة"), value: `-${loss.messageLoss}`, inline: true },
+            { name: L("🎙️ Voice XP lost", "🎙️ خبرة صوت مفقودة"), value: `-${loss.voiceLoss}`, inline: true },
+            { name: L("Message level", "مستوى الرسائل"), value: level(before.messageLevel, after.messageLevel), inline: true },
+            { name: L("Voice level", "مستوى الصوت"), value: level(before.voiceLevel, after.voiceLevel), inline: true },
         )
         .setTimestamp();
 }

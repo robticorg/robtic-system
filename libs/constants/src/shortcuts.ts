@@ -1,3 +1,5 @@
+import { bilingual } from "@utils/lang-context";
+
 /**
  * What a shortcut cleans up once it has run.
  *
@@ -10,18 +12,26 @@ export const SHORTCUT_DELETE_MODES = ["both", "output", "none"] as const;
 
 export type ShortcutDeleteMode = typeof SHORTCUT_DELETE_MODES[number];
 
-export const SHORTCUT_DELETE_MODE_LABELS: Record<ShortcutDeleteMode, string> = {
+export const SHORTCUT_DELETE_MODE_LABELS = bilingual<Record<ShortcutDeleteMode, string>>({
     both: "Delete the trigger message and the reply",
     output: "Delete only the reply",
     none: "Keep both messages",
-};
+}, {
+    both: "حذف رسالة الاختصار والرد",
+    output: "حذف الرد فقط",
+    none: "إبقاء الرسالتين",
+});
 
 /** Compact form for `/shortcut list`. */
-export const SHORTCUT_DELETE_MODE_SHORT: Record<ShortcutDeleteMode, string> = {
+export const SHORTCUT_DELETE_MODE_SHORT = bilingual<Record<ShortcutDeleteMode, string>>({
     both: "🧹 trigger + reply",
     output: "🧽 reply only",
     none: "📌 nothing",
-};
+}, {
+    both: "🧹 الاختصار + الرد",
+    output: "🧽 الرد فقط",
+    none: "📌 لا شيء",
+});
 
 /** How long a deletable shortcut message stays visible before it is removed. */
 export const SHORTCUT_REPLY_LIFETIME_MS = 3_000;

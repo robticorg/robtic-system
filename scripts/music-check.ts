@@ -1,4 +1,5 @@
 /** Verifies music-bot token encryption, token checks, the invite link, the create form, the manifest and the create service — no database, no gateway. */
+import "./_english";
 import { randomBytes } from "node:crypto";
 import { ChannelType, ComponentType } from "discord.js";
 import { generateDependencyReport } from "@discordjs/voice";

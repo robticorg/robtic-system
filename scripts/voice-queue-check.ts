@@ -3,6 +3,7 @@
  * repository guards (per-tick key + levels-before snapshot, period batch ids, unique log keys,
  * Points keyed by tick, `$max` levels).
  */
+import "./_english";
 import { UnrecoverableError } from "bullmq";
 import { applyVoiceXp, calculateLevel, type Levels, type VoiceXpInput, type VoiceXpStore } from "@core/xp";
 import { jobIds, type DiscordOutboxJob, type VoiceTickJob } from "@queue";

@@ -2,6 +2,7 @@
  * Queued combo checks — no Redis, no MongoDB: the store is in memory and mirrors the repository
  * guards (recent message ids on the pair, Points keyed by message, conditional end).
  */
+import "./_english";
 import { UnrecoverableError } from "bullmq";
 import { COMBO_CONFIG } from "@constants";
 import { applyComboMessage, computeHeat, type ComboMessageInput, type ComboStore } from "@core/combo";
@@ -62,7 +63,7 @@ function memoryStore(opts: { punishment?: number; rate?: number } = {}) {
             return { ...pair } as ICombo;
         },
         async scoreRange() { return { min: 10, max: 20 }; },
-        async punishmentLevel() { return opts.punishment ?? 0; },
+        async punishmentLevel(_guildId: string) { return opts.punishment ?? 0; },
         async addPoints(i, scoreGain) {
             maybeFail();
             const key = `combo-${i.messageId}`;

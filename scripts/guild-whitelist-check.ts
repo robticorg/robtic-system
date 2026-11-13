@@ -1,4 +1,5 @@
 /** `<prefix>guild <id> add|remove` argument parsing, and slash command publishing. */
+import "./_english";
 import { Collection } from "discord.js";
 import { parseGuildWhitelistArgs } from "../apps/bot/src/commands/admin/guild-whitelist.message";
 import { SERVER_WHITELIST_MESSAGES } from "@constants";

@@ -5,6 +5,7 @@ import { ShortcutRepository } from "@database/repositories";
 import { resolveTrigger } from "../../utils/resolve-trigger";
 import { buildShortcutInfoEmbed } from "../../utils/build-shortcut-embed";
 
+import { L } from "@utils";
 type Field = "allowedRoleIds" | "channelIds";
 
 /**
@@ -23,7 +24,7 @@ const editRestriction = (field: Field, action: "add" | "remove", option: "role" 
 
         if (!shortcut) {
             await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(`No shortcut called **${trigger}**.`)],
+                embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(L(`No shortcut called **${trigger}**.`, `ما في اختصار اسمه **${trigger}**.`))],
             });
             return;
         }
@@ -42,7 +43,7 @@ export const clearRestrictions: FeatureSubcommandHandler = async (interaction, _
 
     if (!shortcut) {
         await interaction.editReply({
-            embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(`No shortcut called **${trigger}**.`)],
+            embeds: [new EmbedBuilder().setColor(COLORS.error).setDescription(L(`No shortcut called **${trigger}**.`, `ما في اختصار اسمه **${trigger}**.`))],
         });
         return;
     }

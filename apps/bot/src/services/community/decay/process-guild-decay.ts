@@ -8,6 +8,7 @@ import { Logger } from "@logger";
 import { calculateLevel, removeLevelRewards } from "../xp";
 import { logToChannel, decayEmbed } from "../../../utils/community/activity-log";
 
+import { L } from "@utils";
 const pct = (bp: number) => `${bp / 100}%`;
 
 /**
@@ -43,9 +44,9 @@ export async function processGuildDecay(client: Client, guild: Guild): Promise<v
         await ActivityRepository.applyDecay(user.discordId, guild.id, loss, levels, now);
 
         const parts = [
-            loss.messageLoss > 0 ? `${loss.messageLoss} message XP (${pct(message.rateBp)})` : "",
-            loss.voiceLoss > 0 ? `${loss.voiceLoss} voice XP (${pct(voice.rateBp)})` : "",
-        ].filter(Boolean).join(" and ");
+            loss.messageLoss > 0 ? L(`${loss.messageLoss} message XP (${pct(message.rateBp)})`, `${loss.messageLoss} خبرة رسائل (${pct(message.rateBp)})`) : "",
+            loss.voiceLoss > 0 ? L(`${loss.voiceLoss} voice XP (${pct(voice.rateBp)})`, `${loss.voiceLoss} خبرة صوت (${pct(voice.rateBp)})`) : "",
+        ].filter(Boolean).join(L(" and ", " و "));
 
         await ActivityLogRepository.log({
             guildId: guild.id,

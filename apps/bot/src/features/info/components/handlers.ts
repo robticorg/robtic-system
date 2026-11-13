@@ -19,14 +19,15 @@ import {
 import { buildInfoPanelMessage, buildInfoReply, INFO_BUTTON_ID, INFO_MAX_OPTIONS, INFO_MENU_ID } from "../utils/info-render";
 import { syncInfoPanel } from "../utils/info-post";
 
+import { L } from "@utils";
 const EPHEMERAL = { flags: MessageFlags.Ephemeral } as const;
-const NOT_ADMIN = "❌ Only server admins can manage info panels.";
-const GONE = "This info panel no longer exists.";
+const NOT_ADMIN = () => L("❌ Only server admins can manage info panels.", "❌ إدارة لوحات المعلومات للأدمن فقط.");
+const GONE = () => L("This info panel no longer exists.", "هذي اللوحة ما عادت موجودة.");
 
 async function guard(interaction: ModalSubmitInteraction): Promise<boolean> {
     await interaction.deferReply(EPHEMERAL);
     if (await canManageInfo(interaction.member as GuildMember | null)) return true;
-    await interaction.editReply({ content: NOT_ADMIN });
+    await interaction.editReply({ content: NOT_ADMIN() });
     return false;
 }
 
@@ -55,7 +56,7 @@ export const infoCreateModalHandler: ComponentHandler<ModalSubmitInteraction> = 
             await InfoPanelRepository.delete(panel.guildId, String(panel._id));
             return void await interaction.editReply({ content: `❌ ${sync.problem}` });
         }
-        await interaction.editReply({ content: `✅ Info panel sent to <#${channelId}>. Add its ${type === "menu" ? "menu choices" : "buttons"} with \`/option add\`.` });
+        await interaction.editReply({ content: L(`✅ Info panel sent to <#${channelId}>. Add its ${type === "menu" ? "menu choices" : "buttons"} with \`/option add\`.`, `✅ انرسلت اللوحة إلى <#${channelId}>. أضف ${type === "menu" ? "خيارات القائمة" : "الأزرار"} بـ \`/option add\`.`) });
     },
 };
 
@@ -69,7 +70,7 @@ export const infoUpdateModalHandler: ComponentHandler<ModalSubmitInteraction> = 
         const panelId = interaction.customId.split(":")[2]!;
 
         const before = await InfoPanelRepository.getLight(guildId, panelId);
-        if (!before) return void await interaction.editReply({ content: GONE });
+        if (!before) return void await interaction.editReply({ content: GONE() });
 
         const form = await readInfoPanelForm(interaction);
         if ("problem" in form) return void await interaction.editReply({ content: form.problem });
@@ -81,13 +82,13 @@ export const infoUpdateModalHandler: ComponentHandler<ModalSubmitInteraction> = 
             type,
             ...(image === undefined ? {} : { image: image?.data ?? null, imageName: image?.name ?? null }),
         });
-        if (!panel) return void await interaction.editReply({ content: GONE });
+        if (!panel) return void await interaction.editReply({ content: GONE() });
 
         const sync = await syncInfoPanel(interaction.guild!, panel, before.channelId);
         await interaction.editReply({
             content: sync.ok
-                ? `✅ Info panel updated${sync.how === "posted" ? ` and posted in <#${channelId}>` : ""}.`
-                : `⚠️ Saved, but the panel message wasn't updated: ${sync.problem}`,
+                ? L(`✅ Info panel updated${sync.how === "posted" ? ` and posted in <#${channelId}>` : ""}.`, `✅ تم تحديث اللوحة${sync.how === "posted" ? ` ونشرها في <#${channelId}>` : ""}.`)
+                : L(`⚠️ Saved, but the panel message wasn't updated: ${sync.problem}`, `⚠️ انحفظت، بس رسالة اللوحة ما تحدثت: ${sync.problem}`),
         });
     },
 };
@@ -105,21 +106,21 @@ export const infoOptionModalHandler: ComponentHandler<ModalSubmitInteraction> = 
         if ("problem" in form) return void await interaction.editReply({ content: form.problem });
 
         const before = await InfoPanelRepository.getLight(guildId, panelId);
-        if (!before) return void await interaction.editReply({ content: GONE });
+        if (!before) return void await interaction.editReply({ content: GONE() });
         if (before.options.length >= INFO_MAX_OPTIONS) {
-            return void await interaction.editReply({ content: `This panel already has ${INFO_MAX_OPTIONS} options — Discord's limit.` });
+            return void await interaction.editReply({ content: L(`This panel already has ${INFO_MAX_OPTIONS} options: Discord's limit.`, `اللوحة فيها ${INFO_MAX_OPTIONS} خيارات: هذا حد ديسكورد.`) });
         }
 
         const panel = await InfoPanelRepository.addOption(guildId, panelId, form.option);
-        if (!panel) return void await interaction.editReply({ content: GONE });
+        if (!panel) return void await interaction.editReply({ content: GONE() });
 
         const sync = await syncInfoPanel(interaction.guild!, panel);
         if (!sync.ok) {
             const reverted = await InfoPanelRepository.removeOption(guildId, panelId, form.option.optionId);
             if (reverted) await syncInfoPanel(interaction.guild!, reverted);
-            return void await interaction.editReply({ content: `❌ The option wasn't added. ${sync.problem}` });
+            return void await interaction.editReply({ content: L(`❌ The option wasn't added. ${sync.problem}`, `❌ ما انضاف الخيار. ${sync.problem}`) });
         }
-        await interaction.editReply({ content: `✅ Added **${form.option.label}** to the panel.`, allowedMentions: { parse: [] } });
+        await interaction.editReply({ content: L(`✅ Added **${form.option.label}** to the panel.`, `✅ تمت إضافة **${form.option.label}** للوحة.`), allowedMentions: { parse: [] } });
     },
 };
 
@@ -131,7 +132,7 @@ export const infoButtonHandler: ComponentHandler<ButtonInteraction> = {
         const [, , panelId, optionId] = interaction.customId.split(":");
         const panel = await InfoPanelRepository.getLight(interaction.guildId!, panelId!);
         const option = panel?.options.find(o => o.optionId === optionId);
-        if (!option) return void await interaction.reply({ content: "This option is no longer available.", ...EPHEMERAL });
+        if (!option) return void await interaction.reply({ content: L("This option is no longer available.", "هذا الخيار ما عاد متاح."), ...EPHEMERAL });
         await interaction.reply(buildInfoReply(option));
     },
 };
@@ -167,7 +168,7 @@ export const infoMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
         const panelId = interaction.customId.split(":")[2]!;
         const panel = await InfoPanelRepository.getLight(interaction.guildId!, panelId);
         const option = panel?.options.find(o => o.optionId === interaction.values[0]);
-        if (!option) await interaction.reply({ content: "This option is no longer available.", ...EPHEMERAL });
+        if (!option) await interaction.reply({ content: L("This option is no longer available.", "هذا الخيار ما عاد متاح."), ...EPHEMERAL });
         else await interaction.reply(buildInfoReply(option));
         scheduleMenuReset(interaction, panelId);
     },

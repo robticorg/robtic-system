@@ -10,6 +10,7 @@ import {
     type ModalSubmitInteraction,
 } from "discord.js";
 
+import { L } from "@utils";
 export const BOT_PROFILE_MODAL_ID = "bot-profile:config";
 
 export const BOT_PROFILE_FIELDS = {
@@ -36,29 +37,29 @@ export function buildBotProfileModal(currentNick: string | null): ModalBuilder {
 
     return new ModalBuilder()
         .setCustomId(BOT_PROFILE_MODAL_ID)
-        .setTitle("Bot Profile in This Server")
+        .setTitle(L("Bot profile in this server", "بروفايل البوت في السيرفر"))
         .addLabelComponents(
             new LabelBuilder()
-                .setLabel("Logo")
-                .setDescription("PNG, JPG, GIF or WEBP, up to 10 MB. Leave empty to keep the current one.")
+                .setLabel(L("Logo", "الصورة"))
+                .setDescription(L("PNG, JPG, GIF or WEBP, up to 10 MB. Leave empty to keep the current one.", "PNG أو JPG أو GIF أو WEBP، حتى 10 ميقا. اتركه فاضي للإبقاء على الحالي."))
                 .setFileUploadComponent(new FileUploadBuilder()
                     .setCustomId(BOT_PROFILE_FIELDS.avatar)
                     .setRequired(false)
                     .setMaxValues(1)),
             new LabelBuilder()
-                .setLabel("Banner")
-                .setDescription("PNG, JPG, GIF or WEBP, up to 10 MB. Leave empty to keep the current one.")
+                .setLabel(L("Banner", "البنر"))
+                .setDescription(L("PNG, JPG, GIF or WEBP, up to 10 MB. Leave empty to keep the current one.", "PNG أو JPG أو GIF أو WEBP، حتى 10 ميقا. اتركه فاضي للإبقاء على الحالي."))
                 .setFileUploadComponent(new FileUploadBuilder()
                     .setCustomId(BOT_PROFILE_FIELDS.banner)
                     .setRequired(false)
                     .setMaxValues(1)),
             new LabelBuilder()
-                .setLabel("Nickname")
-                .setDescription("Its name in this server. Clear it to go back to the bot's own name.")
+                .setLabel(L("Nickname", "اللقب"))
+                .setDescription(L("Its name in this server. Clear it to go back to the bot's own name.", "اسمه في السيرفر. امسحه لترجع لاسم البوت الأصلي."))
                 .setTextInputComponent(nick),
             new LabelBuilder()
-                .setLabel("Bio")
-                .setDescription("Its About Me in this server. Leave empty to keep the current one.")
+                .setLabel(L("Bio", "النبذة"))
+                .setDescription(L("Its About Me in this server. Leave empty to keep the current one.", "النبذة في السيرفر. اتركها فاضية للإبقاء على الحالية."))
                 .setTextInputComponent(new TextInputBuilder()
                     .setCustomId(BOT_PROFILE_FIELDS.bio)
                     .setStyle(TextInputStyle.Paragraph)
@@ -73,9 +74,9 @@ export type BotProfileResult =
 
 function imageProblem(file: Attachment, what: string): string | null {
     if (!file.contentType || !IMAGE_TYPES.has(file.contentType.split(";")[0]!.trim())) {
-        return `The ${what} must be a PNG, JPG, GIF or WEBP image.`;
+        return L(`The ${what} must be a PNG, JPG, GIF or WEBP image.`, `${what === "logo" ? "الصورة" : "البنر"} لازم تكون PNG أو JPG أو GIF أو WEBP.`);
     }
-    if (file.size > IMAGE_MAX_BYTES) return `The ${what} is bigger than 10 MB.`;
+    if (file.size > IMAGE_MAX_BYTES) return L(`The ${what} is bigger than 10 MB.`, `${what === "logo" ? "الصورة" : "البنر"} أكبر من 10 ميقا.`);
     return null;
 }
 

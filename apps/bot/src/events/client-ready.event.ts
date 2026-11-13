@@ -21,6 +21,15 @@ export default {
         await setupGuildGuard(client);
         await publishFeatureCatalog();
 
+        // Slash commands are published on every start, so a new or changed command (an option, a description) is live
+        // as soon as the bot restarts, without running register:commands by hand. One request: Discord replaces the
+        // bot's whole list. Not awaited, so a slow or failed publish never holds up the bot; a failure is logged.
+        void client.registerSlashCommands()
+            .then(ok => ok
+                ? Logger.success(`Slash commands published (${client.commands.size})`, client.botName)
+                : Logger.warn("Slash commands were not fully published; they update on the next start", client.botName))
+            .catch(err => Logger.error(`Publishing slash commands failed: ${err}`, client.botName));
+
         startDecayScheduler(client);
         startSessionCleanupScheduler();
         startActivityFlush();

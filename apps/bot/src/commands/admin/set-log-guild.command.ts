@@ -11,6 +11,7 @@ import { GlobalConfigRepository } from "@database/repositories";
 import { SERVER_LOG_CHANNELS } from "@constants";
 import { ensureServerLogChannels } from "@bot/utils/server-log";
 
+import { L } from "@utils";
 export default {
     scope: "admin",
     category: "Configuration",
@@ -36,7 +37,7 @@ export default {
         if (!guild) {
             await interaction.editReply({
                 embeds: [new EmbedBuilder()
-                    .setDescription(`❌ Bot is not in guild \`${guildId}\`. Make sure the bot is a member of that server.`)
+                    .setDescription(L(`❌ I'm not in server \`${guildId}\`. Add me there first.`, `❌ أنا مو موجود في السيرفر \`${guildId}\`. أضفني هناك أول.`))
                     .setColor(COLORS.error)],
             });
             return;
@@ -57,13 +58,13 @@ export default {
         }
 
         const embed = new EmbedBuilder()
-            .setTitle("✅ Server Log Guild Set")
+            .setTitle(L("✅ Log server set", "✅ تم ضبط سيرفر اللوقات"))
             .setColor(COLORS.success)
             .addFields(
                 { name: "Guild", value: `${guild.name} (\`${guildId}\`)` },
-                { name: "Categories", value: "One category per server ID, created automatically the moment the bot joins that server.", inline: false },
-                { name: "Channels", value: `Auto-created inside each category:\n${SERVER_LOG_CHANNELS.map(c => `\`${c}\``).join(" ")}`, inline: false },
-                { name: "Backfill", value: `Provisioned ${backfilled} existing server(s) the bot is already in.`, inline: false },
+                { name: L("Categories", "الكاتيقوريات"), value: L("One category per server ID, created automatically the moment the bot joins that server.", "كاتيقوري لكل سيرفر، تنسوى تلقائياً لحظة دخول البوت."), inline: false },
+                { name: L("Channels", "الرومات"), value: L(`Auto-created inside each category:\n${SERVER_LOG_CHANNELS.map(c => `\`${c}\``).join(" ")}`, `تنسوى داخل كل كاتيقوري:\n${SERVER_LOG_CHANNELS.map(c => `\`${c}\``).join(" ")}`), inline: false },
+                { name: L("Backfill", "السيرفرات الحالية"), value: L(`Provisioned ${backfilled} existing server(s) the bot is already in.`, `تم تجهيز ${backfilled} سيرفر البوت موجود فيها.`), inline: false },
             )
             .setTimestamp();
 

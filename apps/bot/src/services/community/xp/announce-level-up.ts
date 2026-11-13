@@ -7,6 +7,7 @@ import { Logger } from "@logger";
 import { renderLevelCard } from "./render-level-card";
 import type { LevelCardLayoutDoc } from "@database/models/XPSettings";
 
+import { L } from "@utils";
 /**
  * Fills the server's level-up text: [user] mention, [username], [level], [type] (Message / Voice), [server], and
  * [#123…] channel mentions. Capped at Discord's 2,000 characters.
@@ -16,7 +17,7 @@ export function fillLevelUpText(text: string, v: { userId: string; username: str
         .replaceAll("[user]", `<@${v.userId}>`)
         .replaceAll("[username]", v.username)
         .replaceAll("[level]", String(v.level))
-        .replaceAll("[type]", v.kind === "voice" ? "Voice" : "Message")
+        .replaceAll("[type]", L(v.kind === "voice" ? "Voice" : "Message", v.kind === "voice" ? "الصوت" : "الرسائل"))
         .replaceAll("[server]", v.server)
         .replace(/\[#(\d{15,22})\]/g, "<#$1>")
         .slice(0, 2000);

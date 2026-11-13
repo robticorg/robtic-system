@@ -17,3 +17,4 @@ export {
     type MessageCounterStore,
     type FlushOutcome,
 } from "./message-counter";
+export { countHourlyMessage, flushHourlyMessages } from "./hourly-counter";

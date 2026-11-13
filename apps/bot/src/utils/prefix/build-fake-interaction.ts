@@ -1,4 +1,4 @@
-import type { Message } from "discord.js";
+import { MessageFlags, type Message } from "discord.js";
 import type { BotClient } from "@core/bot-client";
 import { PREFIX_MESSAGES } from "@constants";
 
@@ -12,14 +12,22 @@ export function buildFakeInteraction(
 ): any {
     let sentMessage: Message | null = null;
 
+    /**
+     * A message reply can't be ephemeral, so flags are dropped, except Components V2, without which a V2 payload is
+     * refused. Only a new message can set it (Discord ignores it on edits).
+     */
+    const keepV2 = (flags: unknown) => (typeof flags === "number" || typeof flags === "bigint") && (BigInt(flags) & BigInt(MessageFlags.IsComponentsV2)) !== 0n
+        ? { flags: MessageFlags.IsComponentsV2 as const }
+        : {};
+
     async function sendOrEdit(payload: any): Promise<Message | null> {
-        const { flags: _flags, ...rest } = payload ?? {};
+        const { flags, ...rest } = payload ?? {};
         if (sentMessage) {
             sentMessage = await sentMessage.edit(rest).catch(() => sentMessage);
             return sentMessage;
         }
         sentMessage = await message
-            .reply({ ...rest, allowedMentions: rest.allowedMentions ?? { repliedUser: false } })
+            .reply({ ...rest, ...keepV2(flags), allowedMentions: rest.allowedMentions ?? { repliedUser: false } })
             .catch(() => null);
         return sentMessage;
     }
@@ -82,9 +90,9 @@ export function buildFakeInteraction(
             }
         },
         async followUp(opts: any) {
-            const { flags: _flags, ...rest } = opts ?? {};
+            const { flags, ...rest } = opts ?? {};
             if (!message.channel.isSendable()) return null;
-            return message.channel.send(rest).catch(() => null);
+            return message.channel.send({ ...rest, ...keepV2(flags) }).catch(() => null);
         },
     };
 

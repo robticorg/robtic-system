@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import { COLORS } from "@constants";
 import { sendToServerLog } from "@bot/utils/server-log";
 
+import { L } from "@utils";
 export default {
     name: Events.GuildRoleCreate,
     async execute(role: Role, client: BotClient) {
@@ -11,13 +12,13 @@ export default {
         const executorId = entry?.executor?.id;
 
         const embed = new EmbedBuilder()
-            .setTitle("📘 Audit: Role Created")
+            .setTitle(L("📘 Role created", "📘 إنشاء رتبة"))
             .setColor(COLORS.success)
             .addFields(
-                { name: "Role", value: `<@&${role.id}> — ${role.name} (\`${role.id}\`)` },
-                { name: "Color", value: role.hexColor, inline: true },
-                { name: "Mentionable", value: role.mentionable ? "Yes" : "No", inline: true },
-                { name: "Executor", value: executorId ? `<@${executorId}> (${executorId})` : "Unknown", inline: true },
+                { name: L("Role", "الرتبة"), value: `<@&${role.id}> — ${role.name} (\`${role.id}\`)` },
+                { name: L("Colour", "اللون"), value: role.hexColor, inline: true },
+                { name: L("Mentionable", "قابلة للمنشن"), value: role.mentionable ? L("Yes", "نعم") : L("No", "لا"), inline: true },
+                { name: L("By", "بواسطة"), value: executorId ? `<@${executorId}> (${executorId})` : L("Unknown", "غير معروف"), inline: true },
             )
             .setTimestamp();
 

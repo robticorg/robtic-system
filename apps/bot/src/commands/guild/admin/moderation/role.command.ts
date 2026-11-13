@@ -2,14 +2,16 @@ import {
     SlashCommandBuilder,
     PermissionFlagsBits,
     EmbedBuilder,
+    MessageFlags,
     type ChatInputCommandInteraction,
     type GuildMember,
     type Role,
 } from "discord.js";
 import type { BotClient } from "@core/bot-client";
-import { COLORS, MODERATION_ACTION_MESSAGES as MSG } from "@constants";
+import { AUDIT_MESSAGES as AUDIT, COLORS, MODERATION_ACTION_MESSAGES as MSG } from "@constants";
+import { L } from "@utils";
 import { recordSecurityEvent, sendAuditLog } from "@bot/utils/moderation/security";
-import { checkRoleAssignable } from "@bot/utils/moderation/hierarchy";
+import { canActOn, checkRoleAssignable } from "@bot/utils/moderation/hierarchy";
 
 const MULTIROLE_SLOTS = ["role1", "role2", "role3", "role4", "role5"] as const;
 
@@ -26,13 +28,13 @@ async function auditRoleChange(
         guild,
         "role_update",
         new EmbedBuilder()
-            .setTitle(granted ? "📘 Audit: Roles Granted" : "📘 Audit: Roles Removed")
+            .setTitle(granted ? L("📘 Roles given", "📘 إعطاء رتب") : L("📘 Roles removed", "📘 سحب رتب"))
             .setColor(granted ? COLORS.success : COLORS.warning)
             .addFields(
-                { name: "Target", value: `<@${target.id}> (${target.id})` },
-                { name: "Executor", value: `<@${interaction.user.id}> (${interaction.user.id})` },
-                { name: "Roles", value: roles.map(r => `<@&${r.id}>`).join(", ") },
-                { name: "Source", value: `/role ${interaction.options.getSubcommand()}`, inline: true },
+                { name: AUDIT.targetFieldName, value: `<@${target.id}> (${target.id})` },
+                { name: AUDIT.executorFieldName, value: `<@${interaction.user.id}> (${interaction.user.id})` },
+                { name: L("Roles", "الرتب"), value: roles.map(r => `<@&${r.id}>`).join(", ") },
+                { name: L("Source", "المصدر"), value: `/role ${interaction.options.getSubcommand()}`, inline: true },
             )
             .setTimestamp(),
     );
@@ -84,18 +86,13 @@ export default {
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
         const guild = interaction.guild;
-        if (!guild) {
-            await interaction.reply({ content: MSG.guildOnly });
-            return;
-        }
+        const refuse = (content: string) => interaction.reply({ content, flags: MessageFlags.Ephemeral });
+        if (!guild) return void await refuse(MSG.guildOnly);
 
         const sub = interaction.options.getSubcommand();
         const targetUser = interaction.options.getUser("user", true);
         const target = guild.members.cache.get(targetUser.id) ?? await guild.members.fetch(targetUser.id).catch(() => null);
-        if (!target) {
-            await interaction.reply({ content: MSG.notInGuild });
-            return;
-        }
+        if (!target) return void await refuse(MSG.notInGuild);
 
         const executor = interaction.member as GuildMember;
 
@@ -120,10 +117,7 @@ export default {
                 }
             }
 
-            if (toApply.length === 0) {
-                await interaction.reply({ content: [MSG.multiroleNone, ...skipped.map(s => `• ${s}`)].join("\n") });
-                return;
-            }
+            if (toApply.length === 0) return void await refuse([MSG.multiroleNone, ...skipped.map(s => `• ${s}`)].join("\n"));
 
             await interaction.deferReply();
 
@@ -143,20 +137,16 @@ export default {
         const role = interaction.options.getRole("role", true) as Role;
 
         const blocked = checkRoleAssignable(guild, executor, role);
-        if (blocked) {
-            await interaction.reply({ content: blocked });
-            return;
+        if (blocked) return void await refuse(blocked);
+
+        // Taking a role away is acting on the person: not someone at or above you (giving one is not).
+        if (sub === "remove" && target.id !== executor.id && !canActOn(executor, target)) {
+            return void await refuse(L("You can't take roles from someone whose highest role is at or above your own.", "ما تقدر تسحب رتب من شخص رتبته أعلى من رتبتك أو تساويها."));
         }
 
         const has = target.roles.cache.has(role.id);
-        if (sub === "give" && has) {
-            await interaction.reply({ content: MSG.roleAlreadyHas(targetUser.username, role.name) });
-            return;
-        }
-        if (sub === "remove" && !has) {
-            await interaction.reply({ content: MSG.roleDoesNotHave(targetUser.username, role.name) });
-            return;
-        }
+        if (sub === "give" && has) return void await refuse(MSG.roleAlreadyHas(targetUser.username, role.name));
+        if (sub === "remove" && !has) return void await refuse(MSG.roleDoesNotHave(targetUser.username, role.name));
 
         await interaction.deferReply();
 

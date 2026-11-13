@@ -45,7 +45,7 @@ export const streakFeature = defineFeature({
         },
         {
             name: "streak-reward",
-            description: "إدارة مكافآت التتابع",
+            description: "Manage streak rewards",
             scope: "guild",
             access: "admin",
             category: "Streak",
@@ -53,20 +53,20 @@ export const streakFeature = defineFeature({
             subcommands: [
                 {
                     name: "add",
-                    description: "إضافة أو تعديل مكافأة عند الوصول لعدد أيام معين",
+                    description: "Add or change the reward for a number of streak days",
                     options: [
-                        { name: "number", description: "عدد أيام التتابع المطلوب", type: "integer", required: true, minValue: 1 },
-                        { name: "offer", description: "وصف المكافأة", type: "string", required: true },
+                        { name: "number", description: "Streak days needed", type: "integer", required: true, minValue: 1 },
+                        { name: "offer", description: "What the reward is", type: "string", required: true },
                     ],
                 },
                 {
                     name: "remove",
-                    description: "إزالة مكافأة",
+                    description: "Remove a reward",
                     options: [
-                        { name: "number", description: "عدد أيام التتابع", type: "integer", required: true, minValue: 1 },
+                        { name: "number", description: "Streak days", type: "integer", required: true, minValue: 1 },
                     ],
                 },
-                { name: "list", description: "عرض جميع مكافآت التتابع المُعدة" },
+                { name: "list", description: "List every streak reward" },
             ],
         },
         {

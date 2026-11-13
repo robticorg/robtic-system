@@ -23,6 +23,7 @@ import { BRANCH_EMOJIS as emoji } from "@config";
 import { hasGuildBotAdmin, isGuildOperator } from "@bot/utils/access";
 import { buildBotProfileModal } from "@bot/utils/bot-profile/bot-profile-form";
 
+import { L } from "@utils";
 export default {
     scope: "guild",
     access: "general",
@@ -55,13 +56,13 @@ export default {
         const currentUser = interaction.guild?.members.cache.get(interaction.user.id) ?? await interaction.guild?.members.fetch(interaction.user.id).catch(() => null);
         const isSelf = target.id === interaction.user.id;
 
-        if(target !== interaction.user && member && await isStaff(member as GuildMember) && !(currentUser && await isStaff(currentUser as GuildMember))) return await interaction.editReply({ content: "You cannot view the profile of another staff member." });
+        if(target !== interaction.user && member && await isStaff(member as GuildMember) && !(currentUser && await isStaff(currentUser as GuildMember))) return await interaction.editReply({ content: L("You can't view another staff member's profile.", "ما تقدر تشوف بروفايل إداري ثاني.") });
 
         const lang = await getUserLang(currentUser as GuildMember | null);
 
         const isPrivate = !isSelf && await UserRepository.getPrivateProfile(target.id);
 
-        const punishmentLevel = !isPrivate ? await PunishmentRepository.getPunishmentLevel(target.id) : 0;
+        const punishmentLevel = !isPrivate ? await PunishmentRepository.getPunishmentLevel(guildId, target.id) : 0;
         const levelInfo = PunishmentRepository.getLevelInfo(punishmentLevel);
         const allPunishments = !isPrivate ? await PunishmentRepository.findByUser(target.id, guildId) : [];
         const activePunishments = allPunishments.filter(p => p.active && !p.appealed);
@@ -127,7 +128,7 @@ export default {
             .addFields(
                 { name: t("profile.field_user", lang), value: `<@${target.id}>`, inline: true },
                 { name: t("profile.field_account_created", lang), value: `<t:${Math.floor(target.createdTimestamp / 1000)}:R>`, inline: true },
-                ...(member ? [{ name: t("profile.field_joined_server", lang), value: member.joinedAt ? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:R>` : "Unknown", inline: true }] : []),
+                ...(member ? [{ name: t("profile.field_joined_server", lang), value: member.joinedAt ? `<t:${Math.floor(member.joinedAt.getTime() / 1000)}:R>` : L("Unknown", "غير معروف"), inline: true }] : []),
                 ...(staffLevel && staffLevel.level !== "Member" ? [{ name: t("profile.field_staff_level", lang), value: `${staffLevel.level} (${staffLevel.score})`, inline: true }] : []),
                 {
                     name: t("profile.field_xp_level", lang),
@@ -137,12 +138,12 @@ export default {
                 { name: t("profile.field_total_xp", lang), value: `${xpRecord.totalXP} · #${rank}`, inline: true },
                 { name: t("profile.field_streak", lang), value: t("profile.streak_value", lang, { current: `${streak.record.currentStreak}`, best: `${streak.record.bestStreak}` }), inline: true },
                 { name: t("profile.field_combo", lang), value: comboValue, inline: true },
-                { name: "🎯 Points", value: `${pointSummary.points}${pointSummary.rank > 0 ? ` (#${pointSummary.rank})` : ""}${pointSummary.rc > 0 ? ` · ${pointSummary.rc} RC` : ""}`, inline: true },
+                { name: L("🎯 Points", "🎯 النقاط"), value: `${pointSummary.points}${pointSummary.rank > 0 ? ` (#${pointSummary.rank})` : ""}${pointSummary.rc > 0 ? ` · ${pointSummary.rc} RC` : ""}`, inline: true },
                 {
                     name: "🎙️ Voice",
                     value: voiceStat
-                        ? `${formatVoiceDuration(voiceStat.totalActiveSeconds)} active · ${formatVoiceDuration(voiceWeek)} this week · ${voiceStat.totalXpEarned} XP`
-                        : "No voice activity yet",
+                        ? L(`${formatVoiceDuration(voiceStat.totalActiveSeconds)} active · ${formatVoiceDuration(voiceWeek)} this week · ${voiceStat.totalXpEarned} XP`, `${formatVoiceDuration(voiceStat.totalActiveSeconds)} نشاط · ${formatVoiceDuration(voiceWeek)} هذا الأسبوع · ${voiceStat.totalXpEarned} خبرة`)
+                        : L("No voice activity yet", "ما في نشاط صوتي لين الحين"),
                     inline: true,
                 },
                 ...(!isPrivate ? [{ name: t("profile.field_roles", lang), value: roles }] : []),
@@ -208,7 +209,7 @@ export default {
 async function runConfig(interaction: ChatInputCommandInteraction) {
     const member = interaction.member as GuildMember | null;
     if (!interaction.guild || !member || !(isGuildOperator(member) || await hasGuildBotAdmin(member))) {
-        await interaction.reply({ content: "❌ Only server admins can change the bot's profile.", flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: L("❌ Only server admins can change the bot's profile.", "❌ تغيير بروفايل البوت للإدارة فقط."), flags: MessageFlags.Ephemeral });
         return;
     }
     const me = interaction.guild.members.me ?? await interaction.guild.members.fetchMe();

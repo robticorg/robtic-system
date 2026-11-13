@@ -9,6 +9,7 @@
  * That is exactly what deleting apps/activity and apps/api caused. This check is the cheap way to
  * never spend that debugging session again.
  */
+import "./_english";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 

@@ -5,10 +5,11 @@ import type { ComboLeaderboardPeriod, ComboLeaderboardType } from "@constants";
 import { buildLeaderboardEmbed } from "../utils/combo-embeds";
 import { buildComboNavRow, buildComboLeaderboardRows, verifyInvoker, isComboAdmin } from "../utils/combo-components";
 
+import { L } from "@utils";
 async function render(interaction: StringSelectMenuInteraction, invokerId: string, period: ComboLeaderboardPeriod, type: ComboLeaderboardType): Promise<void> {
     const guild = interaction.guild;
     if (!guild) {
-        await interaction.reply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر.", flags: MessageFlags.Ephemeral }).catch(() => null);
+        await interaction.reply({ content: L("This can only be used in a server.", "لا يمكن استخدام هذا الأمر إلا داخل سيرفر."), flags: MessageFlags.Ephemeral }).catch(() => null);
         return;
     }
 

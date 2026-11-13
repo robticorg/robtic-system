@@ -1,18 +1,7 @@
-import {
-    ContextMenuCommandBuilder,
-    ApplicationCommandType,
-    UserContextMenuCommandInteraction,
-    ModalBuilder,
-    TextInputBuilder,
-    TextInputStyle,
-    ActionRowBuilder,
-    LabelBuilder,
-    FileUploadBuilder,
-    MessageFlags,
-    type GuildMember,
-} from "discord.js";
-import { needsProof } from "@bot/utils/moderation/punish-flow";
+import { ContextMenuCommandBuilder, ApplicationCommandType, UserContextMenuCommandInteraction } from "discord.js";
+import { openPunishForm } from "@bot/utils/moderation/punish-flow/punish-form";
 
+/** Right-click a member → Warn User: the reason (and proof, when the moderator needs it) in a form. */
 export default {
     scope: "guild",
     category: "Moderation",
@@ -23,46 +12,6 @@ export default {
     requiredPermission: 20,
 
     async run(interaction: UserContextMenuCommandInteraction) {
-        if (interaction.user.id === interaction.targetId) {
-            await interaction.reply({ content: "You cannot warn yourself.", flags: MessageFlags.Ephemeral });
-            return;
-        }
-
-        const modal = new ModalBuilder()
-            .setCustomId(`punish_modal_warn_${interaction.targetId}`)
-            .setTitle(`Warn ${interaction.targetUser.username}`);
-
-        const requireProof = await needsProof(interaction.member as GuildMember);
-
-        if (requireProof) {
-            const reasonLabel = new LabelBuilder()
-                .setLabel("Reason for Warning")
-                .setDescription("Enter the reason or reason key")
-                .setTextInputComponent(
-                    new TextInputBuilder().setCustomId("reason").setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(500)
-                );
-
-            const proofLabel = new LabelBuilder()
-                .setLabel("Proof image")
-                .setDescription("Attach a screenshot/image showing the reason for this action")
-                .setFileUploadComponent(
-                    new FileUploadBuilder().setCustomId("proof").setMinValues(1).setMaxValues(1).setRequired(true)
-                );
-
-            modal.addLabelComponents(reasonLabel, proofLabel);
-        } else {
-            const reasonInput = new TextInputBuilder()
-                .setCustomId("reason")
-                .setLabel("Reason for Warning")
-                .setPlaceholder("Enter the reason or reason key...")
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true)
-                .setMaxLength(500);
-
-            const actionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
-            modal.addComponents(actionRow);
-        }
-
-        await interaction.showModal(modal);
-    }
+        await openPunishForm(interaction, "warn");
+    },
 };

@@ -48,6 +48,16 @@ export class PeriodicStatRepository {
         }
     }
 
+    /** A server's total for one metric in each of these buckets (`periodKey` → total; missing keys are 0). */
+    static async sumByKeys(guildId: string, period: ComboLeaderboardPeriod, metric: PeriodicStatMetric, keys: readonly string[]): Promise<Map<string, number>> {
+        const rows = await PeriodicStat.aggregate<{ _id: string; total: number }>([
+            { $match: { guildId, period, metric, periodKey: { $in: [...keys] } } },
+            { $group: { _id: "$periodKey", total: { $sum: "$value" } } },
+        ]);
+        const totals = new Map(rows.map(r => [String(r._id), Number(r.total)]));
+        return new Map(keys.map(k => [k, totals.get(k) ?? 0]));
+    }
+
     /** Every member's all-time value for one metric, keyed `guildId:discordId` — one query, for migrations. */
     static async getAllTimeValues(metric: PeriodicStatMetric): Promise<Map<string, number>> {
         const rows = await PeriodicStat.find({ period: "alltime", periodKey: "all", metric }).select("guildId discordId value").lean();

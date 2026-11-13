@@ -3,6 +3,17 @@ import type { BotClient } from "@core/bot-client";
 import type { EventConfig } from "@typings/event";
 import type { LoadReport } from "./load-report";
 import { shouldHandle } from "../event-guard";
+import { DEFAULT_LANG, guildIdOf, runWithLang } from "@utils";
+import { ServerConfigRepository } from "@database/repositories";
+import { warmAccent } from "../style/accent";
+
+/** The language of the server an event comes from (cached in the repository), so everything below answers in it. */
+async function langFor(args: readonly unknown[]) {
+    const guildId = guildIdOf(args);
+    warmAccent(guildId);
+    if (!guildId) return DEFAULT_LANG;
+    return (await ServerConfigRepository.getLanguage(guildId).catch(() => null)) ?? DEFAULT_LANG;
+}
 
 function isEvent(value: unknown): value is EventConfig {
     const candidate = value as EventConfig | undefined;
@@ -27,7 +38,8 @@ export function registerEventModule(client: BotClient, exported: unknown, path: 
         }
 
         const name = entry.name as keyof ClientEvents;
-        const run = (args: unknown[]) => (entry.execute as (...a: unknown[]) => unknown)(...args, client);
+        const execute = entry.execute as (...a: unknown[]) => unknown;
+        const run = async (args: unknown[]) => runWithLang(await langFor(args), () => execute(...args, client));
         // Split-brain gate: if another Gateway already took this event, this one doesn't handle it.
         const listener = (...args: unknown[]) => {
             const verdict = shouldHandle(name, args);

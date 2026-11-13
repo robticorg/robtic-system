@@ -3,15 +3,16 @@ import type { BotClient } from "@core/bot-client";
 import { COLORS } from "@constants";
 import { sendToServerLog } from "@bot/utils/server-log";
 
+import { L } from "@utils";
 export default {
     name: Events.ChannelUpdate,
     async execute(oldChannel: GuildChannel, newChannel: GuildChannel, client: BotClient) {
         if (!newChannel.guild) return;
 
         const changes: string[] = [];
-        if (oldChannel.name !== newChannel.name) changes.push(`Name: \`${oldChannel.name}\` → \`${newChannel.name}\``);
+        if (oldChannel.name !== newChannel.name) changes.push(L(`Name: \`${oldChannel.name}\` → \`${newChannel.name}\``, `الاسم: \`${oldChannel.name}\` ← \`${newChannel.name}\``));
         if ("topic" in oldChannel && "topic" in newChannel && oldChannel.topic !== newChannel.topic) {
-            changes.push(`Topic: \`${oldChannel.topic ?? "(none)"}\` → \`${newChannel.topic ?? "(none)"}\``);
+            changes.push(L(`Topic: \`${oldChannel.topic ?? "(none)"}\` → \`${newChannel.topic ?? "(none)"}\``, `الوصف: \`${oldChannel.topic ?? "(لا يوجد)"}\` ← \`${newChannel.topic ?? "(لا يوجد)"}\``));
         }
         if ("nsfw" in oldChannel && "nsfw" in newChannel && oldChannel.nsfw !== newChannel.nsfw) {
             changes.push(`NSFW: ${oldChannel.nsfw} → ${newChannel.nsfw}`);
@@ -19,7 +20,7 @@ export default {
         if (oldChannel.parentId !== newChannel.parentId) {
             const oldCat = oldChannel.parent?.name ?? "(none)";
             const newCat = newChannel.parent?.name ?? "(none)";
-            changes.push(`Category: \`${oldCat}\` → \`${newCat}\``);
+            changes.push(L(`Category: \`${oldCat}\` → \`${newCat}\``, `الكاتيقوري: \`${oldCat}\` ← \`${newCat}\``));
         }
 
         if (changes.length === 0) return;
@@ -29,12 +30,12 @@ export default {
         const executorId = entry?.executor?.id;
 
         const embed = new EmbedBuilder()
-            .setTitle("📘 Audit: Channel Updated")
+            .setTitle(L("📘 Channel changed", "📘 تعديل روم"))
             .setColor(COLORS.warning)
             .addFields(
-                { name: "Channel", value: `${newChannel.toString()} (\`${newChannel.id}\`)` },
-                { name: "Changes", value: changes.join("\n") },
-                { name: "Executor", value: executorId ? `<@${executorId}> (${executorId})` : "Unknown", inline: true },
+                { name: L("Channel", "الروم"), value: `${newChannel.toString()} (\`${newChannel.id}\`)` },
+                { name: L("Changes", "التغييرات"), value: changes.join("\n") },
+                { name: L("By", "بواسطة"), value: executorId ? `<@${executorId}> (${executorId})` : L("Unknown", "غير معروف"), inline: true },
             )
             .setTimestamp();
 

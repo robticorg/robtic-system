@@ -1,4 +1,5 @@
 /** Verifies the invites feature's wording, totals and `/info` paging — no database, no gateway. */
+import "./_english";
 import {
     inviteTotal,
     plural,
@@ -32,9 +33,9 @@ const check = (name: string, ok: boolean, detail = "") => {
     check("vanity join message", vanity === "**<@1508501667920875634>** has arrived by using the vanity invite **robtic**.", vanity);
 
     const invited = invitedJoinMessage("1440413794198360136", ".30g", 7);
-    check("invited join message", invited === "**<@1440413794198360136>** just joined. They were invited by **.30g** who now has **7 invites !**", invited);
+    check("invited join message", invited === "**<@1440413794198360136>** just joined. They were invited by **.30g**, who now has **7 invites!**", invited);
 
-    check("invited join message: singular", invitedJoinMessage("1", "a", 1).endsWith("**1 invite !**"));
+    check("invited join message: singular", invitedJoinMessage("1", "a", 1).endsWith("**1 invite!**"));
     check("inviter names are escaped so the bold survives", invitedJoinMessage("1", "under_score*", 2).includes("**under\\_score\\***"));
     check("unknown join still mentions the member", unknownJoinMessage("42").startsWith("**<@42>** just joined"));
 }
@@ -95,7 +96,7 @@ const check = (name: string, ok: boolean, detail = "") => {
     check("vanity leave message", vanity === "**raouf.\\_.159** has left. They were invited using a vanity invite.", vanity);
 
     const unknown = unknownLeaveMessage("c_iot");
-    check("unknown leave message", unknown === "**c\\_iot** has left but I haven't registered who invited them.", unknown);
+    check("unknown leave message", unknown === "**c\\_iot** has left, but I don't know who invited them.", unknown);
 }
 
 // Fake window: a rejoin within 30 days of the last real join is fake.

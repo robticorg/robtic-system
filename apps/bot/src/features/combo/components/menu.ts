@@ -19,6 +19,7 @@ import {
     type ComboPage,
 } from "../utils/combo-components";
 
+import { L } from "@utils";
 export const comboMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
     customId: /^combo:nav:\d+$/,
 
@@ -28,7 +29,7 @@ export const comboMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
 
         const guild = interaction.guild;
         if (!guild) {
-            await interaction.reply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: L("This can only be used in a server.", "لا يمكن استخدام هذا الأمر إلا داخل سيرفر."), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
@@ -39,7 +40,7 @@ export const comboMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
         const isAdmin = await isComboAdmin(interaction.user.id, member);
 
         if (page === "settings" && !isAdmin) {
-            await interaction.followUp({ content: "ليس لديك صلاحية لعرض إعدادات الكومبو.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.followUp({ content: L("You can't view the combo settings.", "ليس لديك صلاحية لعرض إعدادات الكومبو."), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 

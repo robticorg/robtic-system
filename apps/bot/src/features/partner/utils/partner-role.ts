@@ -2,6 +2,7 @@ import type { Guild, Role } from "discord.js";
 import { PartnerServerRepository, ServerConfigRepository } from "@database/repositories";
 import { Logger } from "@logger";
 
+import { L } from "@utils";
 export type PartnerRoleResult =
     | "granted"
     | "removed"
@@ -14,9 +15,9 @@ export type PartnerRoleResult =
 
 /** Why the bot can't hand `role` out, or `null` when it can. */
 export function partnerRoleProblem(role: Role): string | null {
-    if (role.id === role.guild.id) return "`@everyone` can't be the partner role.";
-    if (role.managed) return `${role} is managed by an integration — pick a normal role.`;
-    if (!role.editable) return `I can't give ${role} — it must be below my highest role, and I need **Manage Roles**.`;
+    if (role.id === role.guild.id) return L("`@everyone` can't be the partner role.", "`@everyone` ما تكون رتبة الشراكة.");
+    if (role.managed) return L(`${role} is managed by an integration: pick a normal role.`, `${role} تابعة لتطبيق: اختر رتبة عادية.`);
+    if (!role.editable) return L(`I can't give ${role}: it must be below my highest role, and I need **Manage Roles**.`, `ما أقدر أعطي ${role}: لازم تكون تحت أعلى رتبة عندي، وأحتاج **Manage Roles**.`);
     return null;
 }
 

@@ -7,25 +7,43 @@ import {
     type GuildMember,
 } from "discord.js";
 import type { BotClient } from "@core/bot-client";
-import { COLORS, MEMBER_PUNISHMENTS, PUNISHMENT_POINTS } from "@constants";
+import { COLORS, MEMBER_PUNISHMENTS } from "@constants";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
-import { errorText } from "@utils";
+import { L, currentLang, errorText } from "@utils";
 import { getUserLang, t } from "@bot/utils/lang";
-import { needsProof, buildProofModal, sendShortcutProofDM, awardPunishPoints } from "@bot/utils/moderation/punish-flow";
+import { canActOn } from "@bot/utils/moderation/hierarchy";
+import { needsProof, buildProofModal, openProofRequest, sendShortcutProofDM, awardPunishPoints } from "@bot/utils/moderation/punish-flow";
+
+/** Swaps the member's punishment-step role for the one their level now reaches. */
+async function applyLevelRole(member: GuildMember, roleId: string | null): Promise<void> {
+    const ladder = new Set<string>(Object.values(MEMBER_PUNISHMENTS).map(p => p.id));
+    for (const [, role] of member.roles.cache.filter(r => ladder.has(r.id))) await member.roles.remove(role).catch(() => null);
+    if (roleId) await member.roles.add(roleId).catch(() => null);
+}
+
+/**
+ * Why a moderator may not punish this member, or null when they may: not themselves, not a bot, not someone at or
+ * above their own highest role. Shared by warn, mute and jail.
+ */
+export function punishBlocker(moderator: GuildMember | null, target: GuildMember | null, targetIsBot: boolean): string | null {
+    if (targetIsBot) return L("Bots can't be punished.", "ما ينعاقب بوت.");
+    if (!moderator || !target) return null;
+    if (moderator.id === target.id) return L("You can't punish yourself.", "ما تقدر تعاقب نفسك.");
+    if (!canActOn(moderator, target)) return L("You can't punish someone whose highest role is at or above your own.", "ما تقدر تعاقب شخص رتبته أعلى من رتبتك أو تساويها.");
+    return null;
+}
 
 export async function executeWarn(
     client: BotClient,
     guildId: string,
     targetId: string,
-    targetUsername: string,
+    _targetUsername: string,
     reason: string,
     reasonAr: string,
     moderatorId: string,
     member: GuildMember | null | undefined,
 ) {
-    const caseId = await PunishmentRepository.getNextCaseId(guildId);
-    await PunishmentRepository.create({
-        caseId,
+    const { caseId } = await PunishmentRepository.createCase({
         guildId,
         userId: targetId,
         moderatorId,
@@ -34,19 +52,11 @@ export async function executeWarn(
         active: true,
     });
 
-    const newLevel = await PunishmentRepository.addPunishmentLevel(targetId, targetUsername, PUNISHMENT_POINTS.warn);
+    const newLevel = await PunishmentRepository.getPunishmentLevel(guildId, targetId);
     const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
 
     if (member) {
-        const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
-        const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
-        for (const [, role] of rolesToRemove) {
-            await member.roles.remove(role).catch(() => null);
-        }
-        if (levelInfo.roleId) {
-            await member.roles.add(levelInfo.roleId).catch(() => null);
-        }
-
+        await applyLevelRole(member, levelInfo.roleId);
         if (newLevel >= MEMBER_PUNISHMENTS.tempMute.level && newLevel < MEMBER_PUNISHMENTS.tempBan.level) {
             await member.timeout(24 * 60 * 60 * 1000, `Auto-mute: punishment level ${newLevel}`).catch(() => null);
         }
@@ -58,26 +68,24 @@ export async function executeWarn(
     const user = await client.users.fetch(targetId).catch(() => null);
     if (user) {
         const lang = await getUserLang(member);
-        const localReason = lang === "ar" ? reasonAr : reason;
-
         const dmEmbed = new EmbedBuilder()
             .setTitle(t("moderation.warn_title", lang))
             .setColor(COLORS.warning)
-            .setDescription(t("moderation.warn_desc", lang, { reason: localReason }))
+            .setDescription(t("moderation.warn_desc", lang, { reason: lang === "ar" ? reasonAr : reason }))
             .setTimestamp();
-
         await user.send({ embeds: [dmEmbed] }).catch(() => null);
     }
 
+    const shownReason = currentLang() === "ar" ? reasonAr : reason;
     const embed = new EmbedBuilder()
-        .setTitle("⚠️ Warning Issued")
+        .setTitle(L("⚠️ Warning given", "⚠️ تم التحذير"))
         .setColor(COLORS.warning)
         .addFields(
-            { name: "User", value: `<@${targetId}>`, inline: true },
-            { name: "Moderator", value: `<@${moderatorId}>`, inline: true },
-            { name: "Case", value: `\`${caseId}\``, inline: true },
-            { name: "Reason", value: reason },
-            { name: "Punishment Level", value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
+            { name: L("Member", "العضو"), value: `<@${targetId}>`, inline: true },
+            { name: L("Moderator", "المشرف"), value: `<@${moderatorId}>`, inline: true },
+            { name: L("Case", "الحالة"), value: `\`${caseId}\``, inline: true },
+            { name: L("Reason", "السبب"), value: shownReason },
+            { name: L("Punishment level", "مستوى العقوبة"), value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
         )
         .setTimestamp();
 
@@ -96,63 +104,57 @@ export default {
         .addSubcommand(sub =>
             sub.setName("add")
                 .setDescription("Issue a warning to a user")
-                .addUserOption(opt =>
-                    opt.setName("target").setDescription("The user to warn").setRequired(true)
-                )
-                .addStringOption(opt =>
-                    opt.setName("reason").setDescription("Select a reason").setRequired(true).setAutocomplete(true)
-                )
+                .addUserOption(opt => opt.setName("target").setDescription("The user to warn").setRequired(true))
+                .addStringOption(opt => opt.setName("reason").setDescription("Select a reason").setRequired(true).setAutocomplete(true))
         )
         .addSubcommand(sub =>
             sub.setName("appeal")
                 .setDescription("Appeal (remove) a specific warning from a user")
-                .addUserOption(opt =>
-                    opt.setName("target").setDescription("The user to appeal a warning for").setRequired(true)
-                )
-                .addStringOption(opt =>
-                    opt.setName("case").setDescription("The case ID to appeal").setRequired(true).setAutocomplete(true)
-                )
-                .addStringOption(opt =>
-                    opt.setName("reason").setDescription("Reason for the appeal").setRequired(true)
-                )
+                .addUserOption(opt => opt.setName("target").setDescription("The user to appeal a warning for").setRequired(true))
+                .addStringOption(opt => opt.setName("case").setDescription("The case ID to appeal").setRequired(true).setAutocomplete(true))
+                .addStringOption(opt => opt.setName("reason").setDescription("Reason for the appeal").setRequired(true).setMaxLength(400))
         )
         .addSubcommand(sub =>
             sub.setName("list")
                 .setDescription("List all warnings for a user")
-                .addUserOption(opt =>
-                    opt.setName("target").setDescription("The user to check").setRequired(true)
-                )
+                .addUserOption(opt => opt.setName("target").setDescription("The user to check").setRequired(true))
         ),
 
     requiredPermission: 20,
 
     async run(interaction: ChatInputCommandInteraction, client: BotClient) {
+        const guild = interaction.guild;
+        const refuse = (content: string) => interaction.reply({ content: errorText(content), flags: MessageFlags.Ephemeral });
+        if (!guild) return void await refuse(L("This command can only be used in a server.", "هذا الأمر يعمل داخل السيرفر فقط."));
+
         const sub = interaction.options.getSubcommand();
         const target = interaction.options.getUser("target", true);
+        const guildId = guild.id;
+        const member = guild.members.cache.get(target.id) ?? await guild.members.fetch(target.id).catch(() => null);
 
         if (sub === "add") {
             const reasonKey = interaction.options.getString("reason", true);
             const modMember = interaction.member as GuildMember;
 
+            const blocked = punishBlocker(modMember, member, target.bot);
+            if (blocked) return void await refuse(blocked);
+
             if (await needsProof(modMember)) {
-                if ((interaction as any).isPrefix) {
-                    const sent = await sendShortcutProofDM(client, interaction.user.id, "warn", interaction.guildId!, target.id, reasonKey);
+                if ((interaction as { isPrefix?: boolean }).isPrefix) {
+                    const sent = await sendShortcutProofDM(client, interaction.user.id, "warn", guildId, target.id, reasonKey);
                     await interaction.reply({
                         content: sent
-                            ? "📩 Check your DMs — submit proof there to finalize this warning."
-                            : "❌ Couldn't DM you to collect proof (check your privacy settings) — ask a Manager+ to run this instead.",
+                            ? L("📩 Check your DMs: send the proof there to finish this warning.", "📩 شيك على الخاص: أرسل الدليل هناك عشان يكتمل التحذير.")
+                            : errorText(L("I couldn't DM you for the proof (check your privacy settings). Ask a Manager+ to run it instead.", "ما قدرت أراسلك بالخاص للدليل (شيك إعدادات الخصوصية). اطلب من Manager+ ينفذه.")),
                     });
                     return;
                 }
-
-                await interaction.showModal(buildProofModal("warn", interaction.guildId!, target.id, reasonKey, interaction.user.id));
+                await interaction.showModal(buildProofModal(await openProofRequest({ guildId, type: "warn", targetId: target.id, reasonKey, moderatorId: interaction.user.id }), "warn"));
                 return;
             }
 
             await interaction.deferReply();
-            const guildId = interaction.guildId!;
-            const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
-            const reasonDoc = await ReasonRepository.findByKey(reasonKey, interaction.guildId!);
+            const reasonDoc = await ReasonRepository.findByKey(reasonKey, guildId);
             const reason = reasonDoc?.label ?? reasonKey;
             const reasonAr = reasonDoc?.labelAr ?? reason;
 
@@ -161,93 +163,79 @@ export default {
             return;
         }
 
-        await interaction.deferReply();
-        const guildId = interaction.guildId!;
-        const member = interaction.guild?.members.cache.get(target.id) ?? await interaction.guild?.members.fetch(target.id).catch(() => null);
-
         if (sub === "appeal") {
-            const caseId = interaction.options.getString("case", true);
+            const caseId = interaction.options.getString("case", true).trim().toUpperCase();
             const reason = interaction.options.getString("reason", true);
 
-            const punishment = await PunishmentRepository.findByCaseId(caseId);
+            const punishment = await PunishmentRepository.findByCaseId(caseId, guildId);
             if (!punishment || punishment.userId !== target.id || punishment.type !== "warn") {
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ content: errorText("Warning case not found for this user."), flags: MessageFlags.Ephemeral });
-                return;
+                return void await refuse(L("That warning case wasn't found for this member.", "ما لقيت حالة التحذير هذي لهذا العضو."));
             }
+            if (punishment.appealed) return void await refuse(L("This warning was already appealed.", "هذا التحذير تم استئنافه من قبل."));
 
-            if (punishment.appealed) {
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ content: errorText("This warning has already been appealed."), flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            await PunishmentRepository.appeal(caseId, reason);
-            const newLevel = await PunishmentRepository.removePunishmentLevel(target.id, target.username, PUNISHMENT_POINTS.warn);
+            await interaction.deferReply();
+            await PunishmentRepository.appeal(caseId, guildId, reason);
+            const newLevel = await PunishmentRepository.getPunishmentLevel(guildId, target.id);
             const levelInfo = PunishmentRepository.getLevelInfo(newLevel);
+            if (member) await applyLevelRole(member, levelInfo.roleId);
 
-            if (member) {
-                const allPunishmentRoleIds = Object.values(MEMBER_PUNISHMENTS).map(p => p.id);
-                const rolesToRemove = member.roles.cache.filter(r => allPunishmentRoleIds.includes(r.id));
-                for (const [, role] of rolesToRemove) {
-                    await member.roles.remove(role).catch(() => null);
-                }
-                if (levelInfo.roleId) {
-                    await member.roles.add(levelInfo.roleId).catch(() => null);
-                }
-            }
-
-            const embed = new EmbedBuilder()
-                .setTitle("✅ Warning Appealed")
-                .setColor(COLORS.success)
-                .addFields(
-                    { name: "User", value: `<@${target.id}>`, inline: true },
-                    { name: "Case", value: `\`${caseId}\``, inline: true },
-                    { name: "Appeal Reason", value: reason },
-                    { name: "New Punishment Level", value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
-                )
-                .setTimestamp();
-
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle(L("✅ Warning appealed", "✅ تم استئناف التحذير"))
+                        .setColor(COLORS.success)
+                        .addFields(
+                            { name: L("Member", "العضو"), value: `<@${target.id}>`, inline: true },
+                            { name: L("Case", "الحالة"), value: `\`${caseId}\``, inline: true },
+                            { name: L("Appeal reason", "سبب الاستئناف"), value: reason },
+                            { name: L("New punishment level", "مستوى العقوبة الجديد"), value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
+                        )
+                        .setTimestamp(),
+                ],
+            });
+            return;
         }
 
         if (sub === "list") {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
             const warns = await PunishmentRepository.findAllByUserAndType(target.id, guildId, "warn");
-            const level = await PunishmentRepository.getPunishmentLevel(target.id);
+            const level = await PunishmentRepository.getPunishmentLevel(guildId, target.id);
 
             if (!warns.length) {
-                await interaction.deleteReply().catch(() => {});
-                await interaction.followUp({ embeds: [new EmbedBuilder().setDescription(`<@${target.id}> has no warnings.`).setColor(COLORS.info)], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: L(`<@${target.id}> has no warnings.`, `<@${target.id}> ما عنده تحذيرات.`), allowedMentions: { parse: [] } });
                 return;
             }
 
             const lines = warns.slice(0, 15).map((w, i) => {
-                const status = w.appealed ? "~~Appealed~~" : w.active ? "🔴 Active" : "⚪ Inactive";
+                const status = w.appealed ? L("~~Appealed~~", "~~مستأنف~~") : w.active ? L("🔴 Active", "🔴 فعال") : L("⚪ Inactive", "⚪ منتهي");
                 return `**${i + 1}.** \`${w.caseId}\` — ${status}\n> ${w.reason} — <t:${Math.floor(w.createdAt.getTime() / 1000)}:R>`;
             });
 
-            const embed = new EmbedBuilder()
-                .setTitle(`⚠️ Warnings for ${target.username}`)
-                .setDescription(lines.join("\n\n"))
-                .setColor(COLORS.warning)
-                .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${warns.length} warning(s)` })
-                .setTimestamp();
-
-            await interaction.deleteReply().catch(() => {});
-            await interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
+            await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle(L(`⚠️ Warnings: ${target.username}`, `⚠️ تحذيرات: ${target.username}`))
+                        .setDescription(lines.join("\n\n"))
+                        .setColor(COLORS.warning)
+                        .setFooter({ text: L(`Punishment level ${level}/100 · ${warns.length} warning(s)`, `مستوى العقوبة ${level}/100 · ${warns.length} تحذير`) })
+                        .setTimestamp(),
+                ],
+            });
         }
     },
 
     async autocomplete(interaction: AutocompleteInteraction, _client: BotClient) {
         const focused = interaction.options.getFocused(true);
         const sub = interaction.options.getSubcommand();
+        const query = focused.value.toLowerCase();
 
         if (focused.name === "reason" && sub === "add") {
             const reasons = await ReasonRepository.findByType("warn", interaction.guildId!);
+            const label = (r: { label: string; labelAr?: string }) => (currentLang() === "ar" && r.labelAr ? r.labelAr : r.label);
             const filtered = reasons
-                .filter(r => r.key.includes(focused.value.toLowerCase()) || r.label.toLowerCase().includes(focused.value.toLowerCase()))
+                .filter(r => r.key.includes(query) || r.label.toLowerCase().includes(query) || (r.labelAr ?? "").includes(focused.value))
                 .slice(0, 25);
-            await interaction.respond(filtered.map(r => ({ name: r.label, value: r.key })));
+            await interaction.respond(filtered.map(r => ({ name: label(r).slice(0, 100), value: r.key })));
         }
 
         if (focused.name === "case") {
@@ -255,17 +243,12 @@ export default {
             if (!targetId) return interaction.respond([]);
 
             const warns = await PunishmentRepository.findAllByUserAndType(targetId, interaction.guildId!, "warn");
-            const active = warns.filter(w => w.active && !w.appealed);
-            const filtered = active
-                .filter(w => w.caseId.toLowerCase().includes(focused.value.toLowerCase()) || w.reason.toLowerCase().includes(focused.value.toLowerCase()))
+            const filtered = warns
+                .filter(w => w.active && !w.appealed)
+                .filter(w => w.caseId.toLowerCase().includes(query) || w.reason.toLowerCase().includes(query))
                 .slice(0, 25);
 
-            await interaction.respond(
-                filtered.map(w => ({
-                    name: `${w.caseId} — ${w.reason.slice(0, 80)}`,
-                    value: w.caseId,
-                }))
-            );
+            await interaction.respond(filtered.map(w => ({ name: `${w.caseId} — ${w.reason}`.slice(0, 100), value: w.caseId })));
         }
     },
 };

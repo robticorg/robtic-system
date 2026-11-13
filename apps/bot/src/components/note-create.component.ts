@@ -6,6 +6,7 @@ import {
 import type { ComponentHandler } from "@typings/command";
 import { NoteRepository } from "@database/repositories/NoteRepository";
 
+import { L } from "@utils";
 const noteCreate: ComponentHandler<ModalSubmitInteraction> = {
     customId: /^note_create_\d+$/,
 
@@ -18,7 +19,7 @@ const noteCreate: ComponentHandler<ModalSubmitInteraction> = {
         await NoteRepository.create(userId, content, interaction.user.id);
 
         await interaction.editReply({
-            content: `✅ Note added for <@${userId}>.`,
+            content: L(`✅ Note added for <@${userId}>.`, `✅ تمت إضافة ملاحظة على <@${userId}>.`),
         });
     },
 };

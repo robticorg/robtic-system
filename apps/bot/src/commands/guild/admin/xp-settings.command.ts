@@ -10,6 +10,7 @@ import type { BotClient } from "@core/bot-client";
 import { XPSettingsRepository } from "@database/repositories";
 import { COLORS } from "@constants";
 
+import { L } from "@utils";
 export default {
     scope: "guild",
     category: "Configuration",
@@ -87,8 +88,8 @@ export default {
 
             await interaction.editReply({
                 content: type === "excluded"
-                    ? `Added <#${channel.id}> to **excluded** channels — XP and the message count will no longer be read there.`
-                    : `Added <#${channel.id}> as a **${type}** channel.`,
+                    ? L(`Added <#${channel.id}> to **excluded** channels: no XP and no message count there.`, `تمت إضافة <#${channel.id}> للرومات **المستثناة**: لا خبرة ولا عد رسائل فيها.`)
+                    : L(`Added <#${channel.id}> as a **${type}** channel.`, `تمت إضافة <#${channel.id}> كروم **${type}**.`),
             });
         }
 
@@ -101,7 +102,7 @@ export default {
             else await XPSettingsRepository.removeStaffChannel(guildId, channelId);
 
             await interaction.editReply({
-                content: `Removed <#${channelId}> from **${type}** channels.`,
+                content: L(`Removed <#${channelId}> from **${type}** channels.`, `تم حذف <#${channelId}> من رومات **${type}**.`),
             });
         }
 
@@ -110,7 +111,7 @@ export default {
             await XPSettingsRepository.setDecayEnabled(guildId, enabled);
 
             await interaction.editReply({
-                content: `XP decay is now **${enabled ? "enabled" : "disabled"}**.`,
+                content: L(`XP decay is now **${enabled ? "enabled" : "disabled"}**.`, `نقص الخبرة بعدم النشاط صار **${enabled ? "مفعّل" : "مقفل"}**.`),
             });
         }
 
@@ -120,25 +121,25 @@ export default {
 
             await interaction.editReply({
                 content: channel
-                    ? `Level-ups will be announced in <#${channel.id}>.`
-                    : "Level-ups will no longer be announced.",
+                    ? L(`Level-ups will be announced in <#${channel.id}>.`, `ترقيات المستوى بتنعلن في <#${channel.id}>.`)
+                    : L("Level-ups will no longer be announced.", "ترقيات المستوى ما عاد تنعلن."),
             });
         }
 
         else if (sub === "view") {
             const settings = await XPSettingsRepository.getOrCreate(guildId);
-            const excludedChs = settings.excludedChannels.map(id => `<#${id}>`).join(", ") || "None";
-            const supportChs = settings.supportChannels.map(id => `<#${id}>`).join(", ") || "None";
-            const staffChs = settings.staffChannels.map(id => `<#${id}>`).join(", ") || "None";
+            const excludedChs = settings.excludedChannels.map(id => `<#${id}>`).join(", ").slice(0, 1000) || L("None", "لا يوجد");
+            const supportChs = settings.supportChannels.map(id => `<#${id}>`).join(", ").slice(0, 1000) || L("None", "لا يوجد");
+            const staffChs = settings.staffChannels.map(id => `<#${id}>`).join(", ").slice(0, 1000) || L("None", "لا يوجد");
 
             const embed = new EmbedBuilder()
-                .setTitle("XP Settings")
+                .setTitle(L("XP settings", "إعدادات الخبرة"))
                 .addFields(
-                    { name: "Chat XP", value: "Every channel, except Support and Excluded channels below" },
-                    { name: "Excluded Channels", value: excludedChs },
-                    { name: "Support Channels", value: supportChs },
-                    { name: "Staff Channels", value: staffChs },
-                    { name: "Decay Enabled", value: settings.decayEnabled ? "Yes" : "No", inline: true },
+                    { name: L("Chat XP", "خبرة الشات"), value: L("Every channel, except Support and Excluded channels below", "كل الرومات، ما عدا رومات الدعم والمستثناة تحت") },
+                    { name: L("Excluded channels", "الرومات المستثناة"), value: excludedChs },
+                    { name: L("Support channels", "رومات الدعم"), value: supportChs },
+                    { name: L("Staff channels", "رومات الإدارة"), value: staffChs },
+                    { name: L("Inactivity decay", "نقص الخبرة بعدم النشاط"), value: settings.decayEnabled ? L("Yes", "نعم") : L("No", "لا"), inline: true },
                 )
                 .setColor(COLORS.info)
                 .setTimestamp();

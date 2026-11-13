@@ -10,6 +10,7 @@ import {
 import { PARTNER_CONFIG } from "@constants";
 import type { IPartnerServer } from "@database/models";
 
+import { L } from "@utils";
 /**
  * Every Components V2 layout the partner feature sends. Sent with `MessageFlags.IsComponentsV2`,
  * so there is no `content` or `embeds`.
@@ -40,7 +41,7 @@ export function buildPartnerPost(partnerId: string, serverName: string, banner: 
             .setCustomId(`partner:info:${partnerId}`)
             .setStyle(ButtonStyle.Secondary)
             .setEmoji(PARTNER_CONFIG.emojis.info)
-            .setLabel("| Information"));
+            .setLabel(L("| Information", "| معلومات")));
 
     const join = new SectionBuilder()
         .addTextDisplayComponents(text("-# Want your server here too?"))
@@ -48,7 +49,7 @@ export function buildPartnerPost(partnerId: string, serverName: string, banner: 
             .setStyle(ButtonStyle.Link)
             .setURL(PARTNER_CONFIG.beAPartnerUrl)
             .setEmoji(PARTNER_CONFIG.emojis.robtic)
-            .setLabel("| Be a Partner"));
+            .setLabel(L("| Be a Partner", "| كن شريك")));
 
     return { components: [gallery, info, join], files: [new AttachmentBuilder(banner, { name: BANNER_NAME })] };
 }
@@ -92,7 +93,7 @@ export function buildPartnerList(guildName: string, partners: IPartnerServer[]) 
         components: [
             text(header),
             new SeparatorBuilder(),
-            text(lines.length ? lines.join("\n") : "No partners yet. Add one with `/partner add`."),
+            text(lines.length ? lines.join("\n") : L("No partners yet. Add one with `/partner add`.", "ما في شركاء لين الحين. أضف واحد بـ `/partner add`.")),
         ],
     };
 }

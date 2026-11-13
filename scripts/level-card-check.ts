@@ -1,4 +1,5 @@
 /** Verifies the level-up card renders (size, format, long and Arabic names) — no database, no gateway. Pass a folder to keep the images. */
+import "./_english";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadImage } from "@napi-rs/canvas";

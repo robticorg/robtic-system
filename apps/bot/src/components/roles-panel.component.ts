@@ -1,6 +1,7 @@
-import { MessageFlags, type ButtonInteraction, type ModalSubmitInteraction } from "discord.js";
+import { MessageFlags, type ButtonInteraction, type GuildMember, type ModalSubmitInteraction } from "discord.js";
 import type { ComponentHandler } from "@typings/command";
 import { verifyInvoker } from "@bot/utils/interaction";
+import { getUserLang, t } from "@bot/utils/lang";
 import { parseOptionalCount, type RoleFilter, type RoleKind, type RoleSort } from "@bot/utils/roles-view/roles-view";
 import {
     ROLES_BUTTON_ID,
@@ -14,13 +15,12 @@ import {
     type RolesSession,
 } from "@bot/utils/roles-view/roles-panel";
 
-const EXPIRED = "This roles panel has expired — run `roles` again.";
-
 /** The session behind a panel id, or a reply saying it expired / isn't theirs. */
 async function sessionFor(interaction: ButtonInteraction | ModalSubmitInteraction, sessionId: string): Promise<RolesSession | null> {
     const session = getRolesSession(sessionId);
     if (!session) {
-        await interaction.reply({ content: EXPIRED, flags: MessageFlags.Ephemeral }).catch(() => null);
+        const lang = await getUserLang(interaction.member as GuildMember | null);
+        await interaction.reply({ content: t("roles.expired", lang), flags: MessageFlags.Ephemeral }).catch(() => null);
         return null;
     }
     return (await verifyInvoker(interaction, session.invokerId)) ? session : null;
@@ -80,7 +80,7 @@ const rolesFilter: ComponentHandler<ModalSubmitInteraction> = {
         const minMembers = parseOptionalCount(interaction.fields.getTextInputValue(ROLES_FIELDS.minMembers));
 
         if (orderMin === null || orderMax === null || minMembers === null) {
-            await interaction.reply({ content: "Order and members must be whole numbers (or left empty).", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: t("roles.bad_number", session.lang), flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -102,7 +102,7 @@ const rolesFilter: ComponentHandler<ModalSubmitInteraction> = {
 /** A modal opened from the panel's button edits that same panel message. */
 async function updatePanel(interaction: ModalSubmitInteraction, session: RolesSession): Promise<void> {
     if (interaction.isFromMessage()) await interaction.update(renderRolesPanel(session));
-    else await interaction.reply({ ...renderRolesPanel(session), flags: MessageFlags.Ephemeral });
+    else await interaction.reply({ ...renderRolesPanel(session), flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2 });
 }
 
 export default [rolesButtons, rolesSearch, rolesFilter];

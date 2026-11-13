@@ -14,6 +14,8 @@ import {
     type Message,
 } from "discord.js";
 import { Logger } from "@logger";
+import { L } from "@utils";
+import { inGuildLang } from "@bot/utils/lang";
 import { CompetitionBot, CompetitionEntry, CompetitionVote, lowestFreeNumber, voteCount, voteCounts, type ICompetitionBot, type ICompetitionEntry } from "./models";
 import { COUNT_ID, UNVOTE_ID, VOTE_ID, buildEntryPost, lineAttachment, postUrl } from "./entry-post";
 import { LEADERBOARD_REFRESH_MS, buildLeaderboard } from "./leaderboard";
@@ -52,8 +54,9 @@ export class CompetitionBotInstance {
 
         this.client.on("clientReady", () => this.onReady().catch(e => this.warn("ready", e)));
         this.client.on("guildCreate", guild => this.enforceGuild(guild));
-        this.client.on("messageCreate", message => this.onMessage(message).catch(e => this.warn("message", e)));
-        this.client.on("interactionCreate", i => this.onInteraction(i).catch(e => this.warn("interaction", e)));
+        // Its own client, outside the main bot's event loader: it answers in its server's language.
+        this.client.on("messageCreate", message => void inGuildLang(this.guildId, () => this.onMessage(message)).catch(e => this.warn("message", e)));
+        this.client.on("interactionCreate", i => void inGuildLang(this.guildId, () => this.onInteraction(i)).catch(e => this.warn("interaction", e)));
         this.client.on("error", e => this.warn("client", e));
         this.client.on("shardError", e => this.warn("shard", e));
     }
@@ -92,7 +95,7 @@ export class CompetitionBotInstance {
         }
 
         if (this.ticker) clearInterval(this.ticker);
-        this.ticker = setInterval(() => this.tick().catch(e => this.warn("leaderboard", e)), 60_000);
+        this.ticker = setInterval(() => void inGuildLang(this.guildId, () => this.tick()).catch(e => this.warn("leaderboard", e)), 60_000);
         await this.tick();
     }
 
@@ -198,19 +201,19 @@ export class CompetitionBotInstance {
             case "reset": return this.reset(message, reply);
             case "leaderboard": return this.postLeaderboard(message);
             case "help": return void await reply([
-                "**Competition commands**",
-                "`!set-room #channel` — where participant posts are sent",
-                "`!register <userID> [image]` — add a participant (attach the image)",
-                "`!start` — open voting (adds the buttons)",
-                "`!end` — end the competition (removes every button)",
-                "`!reset` — wipe the whole competition: every post, vote and the leaderboard (asks to confirm)",
-                "`!hide` — hide / show the vote-count button",
-                "`!check #N` — invites and votes of participant N",
-                "`!remove #N` — strike a participant out (post and number stay)",
-                "`!delete #N` — delete a participant completely: post, votes and number (the next `!register` reuses it)",
-                "`!leaderboard` — post the top 10 (refreshes every 5 minutes)",
-                "`!dm` · `!dm #N` · `!dm >N` · `!dm <N` · `!dm =N` — DM participants",
-                "Variables: `[user]` `[post]` `[vote]` `[number]` `[number;letter]` `[Label;https://link]`",
+                L("**Competition commands**", "**أوامر المسابقة**"),
+                L("`!set-room #channel` — where participant posts are sent", "`!set-room #روم` — وين تنرسل منشورات المتسابقين"),
+                L("`!register <userID> [image]` — add a participant (attach the image)", "`!register <آيدي> [صورة]` — إضافة متسابق (أرفق الصورة)"),
+                L("`!start` — open voting (adds the buttons)", "`!start` — فتح التصويت (يضيف الأزرار)"),
+                L("`!end` — end the competition (removes every button)", "`!end` — إنهاء المسابقة (يشيل كل الأزرار)"),
+                L("`!reset` — wipe the whole competition: every post, vote and the leaderboard (asks to confirm)", "`!reset` — مسح المسابقة كاملة: كل المنشورات والأصوات والتوب (يطلب تأكيد)"),
+                L("`!hide` — hide / show the vote-count button", "`!hide` — إخفاء / إظهار زر عدد الأصوات"),
+                L("`!check #N` — invites and votes of participant N", "`!check #N` — دعوات وأصوات المتسابق N"),
+                L("`!remove #N` — strike a participant out (post and number stay)", "`!remove #N` — شطب متسابق (المنشور والرقم يبقون)"),
+                L("`!delete #N` — delete a participant completely: post, votes and number (the next `!register` reuses it)", "`!delete #N` — حذف متسابق كامل: المنشور والأصوات والرقم (أول `!register` بعده ياخذ الرقم)"),
+                L("`!leaderboard` — post the top 10 (refreshes every 5 minutes)", "`!leaderboard` — نشر أفضل 10 (يتحدث كل 5 دقائق)"),
+                L("`!dm` · `!dm #N` · `!dm >N` · `!dm <N` · `!dm =N` — DM participants", "`!dm` · `!dm #N` · `!dm >N` · `!dm <N` · `!dm =N` — مراسلة المتسابقين بالخاص"),
+                L("Variables: `[user]` `[post]` `[vote]` `[number]` `[number;letter]` `[Label;https://link]`", "المتغيرات: `[user]` `[post]` `[vote]` `[number]` `[number;letter]` `[Label;https://link]`"),
             ].join("\n"));
         }
     }
@@ -219,32 +222,32 @@ export class CompetitionBotInstance {
         const id = arg.trim().replace(/[<#>]/g, "") || message.channelId;
         const channel = await this.client.channels.fetch(id).catch(() => null);
         if (!channel || !("guildId" in channel) || channel.guildId !== this.guildId || !channel.isSendable()) {
-            return void await reply("Usage: `!set-room #channel` — a text channel of this server I can send in.");
+            return void await reply(L("Usage: `!set-room #channel` — a text channel of this server I can send in.", "الاستخدام: `!set-room #روم` — روم كتابي في السيرفر أقدر أرسل فيه."));
         }
         await CompetitionBot.updateOne({ guildId: this.guildId }, { $set: { roomChannelId: channel.id } });
-        await reply(`Participant posts will be sent in <#${channel.id}>.`);
+        await reply(L(`Participant posts will be sent in <#${channel.id}>.`, `منشورات المتسابقين بتنرسل في <#${channel.id}>.`));
     }
 
     private async register(message: Message<true>, args: string[], reply: (c: string) => Promise<unknown>): Promise<void> {
         const userId = args[0]?.replace(/[<@!>]/g, "");
         const image = message.attachments.find(a => a.contentType?.startsWith("image/"));
         if (!userId || !/^\d{17,20}$/.test(userId) || !image) {
-            return void await reply("Usage: `!register <userID>` with the image attached.");
+            return void await reply(L("Usage: `!register <userID>` with the image attached.", "الاستخدام: `!register <آيدي>` مع إرفاق الصورة."));
         }
-        if (image.size > MAX_IMAGE_BYTES) return void await reply("That image is too big (10 MB max).");
+        if (image.size > MAX_IMAGE_BYTES) return void await reply(L("That image is too big (10 MB max).", "الصورة كبيرة (الحد 10 ميقا)."));
 
         const roomId = (await this.state())?.roomChannelId;
         const room = roomId ? await this.client.channels.fetch(roomId).catch(() => null) : message.channel;
-        if (!room?.isSendable()) return void await reply("I can't send in the room — set it again with `!set-room #channel`.");
+        if (!room?.isSendable()) return void await reply(L("I can't send in the room. Set it again with `!set-room #channel`.", "ما أقدر أرسل في الروم. حدده من جديد بـ `!set-room #روم`."));
 
         const member = await message.guild.members.fetch(userId).catch(() => null);
-        if (!member) return void await reply("That user isn't in this server.");
+        if (!member) return void await reply(L("That user isn't in this server.", "هذا الشخص غير موجود في السيرفر."));
         if (await CompetitionEntry.exists({ guildId: this.guildId, userId, removed: false })) {
-            return void await reply(`<@${userId}> is already registered.`);
+            return void await reply(L(`<@${userId}> is already registered.`, `<@${userId}> مسجل من قبل.`));
         }
 
         const data = await fetch(image.url).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null);
-        if (!data) return void await reply("I couldn't download the image — try again.");
+        if (!data) return void await reply(L("I couldn't download the image. Try again.", "ما قدرت أحمل الصورة. حاول مرة ثانية."));
 
         const state = await this.state();
         if (!state) return;
@@ -257,7 +260,7 @@ export class CompetitionBotInstance {
             entry = await CompetitionEntry.create({ guildId: this.guildId, number, userId, channelId: room.id, imageName: `entry-${number}.${ext}` })
                 .catch(err => { if ((err as { code?: number }).code === 11000) return null; throw err; });
         }
-        if (!entry) return void await reply("Couldn't reserve a number — try again.");
+        if (!entry) return void await reply(L("Couldn't reserve a number. Try again.", "ما قدرت أحجز رقم. حاول مرة ثانية."));
         const { number, imageName } = entry;
 
         const line = lineAttachment();
@@ -269,14 +272,14 @@ export class CompetitionBotInstance {
         }).catch(e => { this.warn("register", e); return null; });
         if (!post) {
             await entry.deleteOne();
-            return void await reply("I couldn't post it — I need Send Messages, Attach Files and Embed Links in the room.");
+            return void await reply(L("I couldn't post it: I need Send Messages, Attach Files and Embed Links in the room.", "ما قدرت أنشره: أحتاج Send Messages و Attach Files و Embed Links في الروم."));
         }
 
         entry.channelId = post.channelId;
         entry.messageId = post.id;
         await entry.save();
         if (post.channelId === message.channelId) await message.delete().catch(() => null);
-        else await reply(`✅ #${number} <@${userId}> posted in <#${post.channelId}>.`);
+        else await reply(L(`✅ #${number} <@${userId}> posted in <#${post.channelId}>.`, `✅ #${number} <@${userId}> انرسل في <#${post.channelId}>.`));
     }
 
     private async setVoting(open: boolean, reply: (c: string) => Promise<unknown>): Promise<void> {
@@ -286,10 +289,10 @@ export class CompetitionBotInstance {
             { new: true },
         );
         if (!state) return;
-        await reply(open ? "Voting is open — adding the buttons…" : "Ending the competition — removing every button…");
+        await reply(open ? L("Voting is open: adding the buttons…", "التصويت مفتوح: جاري إضافة الأزرار…") : L("Ending the competition: removing every button…", "إنهاء المسابقة: جاري إزالة كل الأزرار…"));
         const { ok, failed } = await this.editAllPosts(state);
         await this.refreshLeaderboard().catch(e => this.warn("leaderboard", e));
-        await reply(`${open ? "✅ Voting is open." : "🏁 The competition has ended."} ${ok} post(s) updated${failed ? `, ${failed} couldn't be (deleted?)` : ""}.`);
+        await reply(L(`${open ? "✅ Voting is open." : "🏁 The competition has ended."} ${ok} post(s) updated${failed ? `, ${failed} couldn't be (deleted?)` : ""}.`, `${open ? "✅ التصويت مفتوح." : "🏁 انتهت المسابقة."} تم تحديث ${ok} منشور${failed ? `، و ${failed} ما قدرت (محذوفة؟)` : ""}.`));
     }
 
     private async toggleHide(reply: (c: string) => Promise<unknown>): Promise<void> {
@@ -298,7 +301,7 @@ export class CompetitionBotInstance {
         const state = await CompetitionBot.findOneAndUpdate({ guildId: this.guildId }, { $set: { hideCounts: !current.hideCounts } }, { new: true });
         if (!state) return;
         const { ok } = await this.editAllPosts(state);
-        await reply(`${state.hideCounts ? "Vote counts are hidden" : "Vote counts are shown again"} (${ok} post(s) updated).${state.started ? "" : " Buttons appear once you use `!start`."}`);
+        await reply(L(`${state.hideCounts ? "Vote counts are hidden" : "Vote counts are shown again"} (${ok} post(s) updated).${state.started ? "" : " Buttons appear once you use `!start`."}`, `${state.hideCounts ? "عدد الأصوات مخفي" : "عدد الأصوات ظاهر"} (تم تحديث ${ok} منشور).${state.started ? "" : " الأزرار تظهر بعد `!start`."}`));
     }
 
     private async findEntry(arg: string): Promise<ICompetitionEntry | null> {
@@ -308,23 +311,23 @@ export class CompetitionBotInstance {
 
     private async check(arg: string, reply: (c: string) => Promise<unknown>): Promise<void> {
         const entry = await this.findEntry(arg);
-        if (!entry) return void await reply("Usage: `!check #N` — no participant with that number.");
+        if (!entry) return void await reply(L("Usage: `!check #N` — no participant with that number.", "الاستخدام: `!check #N` — ما في متسابق بهذا الرقم."));
         const c = await checkEntry(entry);
         await reply([
-            `${this.emojis.minidot} **#${entry.number}** <@${entry.userId}>${entry.removed ? " (removed)" : ""}`,
-            `${this.emojis.info} Invites: **${c.invites}**`,
-            `${this.emojis.info} Fake invites: **${c.fakes}**`,
-            `${this.emojis.info} Votes from people they invited: **${c.fromInvited}**`,
-            `${this.emojis.info} Votes from people they didn't invite: **${c.fromOthers}**`,
-            `${this.emojis.info} Total votes: **${c.total}**`,
-            `${this.emojis.info} Votes without fakes and without who left: **${c.real}**`,
+            `${this.emojis.minidot} **#${entry.number}** <@${entry.userId}>${entry.removed ? L(" (removed)", " (مشطوب)") : ""}`,
+            L(`${this.emojis.info} Invites: **${c.invites}**`, `${this.emojis.info} الدعوات: **${c.invites}**`),
+            L(`${this.emojis.info} Fake invites: **${c.fakes}**`, `${this.emojis.info} الدعوات الوهمية: **${c.fakes}**`),
+            L(`${this.emojis.info} Votes from people they invited: **${c.fromInvited}**`, `${this.emojis.info} أصوات من دعاهم: **${c.fromInvited}**`),
+            L(`${this.emojis.info} Votes from people they didn't invite: **${c.fromOthers}**`, `${this.emojis.info} أصوات من غيرهم: **${c.fromOthers}**`),
+            L(`${this.emojis.info} Total votes: **${c.total}**`, `${this.emojis.info} مجموع الأصوات: **${c.total}**`),
+            L(`${this.emojis.info} Votes without fakes and without who left: **${c.real}**`, `${this.emojis.info} الأصوات بدون الوهمي واللي طلعوا: **${c.real}**`),
         ].join("\n"));
     }
 
     private async remove(arg: string, reply: (c: string) => Promise<unknown>): Promise<void> {
         const entry = await this.findEntry(arg);
-        if (!entry) return void await reply("Usage: `!remove #N` — no participant with that number.");
-        if (entry.removed) return void await reply(`#${entry.number} is already removed.`);
+        if (!entry) return void await reply(L("Usage: `!remove #N` — no participant with that number.", "الاستخدام: `!remove #N` — ما في متسابق بهذا الرقم."));
+        if (entry.removed) return void await reply(L(`#${entry.number} is already removed.`, `#${entry.number} مشطوب من قبل.`));
 
         entry.removed = true;
         await entry.save();
@@ -332,12 +335,12 @@ export class CompetitionBotInstance {
         await CompetitionVote.deleteMany({ guildId: this.guildId, number: entry.number });
         const state = await this.state();
         const edited = state ? await this.editPost(entry, state, 0) : false;
-        await reply(`#${entry.number} <@${entry.userId}> was removed${edited ? "" : " (I couldn't edit the post — was it deleted?)"}.`);
+        await reply(L(`#${entry.number} <@${entry.userId}> was removed${edited ? "" : " (I couldn't edit the post — was it deleted?)"}.`, `#${entry.number} <@${entry.userId}> انشطب${edited ? "" : " (ما قدرت أعدل المنشور، يمكن انحذف؟)"}.`));
     }
 
     private async deleteEntry(arg: string, reply: (c: string) => Promise<unknown>): Promise<void> {
         const entry = await this.findEntry(arg);
-        if (!entry) return void await reply("Usage: `!delete #N` — no participant with that number.");
+        if (!entry) return void await reply(L("Usage: `!delete #N` — no participant with that number.", "الاستخدام: `!delete #N` — ما في متسابق بهذا الرقم."));
 
         const channel = entry.messageId ? await this.client.channels.fetch(entry.channelId).catch(() => null) : null;
         const postGone = !entry.messageId || (channel?.isTextBased()
@@ -348,17 +351,21 @@ export class CompetitionBotInstance {
         // Their voters get their vote back; the number is free for the next `!register`.
         await CompetitionVote.deleteMany({ guildId: this.guildId, number: entry.number });
         await entry.deleteOne();
-        await reply(`#${entry.number} <@${entry.userId}> was deleted${postGone ? "" : " (I couldn't delete the post — delete it by hand)"}. The next \`!register\` gets #${await lowestFreeNumber(this.guildId)}.`);
+        const next = await lowestFreeNumber(this.guildId);
+        await reply(L(
+            `#${entry.number} <@${entry.userId}> was deleted${postGone ? "" : " (I couldn't delete the post: delete it by hand)"}. The next \`!register\` gets #${next}.`,
+            `تم حذف #${entry.number} <@${entry.userId}>${postGone ? "" : " (ما قدرت أحذف المنشور: احذفه يدوي)"}. أول \`!register\` بعده ياخذ #${next}.`,
+        ));
     }
 
     /** Back to a fresh competition: every post and the leaderboard deleted, entries and votes gone. Room and token stay. */
     private async reset(message: Message<true>, reply: (c: string) => Promise<unknown>): Promise<void> {
         if (!message.channel.isTextBased()) return;
-        await reply("⚠️ This deletes **every** participant post, all votes and the leaderboard. Type `confirm` within 30 seconds.");
+        await reply(L("⚠️ This deletes **every** participant post, all votes and the leaderboard. Type `confirm` within 30 seconds.", "⚠️ هذا يحذف **كل** منشورات المتسابقين وكل الأصوات والتوب. اكتب `confirm` خلال 30 ثانية."));
         const answer = await message.channel.awaitMessages({ filter: m => m.author.id === message.author.id, max: 1, time: 30_000 }).catch(() => null);
-        if (answer?.first()?.content.trim().toLowerCase() !== "confirm") return void await reply("Reset cancelled.");
+        if (answer?.first()?.content.trim().toLowerCase() !== "confirm") return void await reply(L("Reset cancelled.", "تم إلغاء المسح."));
 
-        await reply("Resetting…");
+        await reply(L("Resetting…", "جاري المسح…"));
         const [entries, state] = await Promise.all([CompetitionEntry.find({ guildId: this.guildId }), this.state()]);
         const messages = entries.flatMap(e => [e.messageId, e.lineMessageId].filter(Boolean).map(messageId => ({ channelId: e.channelId, messageId })));
         if (state?.leaderboard.channelId && state.leaderboard.messageId) {
@@ -381,7 +388,10 @@ export class CompetitionBotInstance {
                 $set: { started: false, ended: false, hideCounts: false, leaderboard: { channelId: null, messageId: null, refreshedAt: null } },
             }),
         ]);
-        await reply(`♻️ The competition was reset: ${messages.length - failed} message(s) deleted${failed ? `, ${failed} couldn't be (delete them by hand)` : ""}. The next \`!register\` is #1.`);
+        await reply(L(
+            `♻️ The competition was reset: ${messages.length - failed} message(s) deleted${failed ? `, ${failed} couldn't be (delete them by hand)` : ""}. The next \`!register\` is #1.`,
+            `♻️ تم مسح المسابقة: انحذفت ${messages.length - failed} رسالة${failed ? `، و ${failed} ما قدرت (احذفها يدوي)` : ""}. أول \`!register\` ياخذ #1.`,
+        ));
     }
 
     /**
@@ -419,30 +429,30 @@ export class CompetitionBotInstance {
 
     private async dm(message: Message<true>, arg: string, reply: (c: string) => Promise<unknown>): Promise<void> {
         const target = parseDmTarget(arg);
-        if (!target) return void await reply("Usage: `!dm`, `!dm #N`, `!dm >N`, `!dm <N` or `!dm =N`.");
-        if (this.pendingDm.has(message.author.id)) return void await reply("I'm already waiting for your message.");
+        if (!target) return void await reply(L("Usage: `!dm`, `!dm #N`, `!dm >N`, `!dm <N` or `!dm =N`.", "الاستخدام: `!dm` أو `!dm #N` أو `!dm >N` أو `!dm <N` أو `!dm =N`."));
+        if (this.pendingDm.has(message.author.id)) return void await reply(L("I'm already waiting for your message.", "أنا أنتظر رسالتك من قبل."));
         if (!message.channel.isTextBased()) return;
 
         this.pendingDm.add(message.author.id);
         let text: string | null = null;
         try {
-            await reply("Send your message now (5 minutes, `cancel` to stop).\nVariables: `[user]` `[post]` `[vote]` `[number]` `[number;letter]` `[Label;https://link]`");
+            await reply(L("Send your message now (5 minutes, `cancel` to stop).\nVariables: `[user]` `[post]` `[vote]` `[number]` `[number;letter]` `[Label;https://link]`", "أرسل رسالتك الحين (5 دقائق، `cancel` للإلغاء).\nالمتغيرات: `[user]` `[post]` `[vote]` `[number]` `[number;letter]` `[Label;https://link]`"));
             const collected = await message.channel.awaitMessages({ filter: m => m.author.id === message.author.id, max: 1, time: DM_WAIT_MS }).catch(() => null);
             text = collected?.first()?.content ?? null;
         } finally {
             this.pendingDm.delete(message.author.id);
         }
-        if (!text) return void await reply("No message — nothing was sent.");
-        if (text.trim().toLowerCase() === "cancel") return void await reply("Cancelled.");
+        if (!text) return void await reply(L("No message: nothing was sent.", "ما في رسالة: ما انرسل شي."));
+        if (text.trim().toLowerCase() === "cancel") return void await reply(L("Cancelled.", "تم الإلغاء."));
 
         const [entries, counts] = await Promise.all([
             CompetitionEntry.find({ guildId: this.guildId, removed: false }).sort({ number: 1 }),
             voteCounts(this.guildId),
         ]);
         const targets = entries.filter(e => matchesTarget(target, e, counts.get(e.number) ?? 0));
-        if (!targets.length) return void await reply("No participant matches that.");
+        if (!targets.length) return void await reply(L("No participant matches that.", "ما في متسابق يطابق."));
 
-        await reply(`Sending to ${targets.length} participant(s)…`);
+        await reply(L(`Sending to ${targets.length} participant(s)…`, `جاري الإرسال لـ ${targets.length} متسابق…`));
         let sent = 0;
         const failed: number[] = [];
         for (const entry of targets) {
@@ -455,7 +465,7 @@ export class CompetitionBotInstance {
             else failed.push(entry.number);
             await sleep(1_000);
         }
-        await reply(`✅ Sent to ${sent}/${targets.length}.${failed.length ? ` Failed (DMs closed?): ${failed.map(n => `#${n}`).join(", ")}` : ""}`);
+        await reply(L(`✅ Sent to ${sent}/${targets.length}.${failed.length ? ` Failed (DMs closed?): ${failed.map(n => `#${n}`).join(", ")}` : ""}`, `✅ انرسل لـ ${sent}/${targets.length}.${failed.length ? ` ما وصل (الخاص مقفل؟): ${failed.map(n => `#${n}`).join("، ")}` : ""}`));
     }
 
     // ── buttons ──────────────────────────────────────────────────────────────
@@ -467,7 +477,7 @@ export class CompetitionBotInstance {
         if (id.startsWith(UNVOTE_ID)) return this.unvote(interaction, Number(id.slice(UNVOTE_ID.length)));
         if (id.startsWith(COUNT_ID)) {
             const n = Number(id.slice(COUNT_ID.length));
-            await interaction.reply({ content: `#${n} has **${await voteCount(this.guildId, n)}** vote(s).`, flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L(`#${n} has **${await voteCount(this.guildId, n)}** vote(s).`, `#${n} عنده **${await voteCount(this.guildId, n)}** صوت.`), flags: MessageFlags.Ephemeral });
         }
     }
 
@@ -479,35 +489,35 @@ export class CompetitionBotInstance {
         const ephemeral = (content: string, components: ActionRowBuilder<ButtonBuilder>[] = []) =>
             interaction.reply({ content, components, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
         const [state, entry] = await Promise.all([this.state(), CompetitionEntry.findOne({ guildId: this.guildId, number })]);
-        if (!state?.started || state.ended) return void await ephemeral("التصويت غير متاح حاليا.");
-        if (!entry || entry.removed) return void await ephemeral("هذا المتسابق لم يعد في المسابقة.");
-        if (entry.userId === interaction.user.id) return void await ephemeral("لا يمكنك التصويت لنفسك.");
+        if (!state?.started || state.ended) return void await ephemeral(L("Voting isn't open right now.", "التصويت غير متاح حاليا."));
+        if (!entry || entry.removed) return void await ephemeral(L("This participant isn't in the competition any more.", "هذا المتسابق لم يعد في المسابقة."));
+        if (entry.userId === interaction.user.id) return void await ephemeral(L("You can't vote for yourself.", "لا يمكنك التصويت لنفسك."));
 
         const existing = await CompetitionVote.findOne({ guildId: this.guildId, voterId: interaction.user.id });
         if (existing && existing.number === number) {
-            return void await ephemeral("لقد قمت بالتصويت على هذا المتسابق مسبقا هل تريد ازالة تصويت ؟", [
+            return void await ephemeral(L("You already voted for this participant. Remove your vote?", "لقد صوتت لهذا المتسابق من قبل. تبي تشيل تصويتك؟"), [
                 new ActionRowBuilder<ButtonBuilder>().addComponents(
-                    new ButtonBuilder().setCustomId(`${UNVOTE_ID}${number}`).setStyle(ButtonStyle.Danger).setLabel("ازالة التصويت"),
+                    new ButtonBuilder().setCustomId(`${UNVOTE_ID}${number}`).setStyle(ButtonStyle.Danger).setLabel(L("Remove vote", "إزالة التصويت")),
                 ),
             ]);
         }
-        if (existing) return void await ephemeral(`لقد قمت بالتصويت مسبقا على المتسابق **#${existing.number}**. يمكنك التصويت لمتسابق واحد فقط.`);
+        if (existing) return void await ephemeral(L(`You already voted for **#${existing.number}**. You can vote for one participant only.`, `صوتت من قبل للمتسابق **#${existing.number}**. تقدر تصوت لمتسابق واحد فقط.`));
 
         const created = await CompetitionVote.create({ guildId: this.guildId, voterId: interaction.user.id, number }).then(() => true, err => {
             if ((err as { code?: number }).code === 11000) return false;
             throw err;
         });
-        if (!created) return void await ephemeral("لقد قمت بالتصويت مسبقا.");
+        if (!created) return void await ephemeral(L("You already voted.", "صوتت من قبل."));
 
         const hasLine = interaction.message.attachments.some(a => a.name === "line.png");
         await interaction.update({ components: buildEntryPost(entry, state, await voteCount(this.guildId, number), this.emojis, hasLine), allowedMentions: { parse: [] } });
-        await interaction.followUp({ content: `✅ تم التصويت للمتسابق **#${number}** <@${entry.userId}>`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } }).catch(() => null);
+        await interaction.followUp({ content: L(`✅ Voted for **#${number}** <@${entry.userId}>`, `✅ تم التصويت للمتسابق **#${number}** <@${entry.userId}>`), flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } }).catch(() => null);
     }
 
     /** The red button under "do you want to remove your vote?". */
     private async unvote(interaction: ButtonInteraction, number: number): Promise<void> {
         const removed = await CompetitionVote.findOneAndDelete({ guildId: this.guildId, voterId: interaction.user.id, number });
-        await interaction.update({ content: removed ? `تم ازالة تصويتك للمتسابق **#${number}**.` : "لا يوجد لديك تصويت لهذا المتسابق.", components: [] });
+        await interaction.update({ content: removed ? L(`Removed your vote for **#${number}**.`, `تم إزالة تصويتك للمتسابق **#${number}**.`) : L("You haven't voted for this participant.", "ما عندك تصويت لهذا المتسابق."), components: [] });
         if (!removed) return;
 
         const [state, entry] = await Promise.all([this.state(), CompetitionEntry.findOne({ guildId: this.guildId, number })]);

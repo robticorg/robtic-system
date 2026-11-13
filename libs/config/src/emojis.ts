@@ -1,4 +1,18 @@
-export const BRANCH_EMOJIS = {
+import { getEmojiOverride } from "../../shared/src/remote-config";
+
+/**
+ * The bot's emojis. Each key is a slot the admin console can fill (admin.robtic.org → Discord → Emojis); an empty slot
+ * uses the default here. The slot list in robtic-discord (libs/shared/src/emojis.ts) must name the same keys.
+ */
+const DEFAULT_EMOJIS = {
+    top_rank: "#️⃣",
+    top_text: "💬",
+    top_voice: "🎙️",
+    top_board: "🏆",
+    top_prev: "",
+    top_next: "",
+    roles_search: "🔍",
+    roles_filter: "⚙️",
     lock: "<:security:1480429199427899412>",
     info: "<:info:1480426659747463242>",
     dots: "<:minidot:1482015855305949375>",
@@ -19,3 +33,23 @@ export const BRANCH_EMOJIS = {
     down: "<:down:1480426699878567998>",
     add: "<:add:1480426720967266334>",
 } as const;
+
+export type EmojiKey = keyof typeof DEFAULT_EMOJIS;
+
+/** The emoji for a slot: the admin console's choice, else the default. */
+export const emoji = (key: EmojiKey): string => getEmojiOverride(key) ?? DEFAULT_EMOJIS[key];
+
+/**
+ * The same emojis under the old name. Every read goes through `emoji()`, so existing code picks up the admin console's
+ * choices without changing.
+ */
+export const BRANCH_EMOJIS: Readonly<Record<EmojiKey, string>> = new Proxy(DEFAULT_EMOJIS, {
+    get: (target, key) => (typeof key === "string" && key in target ? emoji(key as EmojiKey) : Reflect.get(target, key)),
+});
+
+/** A button can only take a custom emoji as an id: `<:name:id>` → { id, name, animated }; a plain emoji passes as is. */
+export function buttonEmoji(value: string): { id?: string; name?: string; animated?: boolean } | undefined {
+    if (!value) return undefined;
+    const m = /^<(a?):(\w{2,32}):(\d{15,22})>$/.exec(value);
+    return m ? { id: m[3], name: m[2], animated: m[1] === "a" } : { name: value };
+}

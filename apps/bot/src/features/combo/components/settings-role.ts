@@ -5,6 +5,7 @@ import { ComboSettingsRepository } from "@database/repositories";
 import { buildSettingsEmbed } from "../utils/combo-embeds";
 import { buildComboNavRow, buildComboSettingsRow, buildComboPointsButtonRow, verifyInvoker, isComboAdmin } from "../utils/combo-components";
 
+import { L } from "@utils";
 export const comboSettingsRoleHandler: ComponentHandler<RoleSelectMenuInteraction> = {
     customId: /^combo:settings-role:\d+$/,
 
@@ -14,13 +15,13 @@ export const comboSettingsRoleHandler: ComponentHandler<RoleSelectMenuInteractio
 
         const guild = interaction.guild;
         if (!guild) {
-            await interaction.reply({ content: "لا يمكن استخدام هذا الأمر إلا داخل سيرفر.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: L("This can only be used in a server.", "لا يمكن استخدام هذا الأمر إلا داخل سيرفر."), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 
         const member = interaction.member as GuildMember | null;
         if (!(await isComboAdmin(interaction.user.id, member))) {
-            await interaction.reply({ content: "ليس لديك صلاحية لتغيير إعدادات الكومبو.", flags: MessageFlags.Ephemeral }).catch(() => null);
+            await interaction.reply({ content: L("You can't change the combo settings.", "ليس لديك صلاحية لتغيير إعدادات الكومبو."), flags: MessageFlags.Ephemeral }).catch(() => null);
             return;
         }
 

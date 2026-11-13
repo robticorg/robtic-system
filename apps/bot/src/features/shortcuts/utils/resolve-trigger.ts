@@ -1,6 +1,7 @@
 import { DEFAULT_PREFIX } from "@constants";
 import { ServerConfigRepository, ShortcutRepository } from "@database/repositories";
 
+import { L } from "@utils";
 /**
  * Turns whatever an admin typed into the trigger as it is actually stored.
  *
@@ -28,10 +29,10 @@ export async function resolveTrigger(guildId: string, raw: string): Promise<stri
 /** The triggers a server has, for a "no such trigger" reply that actually helps. */
 export async function knownTriggers(guildId: string, limit = 15): Promise<string> {
     const shortcuts = await ShortcutRepository.listCached(guildId);
-    if (shortcuts.length === 0) return "This server has no shortcuts yet.";
+    if (shortcuts.length === 0) return L("This server has no shortcuts yet.", "ما في اختصارات في السيرفر لين الحين.");
 
     const names = shortcuts.slice(0, limit).map(shortcut => `\`${shortcut.trigger}\``).join(" · ");
     return shortcuts.length > limit
-        ? `Existing: ${names} …and ${shortcuts.length - limit} more.`
-        : `Existing: ${names}`;
+        ? L(`Existing: ${names} …and ${shortcuts.length - limit} more.`, `الموجود: ${names} …و ${shortcuts.length - limit} غيرها.`)
+        : L(`Existing: ${names}`, `الموجود: ${names}`);
 }

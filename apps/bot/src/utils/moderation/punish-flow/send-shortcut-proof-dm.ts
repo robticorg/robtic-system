@@ -3,6 +3,7 @@ import type { BotClient } from "@core/bot-client";
 import type { PunishType } from "@typings/punishment";
 import { COLORS, PUNISH_TITLES, PUNISH_PROOF_MESSAGES, PUNISH_EXTRA_NONE } from "@constants";
 import { shortcutButtonCustomId } from "./shortcut-custom-id";
+import { openProofRequest } from "./punish-request";
 
 /** A fake prefix interaction can't showModal() — DM a real button instead, which can (see punish-shortcut-dm.ts). */
 export async function sendShortcutProofDM(
@@ -17,6 +18,7 @@ export async function sendShortcutProofDM(
     const moderator = await client.users.fetch(moderatorId).catch(() => null);
     if (!moderator) return false;
 
+    const requestId = await openProofRequest({ guildId, type, targetId, reasonKey, moderatorId, extra });
     const embed = new EmbedBuilder()
         .setTitle(PUNISH_PROOF_MESSAGES.modalTitle(PUNISH_TITLES[type]))
         .setColor(COLORS.warning)
@@ -25,7 +27,7 @@ export async function sendShortcutProofDM(
 
     const button = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
-            .setCustomId(shortcutButtonCustomId(type, guildId, targetId, reasonKey, moderatorId, extra))
+            .setCustomId(shortcutButtonCustomId(requestId))
             .setLabel(PUNISH_PROOF_MESSAGES.dmButtonLabel)
             .setStyle(ButtonStyle.Primary)
             .setEmoji(PUNISH_PROOF_MESSAGES.dmButtonEmoji),

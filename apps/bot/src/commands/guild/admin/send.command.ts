@@ -12,6 +12,7 @@ import {
 
 import { SEND_FIELDS, SEND_MODAL_ID } from "@bot/utils/send/send-form";
 
+import { L } from "@utils";
 /** `/send` — a form: the channel, the message, and whether to send it as Components V2. Sent as the bot. */
 export default {
     scope: "guild",
@@ -26,11 +27,11 @@ export default {
     async run(interaction: ChatInputCommandInteraction) {
         await interaction.showModal(new ModalBuilder()
             .setCustomId(SEND_MODAL_ID)
-            .setTitle("Send a Message")
+            .setTitle(L("Send a message", "إرسال رسالة"))
             .addLabelComponents(
                 new LabelBuilder()
                     .setLabel("Channel")
-                    .setDescription("Where to send it")
+                    .setDescription(L("Where to send it", "وين ترسلها"))
                     .setChannelSelectMenuComponent(new ChannelSelectMenuBuilder()
                         .setCustomId(SEND_FIELDS.channel)
                         .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
@@ -39,15 +40,15 @@ export default {
                         .setRequired(true)),
                 new LabelBuilder()
                     .setLabel("Message")
-                    .setDescription("Markdown works. Up to 2000 characters, or 4000 as Components V2")
+                    .setDescription(L("Markdown works. Up to 2000 characters, or 4000 as Components V2", "الماركداون يشتغل. حتى 2000 حرف، أو 4000 بنظام Components V2"))
                     .setTextInputComponent(new TextInputBuilder()
                         .setCustomId(SEND_FIELDS.message)
                         .setStyle(TextInputStyle.Paragraph)
                         .setRequired(true)
                         .setMaxLength(4000)),
                 new LabelBuilder()
-                    .setLabel("Send as Components V2")
-                    .setDescription("Shows the message inside a card instead of as plain text")
+                    .setLabel(L("Send as Components V2", "إرسال بنظام Components V2"))
+                    .setDescription(L("Shows the message inside a card instead of as plain text", "تظهر الرسالة داخل بطاقة بدل نص عادي"))
                     .setCheckboxComponent(new CheckboxBuilder().setCustomId(SEND_FIELDS.componentsV2).setDefault(false)),
             ));
     },

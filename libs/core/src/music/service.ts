@@ -6,6 +6,7 @@ import { inspectBotToken, looksLikeBotToken, type BotAccount } from "./bot-accou
 import { getRunningMusicBot, startMusicBot, stopMusicBot } from "./runtime";
 import { encryptToken, musicTokenKey } from "./token-crypto";
 
+import { L } from "@utils";
 /**
  * Music bots as a service: create, list and remove, run inside the Gateway. Discord-side setup that
  * needs the *main* bot — the invite link shown to staff, the voice-channel permissions — stays in
@@ -63,17 +64,17 @@ export function musicBotView(record: IMusicBot): MusicBotView {
  */
 export async function createMusicBot(input: CreateMusicBotInput, deps: MusicServiceDeps = defaultDeps): Promise<CreateMusicBotResult> {
     const key = musicTokenKey();
-    if (!key) return { ok: false, problem: "Music bots aren't set up yet: `MUSIC_TOKEN_KEY` is missing from the bot's environment." };
+    if (!key) return { ok: false, problem: L("Music bots aren't set up yet: `MUSIC_TOKEN_KEY` is missing from the bot's environment.", "بوتات الموسيقى غير مجهزة لين الحين: `MUSIC_TOKEN_KEY` ناقص في إعدادات البوت.") };
 
     if (await MusicBotRepository.countByGuild(input.guildId) >= MUSIC_CONFIG.maxBotsPerGuild) {
-        return { ok: false, problem: `This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one with \`/bot delete\` first.` };
+        return { ok: false, problem: L(`This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one with \`/bot delete\` first.`, `هذا السيرفر عنده ${MUSIC_CONFIG.maxBotsPerGuild} بوتات موسيقى. احذف واحد بـ \`/bot delete\` أول.`) };
     }
 
     const token = input.token.trim();
-    if (!looksLikeBotToken(token)) return { ok: false, problem: "That doesn't look like a bot token." };
+    if (!looksLikeBotToken(token)) return { ok: false, problem: L("That doesn't look like a bot token.", "هذا ما يبدو توكن بوت.") };
 
     const account = await deps.inspect(token);
-    if (!account) return { ok: false, problem: "Discord didn't accept that token. Copy a fresh one from the Developer Portal (Bot → Reset Token)." };
+    if (!account) return { ok: false, problem: L("Discord didn't accept that token. Copy a fresh one from the Developer Portal (Bot → Reset Token).", "ديسكورد ما قبل التوكن. انسخ واحد جديد من Developer Portal (Bot → Reset Token).") };
     if (account.botId === input.mainBotId) return { ok: false, problem: "That's my own token — use a different bot." };
 
     const record = await MusicBotRepository.create({

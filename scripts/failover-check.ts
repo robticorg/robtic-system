@@ -2,6 +2,7 @@
  * Gateway failover checks — no Redis, no Discord: a fake Redis (one shared store, a client per
  * container that can be cut off) with real expiry, and short timings.
  */
+import "./_english";
 import { acquireLeadership, LEADER_KEYS, type LeaderRedis, type Leadership } from "@queue";
 
 let failures = 0;

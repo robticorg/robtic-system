@@ -6,6 +6,7 @@ import {
 import { ServerConfigRepository } from "@database/repositories";
 import { LINE_SHORTCUT_LIMITS, parseLineShortcuts } from "@bot/utils/line/line-shortcuts";
 
+import { L } from "@utils";
 /**
  * `/line shortcut [words] [clear]` — words that post the line: when an Administrator, or a member
  * with a role from `/line role`, sends one of them on its own, the bot deletes it and posts the
@@ -51,7 +52,7 @@ export default {
 
         const guildId = interaction.guildId;
         if (!guildId) {
-            await interaction.editReply({ content: "❌ This command can only be used in a server." });
+            await interaction.editReply({ content: L("❌ This command can only be used in a server.", "❌ هذا الأمر يعمل داخل السيرفر فقط.") });
             return;
         }
 
@@ -64,8 +65,8 @@ export default {
                 const { roleIds } = await ServerConfigRepository.getLineConfig(guildId);
                 await interaction.editReply({
                     content: roleIds.length
-                        ? `Administrators and these roles can post the line: ${roles(roleIds)}`
-                        : "Only Administrators can post the line. Allow a role with `/line role role:`.",
+                        ? L(`Administrators and these roles can post the line: ${roles(roleIds)}`, `الإدارة وهذي الرتب يقدرون يرسلون الخط: ${roles(roleIds)}`)
+                        : L("Only Administrators can post the line. Allow a role with `/line role role:`.", "الإدارة فقط يقدرون يرسلون الخط. اسمح لرتبة بـ `/line role role:`."),
                     allowedMentions: { parse: [] },
                 });
                 return;
@@ -75,8 +76,8 @@ export default {
             await ServerConfigRepository.setLineRole(guildId, role.id, !remove);
             await interaction.editReply({
                 content: remove
-                    ? `<@&${role.id}> can no longer post the line.`
-                    : `<@&${role.id}> can now post the line with a shortcut word.`,
+                    ? L(`<@&${role.id}> can no longer post the line.`, `<@&${role.id}> ما عاد يقدر يرسل الخط.`)
+                    : L(`<@&${role.id}> can now post the line with a shortcut word.`, `<@&${role.id}> صار يقدر يرسل الخط بكلمة اختصار.`),
                 allowedMentions: { parse: [] },
             });
             return;
@@ -84,7 +85,7 @@ export default {
 
         if (interaction.options.getBoolean("clear")) {
             await ServerConfigRepository.setLineShortcuts(guildId, []);
-            await interaction.editReply({ content: "Line shortcuts removed." });
+            await interaction.editReply({ content: L("Line shortcuts removed.", "تم حذف اختصارات الخط.") });
             return;
         }
 
@@ -93,21 +94,21 @@ export default {
             const { shortcuts } = await ServerConfigRepository.getLineConfig(guildId);
             await interaction.editReply({
                 content: shortcuts.length
-                    ? `Line shortcuts: ${list(shortcuts)}`
-                    : "No line shortcuts set. Add some with `/line shortcut words:`.",
+                    ? L(`Line shortcuts: ${list(shortcuts)}`, `اختصارات الخط: ${list(shortcuts)}`)
+                    : L("No line shortcuts set. Add some with `/line shortcut words:`.", "ما في اختصارات للخط. أضف بـ `/line shortcut words:`."),
             });
             return;
         }
 
         const words = parseLineShortcuts(input);
         if (!words.length) {
-            await interaction.editReply({ content: `Give at least one word (up to ${LINE_SHORTCUT_LIMITS.maxLength} characters each), separated by commas.` });
+            await interaction.editReply({ content: L(`Give at least one word (up to ${LINE_SHORTCUT_LIMITS.maxLength} characters each), separated by commas.`, `اكتب كلمة وحدة على الأقل (حتى ${LINE_SHORTCUT_LIMITS.maxLength} حرف لكل كلمة)، مفصولة بفواصل.`) });
             return;
         }
 
         await ServerConfigRepository.setLineShortcuts(guildId, words);
         await interaction.editReply({
-            content: `Line shortcuts set: ${list(words)}.\nAdministrators and roles from \`/line role\` can send one on its own to replace it with the line.`,
+            content: L(`Line shortcuts set: ${list(words)}.\nAdministrators and roles from \`/line role\` can send one on its own to replace it with the line.`, `تم ضبط اختصارات الخط: ${list(words)}.\nالإدارة والرتب من \`/line role\` يقدرون يرسلون وحدة منها لحالها وتتبدل بالخط.`),
         });
     },
 };

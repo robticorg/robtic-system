@@ -15,12 +15,13 @@ import { getPanel, listPanels, getPanelKeys } from "../registry";
 import { ServerConfigRepository } from "@database/repositories/ServerConfigRepository";
 import { getUserLang } from "@bot/utils/lang";
 
+import { L } from "@utils";
 export async function panelList(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const panels = await listPanels();
     if (!panels.length) {
-        await interaction.editReply({ content: "No panels defined." });
+        await interaction.editReply({ content: L("No panels yet.", "ما في لوحات لين الحين.") });
         return;
     }
 
@@ -30,15 +31,15 @@ export async function panelList(interaction: ChatInputCommandInteraction) {
         const sent = sentPanels.filter(s => s.panelKey === p.key);
         const status = sent.length > 0
             ? `✅ Sent ${sent.length}x (${sent.map(s => `<#${s.channelId}>`).join(", ")})`
-            : "❌ Not sent";
+            : L("❌ Not sent", "❌ ما انرسلت");
         return `**${name}** (\`${p.key}\`) — ${status}`;
     });
 
     const embed = new EmbedBuilder()
-        .setTitle("📋 Available Panels")
+        .setTitle(L("📋 Panels", "📋 اللوحات"))
         .setDescription(lines.join("\n"))
         .setColor(COLORS.info)
-        .setFooter({ text: `${panels.length} panel(s) available` })
+        .setFooter({ text: L(`${panels.length} panel(s) available`, `${panels.length} لوحة متاحة`) })
         .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });
@@ -51,7 +52,7 @@ export async function panelSend(interaction: ChatInputCommandInteraction) {
     const panel = await getPanel(panelKey);
 
     if (!panel) {
-        await interaction.editReply({ content: `Panel \`${panelKey}\` not found.` });
+        await interaction.editReply({ content: L(`Panel \`${panelKey}\` not found.`, `ما لقيت اللوحة \`${panelKey}\`.`) });
         return;
     }
 
@@ -73,7 +74,7 @@ export async function panelSend(interaction: ChatInputCommandInteraction) {
         });
 
         await interaction.editReply({
-            content: `✅ Panel **${name}** sent to <#${channel.id}>.`,
+            content: L(`✅ Panel **${name}** sent to <#${channel.id}>.`, `✅ انرسلت اللوحة **${name}** إلى <#${channel.id}>.`),
         });
         return;
     }
@@ -84,12 +85,12 @@ export async function panelSend(interaction: ChatInputCommandInteraction) {
         .setDescription(panel.description ?? "")
         .setImage(`${BRANCH_CONFIG.server.githubAssetsBase}/utils/discord/rules.png`)
         .setFooter({
-            text: "Click the button below to view more details"
+            text: L("Press the button below for more", "اضغط الزر تحت للمزيد")
         });
 
     const button = new ButtonBuilder()
         .setCustomId(`panel_view_${panel.key}`)
-        .setLabel(panel.buttonLabel ?? "View Details")
+        .setLabel(panel.buttonLabel ?? L("Details", "التفاصيل"))
         .setEmoji(BRANCH_CONFIG.emojis.membersPanelButton)
         .setStyle(ButtonStyle.Secondary);
 
@@ -109,7 +110,7 @@ export async function panelSend(interaction: ChatInputCommandInteraction) {
     });
 
     await interaction.editReply({
-        content: `✅ Panel **${name}** sent to <#${channel.id}>.`,
+        content: L(`✅ Panel **${name}** sent to <#${channel.id}>.`, `✅ انرسلت اللوحة **${name}** إلى <#${channel.id}>.`),
     });
 }
 
@@ -121,7 +122,7 @@ export async function panelDelete(interaction: ChatInputCommandInteraction) {
 
     const sentPanel = await ServerConfigRepository.getSentPanel(guildId, messageId);
     if (!sentPanel) {
-        await interaction.editReply({ content: "That panel was not found in the database." });
+        await interaction.editReply({ content: L("That panel was not found in the database.", "ما لقيت هذي اللوحة في قاعدة البيانات.") });
         return;
     }
 
@@ -149,7 +150,7 @@ export async function panelButtonHandler(interaction: ButtonInteraction) {
 
     const panel = await getPanel(panelKey);
     if (!panel) {
-        await interaction.editReply({ content: "This panel no longer exists." });
+        await interaction.editReply({ content: L("This panel no longer exists.", "هذي اللوحة ما عادت موجودة.") });
         return;
     }
 

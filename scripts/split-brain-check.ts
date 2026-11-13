@@ -2,6 +2,7 @@
  * Split-brain protection checks — no Redis, no Discord: a fake Redis for event claims, fake
  * clients for the event loader.
  */
+import "./_english";
 import { EventEmitter } from "node:events";
 import { Events } from "discord.js";
 import { eventIdFor, setEventGuard, shouldHandle } from "@core/event-guard";

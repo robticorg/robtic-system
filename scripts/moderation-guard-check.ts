@@ -11,6 +11,7 @@
  *    matches on a word boundary, so `l` claims every message starting "l ", and these utilities used
  *    to ignore their arguments entirely — which turned "l ike i said" into a channel lock.
  */
+import "./_english";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { Guild, GuildTextBasedChannel } from "discord.js";

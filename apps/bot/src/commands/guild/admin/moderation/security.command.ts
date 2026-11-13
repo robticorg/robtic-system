@@ -6,8 +6,8 @@ import {
     SlashCommandBuilder,
     type GuildMember,
 } from "discord.js";
-import { COLORS } from "@constants";
-import { errorText } from "@utils";
+import { COLORS, DURATION_SHORTHAND_REGEX } from "@constants";
+import { L, errorText } from "@utils";
 import { getMemberLevel, isManager } from "@bot/utils/access";
 import {
     formatWindow,
@@ -43,16 +43,21 @@ const securityEventChoices: Array<{ name: string; value: SecurityEventType }> = 
     { name: "channel_delete", value: "channel_delete" },
 ];
 
-function parseActions(raw: string): SecurityActionType[] {
+/** The rule's actions, or null when any of them isn't a known action (they used to be dropped silently). */
+function parseActions(raw: string): SecurityActionType[] | null {
     const parts = raw
         .split(",")
         .map((item) => item.trim().toLowerCase().replace(/-/g, "_"))
         .filter(Boolean);
 
     const valid = new Set<SecurityActionType>(["kick", "ban", "remove_role", "send_alert"]);
-    const actions = parts.filter((item): item is SecurityActionType => valid.has(item as SecurityActionType));
+    if (!parts.length || parts.some((item) => !valid.has(item as SecurityActionType))) return null;
+    return Array.from(new Set(parts as SecurityActionType[]));
+}
 
-    return actions.length > 0 ? Array.from(new Set(actions)) : ["send_alert"];
+/** A field holds 1024 characters; a long list is cut with a note rather than breaking the reply. */
+function fit(text: string): string {
+    return text.length <= 1024 ? text : `${text.slice(0, 1000)}\n…`;
 }
 
 async function managerOnly(member: GuildMember): Promise<boolean> {
@@ -249,46 +254,42 @@ export default {
 
         const member = interaction.member as GuildMember;
         if (!(await managerOnly(member))) {
-            await interaction.editReply({
-                content: errorText("Only managers can use this command."),
-            });
+            await interaction.editReply({ content: errorText(L("Only managers can use this command.", "هذا الأمر للمدراء فقط.")) });
             return;
         }
 
         const sub = interaction.options.getSubcommand();
         const config = await getModerationSecurityConfig(interaction.guildId);
+        const done = (description: string) => interaction.editReply({ embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(description)] });
+        const fail = (description: string) => interaction.editReply({ content: errorText(description) });
+        const none = L("none", "لا يوجد");
+        const notSet = L("Not set", "غير محدد");
 
         if (sub === "status") {
-            const embed = new EmbedBuilder()
-                .setTitle("🛡️ Moderation Security Status")
-                .setColor(COLORS.info)
-                .addFields(
-                    { name: "Enabled", value: String(config.enabled), inline: true },
-                    { name: "Rules", value: String(config.rules.length), inline: true },
-                    { name: "Whitelist Users", value: String(config.whitelistUserIds.length), inline: true },
-                    { name: "Whitelist Roles", value: String(config.whitelistRoleIds.length), inline: true },
-                    { name: "Security Log Channel", value: config.settings.securityLogChannelId ? `<#${config.settings.securityLogChannelId}>` : "Not set" },
-                    { name: "Role Strip List", value: config.settings.rolesToStrip.length > 0 ? config.settings.rolesToStrip.map((id) => `<@&${id}>`).join(", ") : "Not set" },
-                    {
-                        name: "Rules Detail",
-                        value: config.rules.length > 0
-                            ? config.rules.map((rule, index) => describeRule(rule, index)).join("\n")
-                            : "No rules configured",
-                    },
-                )
-                .setTimestamp();
-
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle(L("🛡️ Security", "🛡️ الحماية"))
+                        .setColor(COLORS.info)
+                        .addFields(
+                            { name: L("On", "مفعّل"), value: config.enabled ? L("Yes", "نعم") : L("No", "لا"), inline: true },
+                            { name: L("Rules", "القواعد"), value: String(config.rules.length), inline: true },
+                            { name: L("Allowed users", "أعضاء مستثنين"), value: String(config.whitelistUserIds.length), inline: true },
+                            { name: L("Allowed roles", "رتب مستثناة"), value: String(config.whitelistRoleIds.length), inline: true },
+                            { name: L("Alert channel", "روم التنبيهات"), value: config.settings.securityLogChannelId ? `<#${config.settings.securityLogChannelId}>` : notSet },
+                            { name: L("Roles to strip", "رتب تنسحب"), value: fit(config.settings.rolesToStrip.map((id) => `<@&${id}>`).join(", ")) || notSet },
+                            { name: L("Rules", "القواعد"), value: fit(config.rules.map((rule, index) => describeRule(rule, index)).join("\n")) || L("No rules yet", "ما في قواعد لين الحين") },
+                        )
+                        .setTimestamp(),
+                ],
+            });
             return;
         }
 
         if (sub === "toggle") {
-            const enabled = interaction.options.getBoolean("enabled", true);
-            config.enabled = enabled;
+            config.enabled = interaction.options.getBoolean("enabled", true);
             const saved = await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
-            await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Security system is now **${saved.enabled ? "ENABLED" : "DISABLED"}**.`)],
-            });
+            await done(saved.enabled ? L("Security is now **on**.", "الحماية صارت **مفعّلة**.") : L("Security is now **off**.", "الحماية صارت **مقفلة**."));
             return;
         }
 
@@ -297,10 +298,7 @@ export default {
             const channel = interaction.options.getChannel("channel", true);
             config.settings.auditChannels[type] = channel.id;
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
-
-            await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Audit log channel for **${type}** set to <#${channel.id}>.`)],
-            });
+            await done(L(`**${type}** logs now go to <#${channel.id}>.`, `لوقات **${type}** صارت تروح لـ <#${channel.id}>.`));
             return;
         }
 
@@ -308,10 +306,7 @@ export default {
             const channel = interaction.options.getChannel("channel", true);
             config.settings.securityLogChannelId = channel.id;
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
-
-            await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Security alert channel set to <#${channel.id}>.`)],
-            });
+            await done(L(`Security alerts now go to <#${channel.id}>.`, `تنبيهات الحماية صارت تروح لـ <#${channel.id}>.`));
             return;
         }
 
@@ -321,19 +316,18 @@ export default {
             const windowRaw = interaction.options.getString("window", true);
             const actionsRaw = interaction.options.getString("actions", true);
 
-            const rule: SecurityRule = {
-                event,
-                limit,
-                windowMs: parseWindowToMs(windowRaw),
-                actions: parseActions(actionsRaw),
-            };
+            // Bad input used to be swapped silently for defaults (a 1-minute window, "send_alert"); now it's refused.
+            if (!Number.isInteger(limit) || limit < 1) return void await fail(L("The limit must be 1 or more.", "الحد لازم يكون 1 أو أكثر."));
+            if (!DURATION_SHORTHAND_REGEX.test(windowRaw.trim().toLowerCase()) || parseWindowToMs(windowRaw) <= 0) {
+                return void await fail(L(`\`${windowRaw}\` isn't a window. Use 30s, 5m, 2h or 1d.`, `\`${windowRaw}\` ليست مدة صحيحة. استخدم 30s أو 5m أو 2h أو 1d.`));
+            }
+            const actions = parseActions(actionsRaw);
+            if (!actions) return void await fail(L("Actions are send_alert, remove_role, kick and ban, separated by commas.", "الإجراءات هي send_alert و remove_role و kick و ban، مفصولة بفواصل."));
 
+            const rule: SecurityRule = { event, limit, windowMs: parseWindowToMs(windowRaw), actions };
             config.rules.push(rule);
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
-
-            await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Rule added: ${describeRule(rule, config.rules.length - 1)}`)],
-            });
+            await done(L(`Rule added: ${describeRule(rule, config.rules.length - 1)}`, `تمت إضافة القاعدة: ${describeRule(rule, config.rules.length - 1)}`));
             return;
         }
 
@@ -341,54 +335,31 @@ export default {
             const event = interaction.options.getString("event", true) as SecurityEventType;
             const index = interaction.options.getInteger("index", true) - 1;
             const list = config.rules.filter((rule) => rule.event === event);
+            if (index < 0 || index >= list.length) return void await fail(L("There's no rule with that number for this event.", "ما في قاعدة بهذا الرقم لهذا الحدث."));
 
-            if (index < 0 || index >= list.length) {
-                await interaction.editReply({ content: errorText("Invalid index for this event.") });
-                return;
-            }
-
-            const selected = list[index];
-            const globalIndex = config.rules.findIndex((rule) =>
-                rule.event === selected.event &&
-                rule.limit === selected.limit &&
-                rule.windowMs === selected.windowMs &&
-                rule.actions.join(",") === selected.actions.join(",")
-            );
-
+            const selected = list[index]!;
+            const globalIndex = config.rules.indexOf(selected);
             if (globalIndex >= 0) config.rules.splice(globalIndex, 1);
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
-
-            await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Removed rule: ${describeRule(selected, index)}`)],
-            });
+            await done(L(`Rule removed: ${describeRule(selected, index)}`, `تم حذف القاعدة: ${describeRule(selected, index)}`));
             return;
         }
 
         if (sub === "rule-list") {
             const byEvent = securityEventChoices.map((choice) => {
                 const eventRules = config.rules.filter((rule) => rule.event === choice.value);
-                if (eventRules.length === 0) return `**${choice.value}**\n- none`;
-                return `**${choice.value}**\n${eventRules.map((rule, i) => `- ${describeRule(rule, i)}`).join("\n")}`;
+                return `**${choice.value}**\n${eventRules.length ? eventRules.map((rule, i) => `- ${describeRule(rule, i)}`).join("\n") : `- ${none}`}`;
             });
-
-            const embed = new EmbedBuilder()
-                .setTitle("Security Rules")
-                .setColor(COLORS.info)
-                .setDescription(byEvent.join("\n\n"))
-                .setTimestamp();
-
-            await interaction.editReply({ embeds: [embed] });
+            await interaction.editReply({
+                embeds: [new EmbedBuilder().setTitle(L("Security rules", "قواعد الحماية")).setColor(COLORS.info).setDescription(byEvent.join("\n\n").slice(0, 4000)).setTimestamp()],
+            });
             return;
         }
 
         if (sub === "whitelist-add" || sub === "whitelist-remove") {
             const user = interaction.options.getUser("user", false);
             const role = interaction.options.getRole("role", false);
-
-            if (!user && !role) {
-                await interaction.editReply({ content: errorText("Provide at least one of user or role.") });
-                return;
-            }
+            if (!user && !role) return void await fail(L("Give a user, a role, or both.", "حدد عضو أو رتبة أو الاثنين."));
 
             if (sub === "whitelist-add") {
                 if (user && !config.whitelistUserIds.includes(user.id)) config.whitelistUserIds.push(user.id);
@@ -397,55 +368,34 @@ export default {
                 if (user) config.whitelistUserIds = config.whitelistUserIds.filter((id) => id !== user.id);
                 if (role) config.whitelistRoleIds = config.whitelistRoleIds.filter((id) => id !== role.id);
             }
-
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
 
+            const who = `${user ? `<@${user.id}>` : ""} ${role ? `<@&${role.id}>` : ""}`.trim();
+            await done(sub === "whitelist-add" ? L(`Now exempt from security: ${who}`, `صار مستثنى من الحماية: ${who}`) : L(`No longer exempt: ${who}`, `ما عاد مستثنى: ${who}`));
+            return;
+        }
+
+        if (sub === "whitelist-list") {
             await interaction.editReply({
                 embeds: [
                     new EmbedBuilder()
-                        .setColor(COLORS.success)
-                        .setDescription(
-                            `${sub === "whitelist-add" ? "Added to" : "Removed from"} whitelist: ${user ? `<@${user.id}>` : ""} ${role ? `<@&${role.id}>` : ""}`.trim()
-                        ),
+                        .setTitle(L("Exempt from security", "المستثنين من الحماية"))
+                        .setColor(COLORS.info)
+                        .addFields(
+                            { name: L("Users", "الأعضاء"), value: fit(config.whitelistUserIds.map((id) => `<@${id}>`).join("\n")) || none },
+                            { name: L("Roles", "الرتب"), value: fit(config.whitelistRoleIds.map((id) => `<@&${id}>`).join("\n")) || none },
+                        )
+                        .setTimestamp(),
                 ],
             });
             return;
         }
 
-        if (sub === "whitelist-list") {
-            const embed = new EmbedBuilder()
-                .setTitle("Security Whitelist")
-                .setColor(COLORS.info)
-                .addFields(
-                    {
-                        name: "Users",
-                        value: config.whitelistUserIds.length > 0
-                            ? config.whitelistUserIds.map((id) => `<@${id}>`).join("\n")
-                            : "none",
-                    },
-                    {
-                        name: "Roles",
-                        value: config.whitelistRoleIds.length > 0
-                            ? config.whitelistRoleIds.map((id) => `<@&${id}>`).join("\n")
-                            : "none",
-                    },
-                )
-                .setTimestamp();
-
-            await interaction.editReply({ embeds: [embed] });
-            return;
-        }
-
         if (sub === "rolestrip-add") {
             const role = interaction.options.getRole("role", true);
-            if (!config.settings.rolesToStrip.includes(role.id)) {
-                config.settings.rolesToStrip.push(role.id);
-            }
+            if (!config.settings.rolesToStrip.includes(role.id)) config.settings.rolesToStrip.push(role.id);
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
-
-            await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Added <@&${role.id}> to role strip list.`)],
-            });
+            await done(L(`<@&${role.id}> will be taken away when a rule triggers.`, `<@&${role.id}> بتنسحب لما تنطبق قاعدة.`));
             return;
         }
 
@@ -453,10 +403,7 @@ export default {
             const role = interaction.options.getRole("role", true);
             config.settings.rolesToStrip = config.settings.rolesToStrip.filter((id) => id !== role.id);
             await saveModerationSecurityConfig(interaction.guildId, config, interaction.user.id);
-
-            await interaction.editReply({
-                embeds: [new EmbedBuilder().setColor(COLORS.success).setDescription(`Removed <@&${role.id}> from role strip list.`)],
-            });
+            await done(L(`<@&${role.id}> is off the list.`, `<@&${role.id}> انشالت من القائمة.`));
             return;
         }
 
@@ -465,15 +412,10 @@ export default {
                 embeds: [
                     new EmbedBuilder()
                         .setColor(COLORS.info)
-                        .setTitle("Role Strip List")
-                        .setDescription(
-                            config.settings.rolesToStrip.length > 0
-                                ? config.settings.rolesToStrip.map((id) => `<@&${id}>`).join("\n")
-                                : "No roles configured."
-                        ),
+                        .setTitle(L("Roles taken away on a trigger", "الرتب اللي تنسحب عند التنبيه"))
+                        .setDescription(config.settings.rolesToStrip.map((id) => `<@&${id}>`).join("\n").slice(0, 4000) || L("No roles yet.", "ما في رتب لين الحين.")),
                 ],
             });
-            return;
         }
     },
 };

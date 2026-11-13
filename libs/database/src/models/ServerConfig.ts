@@ -39,6 +39,10 @@ export interface IServerConfig extends Document {
     lineShortcuts: string[];
     /** Roles allowed to post the line with a shortcut word, besides Administrators (`/line role`). */
     lineRoleIds: string[];
+    /** How `/top` looks here (dashboard → Leaderboards). Its background image is the BranchAsset `top-bg:<guildId>`. */
+    topStyle?: { accent?: string; chart?: boolean } | null;
+    /** The language the bot answers in on this server (dashboard → General). Unset: Arabic, as before. */
+    language?: "en" | "ar";
     /** Prefix for main-bot text commands in this guild (e.g. "!"). Falls back to DEFAULT_PREFIX when unset. */
     prefix?: string;
     /** Channel where plain chat is auto-deleted, keeping it command-only (see commands-channel-guard.ts). */
@@ -110,6 +114,8 @@ const serverConfigSchema = new Schema<IServerConfig>(
         lineShortcuts: { type: [String], default: [] },
         lineRoleIds: { type: [String], default: [] },
         prefix: { type: String },
+        language: { type: String, enum: ["en", "ar"] },
+        topStyle: { type: Schema.Types.Mixed, default: null },
         commandsChannelId: { type: String },
         inviteLogChannelId: { type: String },
         partnerChannelId: { type: String },

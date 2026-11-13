@@ -13,7 +13,7 @@ import { getStreakSummary } from "@core/streak";
 import { getProfileTab } from "@core/profile";
 import { isFeatureEnabled } from "@core/features";
 import { buildProfileSettingsRow, buildSettingsEmbed } from "./profile-settings-buttons.component";
-import { formatDuration } from "@utils";
+import { L, formatDuration } from "@utils";
 import { isStaff } from "@bot/utils/access";
 import { getUserLang, t } from "@bot/utils/lang";
 import type { GuildMember } from "discord.js";
@@ -59,7 +59,7 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
 
             const recentLines = logs.length > 0
                 ? logs.map(l => `\`${l.type}\` **${l.amount >= 0 ? "+" : ""}${l.amount}** ${l.details ? `— ${l.details}` : ""} <t:${Math.floor(l.createdAt.getTime() / 1000)}:R>`).join("\n")
-                : "No recent activity.";
+                : L("No recent activity.", "ما في نشاط حديث.");
 
             const since = (at: Date | undefined) => (at ? `<t:${Math.floor(at.getTime() / 1000)}:R>` : "never");
             const decayStatus = record.decay.enabled
@@ -67,15 +67,15 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                 : "Disabled";
 
             const embed = new EmbedBuilder()
-                .setTitle(`${emoji.status} Activity ${putUser}`)
+                .setTitle(L(`${emoji.status} Activity ${putUser}`, `${emoji.status} النشاط ${putUser}`))
                 .addFields(
-                    { name: "💬 Message Level", value: `**${message.level}** · ${record.messageXP ?? 0} XP\n${bar(message)}`, inline: true },
-                    { name: "🎙️ Voice Level", value: `**${voice.level}** · ${record.voiceXP ?? 0} XP\n${bar(voice)}`, inline: true },
-                    { name: "Total XP", value: `${record.totalXP} · Rank #${rank}`, inline: true },
+                    { name: L("💬 Message level", "💬 مستوى الرسائل"), value: `**${message.level}** · ${record.messageXP ?? 0} XP\n${bar(message)}`, inline: true },
+                    { name: L("🎙️ Voice level", "🎙️ مستوى الصوت"), value: `**${voice.level}** · ${record.voiceXP ?? 0} XP\n${bar(voice)}`, inline: true },
+                    { name: L("Total XP", "مجموع الخبرة"), value: L(`${record.totalXP} · Rank #${rank}`, `${record.totalXP} · الترتيب #${rank}`), inline: true },
                     { name: "Messages", value: `${record.messageCount}`, inline: true },
-                    { name: "Real Messages", value: `${record.realMessageCount}`, inline: true },
+                    { name: L("Real messages", "الرسائل الحقيقية"), value: `${record.realMessageCount}`, inline: true },
                     { name: "Decay", value: decayStatus, inline: false },
-                    { name: "Recent Activity", value: recentLines.slice(0, 1024) },
+                    { name: L("Recent activity", "النشاط الأخير"), value: recentLines.slice(0, 1024) },
                 )
                 .setColor(COLORS.default)
                 .setTimestamp();
@@ -130,29 +130,29 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
         if (selected === "staff_activity") {
             const guildMember = interaction.guild?.members.cache.get(targetId) ?? await interaction.guild?.members.fetch(targetId).catch(() => null);
             if (!guildMember || !(await isStaff(guildMember as GuildMember))) {
-                await interaction.editReply({ content: "This user is not a staff member." });
+                await interaction.editReply({ content: L("This user is not a staff member.", "هذا العضو ليس من الإدارة.") });
                 return;
             }
 
             const staffData = await getStaffActivity(targetId, guildId);
             const supportStats = await getSupportStats(targetId);
-            const avgResponse = supportStats.avgResponseMs > 0 ? `${Math.round(supportStats.avgResponseMs / 1000)}s` : "N/A";
+            const avgResponse = supportStats.avgResponseMs > 0 ? `${Math.round(supportStats.avgResponseMs / 1000)}s` : L("N/A", "غير متوفر");
 
             const embed = new EmbedBuilder()
-                .setTitle(`${emoji.trophy} Staff Activity ${putUser}`)
+                .setTitle(L(`${emoji.trophy} Staff activity ${putUser}`, `${emoji.trophy} نشاط الإداري ${putUser}`))
                 .addFields(
-                    { name: "Support Points", value: `${staffData.supportPoints}`, inline: true },
-                    { name: "Public Chat Points", value: `${staffData.publicChatPoints}`, inline: true },
-                    { name: "Staff Chat Points", value: `${staffData.staffChatPoints}`, inline: true },
-                    { name: "Moderation Points", value: `${staffData.moderationPoints}`, inline: true },
+                    { name: L("Support points", "نقاط الدعم"), value: `${staffData.supportPoints}`, inline: true },
+                    { name: L("Public chat points", "نقاط الشات العام"), value: `${staffData.publicChatPoints}`, inline: true },
+                    { name: L("Staff chat points", "نقاط شات الإدارة"), value: `${staffData.staffChatPoints}`, inline: true },
+                    { name: L("Moderation points", "نقاط الإشراف"), value: `${staffData.moderationPoints}`, inline: true },
                     { name: "Penalties", value: `${staffData.penalties}`, inline: true },
-                    { name: "Total Staff Points", value: `**${staffData.totalStaffPoints}**`, inline: true },
+                    { name: L("Total staff points", "مجموع نقاط الإدارة"), value: `**${staffData.totalStaffPoints}**`, inline: true },
                     { name: "​", value: "​", inline: true },
-                    { name: "​", value: "**── Support Performance ──**" },
-                    { name: "Sessions Claimed", value: `${supportStats.totalClaimed}`, inline: true },
-                    { name: "Sessions Resolved", value: `${supportStats.totalResolved}`, inline: true },
-                    { name: "Avg Response Time", value: avgResponse, inline: true },
-                    { name: "Support Points Earned", value: `${supportStats.totalPoints}`, inline: true },
+                    { name: "​", value: L("**── Support ──**", "**── الدعم ──**") },
+                    { name: L("Sessions claimed", "الجلسات المستلمة"), value: `${supportStats.totalClaimed}`, inline: true },
+                    { name: L("Sessions resolved", "الجلسات المحلولة"), value: `${supportStats.totalResolved}`, inline: true },
+                    { name: L("Average response time", "متوسط وقت الرد"), value: avgResponse, inline: true },
+                    { name: L("Support points earned", "نقاط الدعم المكتسبة"), value: `${supportStats.totalPoints}`, inline: true },
                 )
                 .setColor(COLORS.default)
                 .setTimestamp();
@@ -165,19 +165,19 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
             const notes = await NoteRepository.findByUser(targetId);
 
             if (!notes.length) {
-                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(`No notes found for <@${targetId}>.`).setColor(COLORS.info)] });
+                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(L(`No notes found for <@${targetId}>.`, `ما في ملاحظات على <@${targetId}>.`)).setColor(COLORS.info)] });
                 return;
             }
 
             const lines = notes.slice(0, 15).map((n, i) =>
-                `**${i + 1}.** ${n.content}\n> By <@${n.createdBy}> — <t:${Math.floor(n.createdAt.getTime() / 1000)}:R>`
+                L(`**${i + 1}.** ${n.content}\n> By <@${n.createdBy}> — <t:${Math.floor(n.createdAt.getTime() / 1000)}:R>`, `**${i + 1}.** ${n.content}\n> بواسطة <@${n.createdBy}> — <t:${Math.floor(n.createdAt.getTime() / 1000)}:R>`)
             );
 
             const embed = new EmbedBuilder()
-                .setTitle(`${emoji.info} Notes for ${putUser}`)
+                .setTitle(L(`${emoji.info} Notes ${putUser}`, `${emoji.info} الملاحظات ${putUser}`))
                 .setDescription(lines.join("\n\n"))
                 .setColor(COLORS.info)
-                .setFooter({ text: `Total: ${notes.length} note(s)` })
+                .setFooter({ text: L(`Total: ${notes.length} note(s)`, `المجموع: ${notes.length} ملاحظة`) })
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });
@@ -186,24 +186,24 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
 
         if (selected === "history") {
             const all = await PunishmentRepository.findByUser(targetId, guildId);
-            const level = await PunishmentRepository.getPunishmentLevel(targetId);
+            const level = await PunishmentRepository.getPunishmentLevel(guildId, targetId);
 
             if (!all.length) {
-                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(`No punishment history for <@${targetId}>.`).setColor(COLORS.info)] });
+                await interaction.editReply({ embeds: [new EmbedBuilder().setDescription(L(`No punishment history for <@${targetId}>.`, `ما في سجل عقوبات لـ <@${targetId}>.`)).setColor(COLORS.info)] });
                 return;
             }
 
             const lines = all.slice(0, 20).map((p, i) => {
-                const status = p.appealed ? "~~Appealed~~" : p.active ? "🔴 Active" : "⚪ Inactive";
+                const status = p.appealed ? L("~~Appealed~~", "~~مستأنف~~") : p.active ? L("🔴 Active", "🔴 فعال") : L("⚪ Ended", "⚪ منتهي");
                 const typeIcon = p.type === "warn" ? "⚠️" : p.type === "mute" ? "🔇" : "🔨";
                 return `**${i + 1}.** ${typeIcon} \`${p.caseId}\` [${p.type.toUpperCase()}] — ${status}\n> ${p.reason} — <t:${Math.floor(p.createdAt.getTime() / 1000)}:R>`;
             });
 
             const embed = new EmbedBuilder()
-                .setTitle(`${emoji.note} Punishment History ${putUser}`)
+                .setTitle(L(`${emoji.note} Punishment history ${putUser}`, `${emoji.note} سجل العقوبات ${putUser}`))
                 .setDescription(lines.join("\n\n"))
                 .setColor(COLORS.moderation)
-                .setFooter({ text: `Punishment Level: ${level}/100 | Total: ${all.length} record(s)` })
+                .setFooter({ text: L(`Punishment level ${level}/100 · ${all.length} record(s)`, `مستوى العقوبة ${level}/100 · ${all.length} سجل`) })
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });

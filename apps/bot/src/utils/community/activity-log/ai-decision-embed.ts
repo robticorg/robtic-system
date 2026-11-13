@@ -1,6 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { COLORS, COMMUNITY_MESSAGES } from "@constants";
 
+import { L } from "@utils";
 export function aiDecisionEmbed(
     userId: string,
     classification: string,
@@ -12,11 +13,11 @@ export function aiDecisionEmbed(
         .setColor(fallback ? COLORS.warning : COLORS.info)
         .setTitle(COMMUNITY_MESSAGES.aiDecisionTitle(fallback))
         .addFields(
-            { name: "User", value: `<@${userId}>`, inline: true },
-            { name: "Classification", value: classification, inline: true },
-            { name: "Confidence", value: `${(confidence * 100).toFixed(0)}%`, inline: true },
-            { name: "Context", value: context, inline: true },
-            { name: "Mode", value: fallback ? "Rule-based" : "AI", inline: true },
+            { name: L("User", "العضو"), value: `<@${userId}>`, inline: true },
+            { name: L("Classification", "التصنيف"), value: classification, inline: true },
+            { name: L("Confidence", "الثقة"), value: `${(confidence * 100).toFixed(0)}%`, inline: true },
+            { name: L("Context", "السياق"), value: context, inline: true },
+            { name: L("Mode", "الطريقة"), value: fallback ? L("Rule-based", "قواعد") : "AI", inline: true },
         )
         .setTimestamp();
 }

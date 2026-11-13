@@ -4,6 +4,7 @@ import { isFeatureEnabled } from "@core/features";
 import { AllowedGuildRepository, ServerConfigRepository } from "@database/repositories";
 import { Logger } from "@logger";
 
+import { L } from "@utils";
 const CTX = "tag";
 
 /** A server's `/tag setup`: the role, and where changes are logged (optional). */
@@ -21,9 +22,9 @@ export async function wearsWhitelistedTag(user: Pick<User, "primaryGuild">): Pro
 
 /** Why the bot can't hand `role` out, or `null` when it can. */
 export function tagRoleProblem(role: Role): string | null {
-    if (role.id === role.guild.id) return "`@everyone` can't be the tag role.";
-    if (role.managed) return `${role} is managed by an integration — pick a normal role.`;
-    if (!role.editable) return `I can't give ${role} — it must be below my highest role, and I need **Manage Roles**.`;
+    if (role.id === role.guild.id) return L("`@everyone` can't be the tag role.", "`@everyone` ما تكون رتبة التاق.");
+    if (role.managed) return L(`${role} is managed by an integration: pick a normal role.`, `${role} تابعة لتطبيق: اختر رتبة عادية.`);
+    if (!role.editable) return L(`I can't give ${role}: it must be below my highest role, and I need **Manage Roles**.`, `ما أقدر أعطي ${role}: لازم تكون تحت أعلى رتبة عندي، وأحتاج **Manage Roles**.`);
     return null;
 }
 
@@ -77,8 +78,8 @@ async function logMemberChange(member: GuildMember, role: Role, wears: boolean, 
         logChannelId,
         wears ? COLORS.success : COLORS.warning,
         wears
-            ? `🏷️ ${member} (\`${member.id}\`) wears the server tag${from} — given ${role}.`
-            : `🏷️ ${member} (\`${member.id}\`) no longer wears a server tag — ${role} removed.`,
+            ? L(`🏷️ ${member} (\`${member.id}\`) wears the server tag${from}: given ${role}.`, `🏷️ ${member} (\`${member.id}\`) لابس تاق السيرفر${from}: أخذ ${role}.`)
+            : L(`🏷️ ${member} (\`${member.id}\`) no longer wears a server tag: ${role} removed.`, `🏷️ ${member} (\`${member.id}\`) ما عاد لابس التاق: انسحبت ${role}.`),
     );
 }
 

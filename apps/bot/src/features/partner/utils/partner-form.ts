@@ -12,6 +12,7 @@ import type { IPartnerServer } from "@database/models";
 import { Logger } from "@logger";
 import { normalizePartnerImage } from "./render-partner-banner";
 
+import { L } from "@utils";
 /**
  * The partner form, shared by `/partner add` (empty, image required) and `/partner edit`
  * (prefilled, image optional — leave it empty to keep the current logo).
@@ -43,15 +44,15 @@ export function buildPartnerModal(partner?: IPartnerServer): ModalBuilder {
 
     return new ModalBuilder()
         .setCustomId(partner ? `partner:edit:${String(partner._id)}` : PARTNER_ADD_MODAL_ID)
-        .setTitle(editing ? "Edit Partner" : "Add Partner")
+        .setTitle(editing ? L("Edit partner", "تعديل شريك") : L("Add partner", "إضافة شريك"))
         .addLabelComponents(
-            text(PARTNER_FIELDS.invite, "Server invite URL", TextInputStyle.Short, limits.inviteUrl, "https://discord.gg/...", partner?.inviteUrl),
-            text(PARTNER_FIELDS.name, "Server name", TextInputStyle.Short, limits.name, "Their server's name", partner?.name),
-            text(PARTNER_FIELDS.representative, "Representative user ID", TextInputStyle.Short, 25, "The partner's representative", partner?.representativeId),
-            text(PARTNER_FIELDS.description, "Partner message", TextInputStyle.Paragraph, limits.description, "Describe their server", partner?.description),
+            text(PARTNER_FIELDS.invite, L("Server invite URL", "رابط دعوة السيرفر"), TextInputStyle.Short, limits.inviteUrl, "https://discord.gg/...", partner?.inviteUrl),
+            text(PARTNER_FIELDS.name, L("Server name", "اسم السيرفر"), TextInputStyle.Short, limits.name, L("Their server's name", "اسم سيرفرهم"), partner?.name),
+            text(PARTNER_FIELDS.representative, L("Representative user ID", "آيدي الممثل"), TextInputStyle.Short, 25, L("The partner's representative", "ممثل الشريك"), partner?.representativeId),
+            text(PARTNER_FIELDS.description, L("Partner message", "رسالة الشراكة"), TextInputStyle.Paragraph, limits.description, L("Describe their server", "وصف سيرفرهم"), partner?.description),
             new LabelBuilder()
-                .setLabel(editing ? "New partner image (optional)" : "Partner image")
-                .setDescription(editing ? "Leave empty to keep the current logo" : "Their server logo — shown on the banner beside ours")
+                .setLabel(editing ? L("New partner image (optional)", "صورة الشريك الجديدة (اختياري)") : L("Partner image", "صورة الشريك"))
+                .setDescription(editing ? L("Leave empty to keep the current logo", "اتركها فاضية للإبقاء على الحالية") : L("Their server logo, shown on the banner beside ours", "شعار سيرفرهم، يظهر على البنر جنب شعارنا"))
                 .setFileUploadComponent(new FileUploadBuilder()
                     .setCustomId(PARTNER_FIELDS.image)
                     .setRequired(!editing)
@@ -82,19 +83,19 @@ export async function readPartnerForm(
 
     // The invite must actually resolve — a typo or an expired link would be a dead post.
     const invite = await interaction.client.fetchInvite(inviteInput).catch(() => null);
-    if (!invite) return { problem: "That invite link is invalid or has expired." };
+    if (!invite) return { problem: L("That invite link is invalid or has expired.", "رابط الدعوة غير صحيح أو منتهي.") };
 
-    if (!SNOWFLAKE.test(representativeId)) return { problem: "The representative must be a user ID (numbers only)." };
+    if (!SNOWFLAKE.test(representativeId)) return { problem: L("The representative must be a user ID (numbers only).", "الممثل لازم يكون آيدي (أرقام فقط).") };
     const representative = await interaction.client.users.fetch(representativeId).catch(() => null);
-    if (!representative) return { problem: "No Discord user has that ID." };
+    if (!representative) return { problem: L("No Discord user has that ID.", "ما في حساب ديسكورد بهذا الآيدي.") };
 
     if (!upload) {
-        if (imageRequired) return { problem: "Attach the partner's image." };
+        if (imageRequired) return { problem: L("Attach the partner's image.", "أرفق صورة الشريك.") };
         return { values: { invite, name, representativeId, description, image: null } };
     }
 
-    if (!upload.contentType?.startsWith("image/")) return { problem: "The partner image must be an image file (PNG, JPG, WEBP, GIF)." };
-    if (upload.size > PARTNER_CONFIG.maxUploadBytes) return { problem: "That image is too large — 8 MB at most." };
+    if (!upload.contentType?.startsWith("image/")) return { problem: L("The partner image must be an image file (PNG, JPG, WEBP, GIF).", "صورة الشريك لازم تكون صورة (PNG أو JPG أو WEBP أو GIF).") };
+    if (upload.size > PARTNER_CONFIG.maxUploadBytes) return { problem: L("That image is too large: 8 MB at most.", "الصورة كبيرة: الحد 8 ميقا.") };
 
     try {
         const response = await fetch(upload.url);
@@ -103,13 +104,13 @@ export async function readPartnerForm(
         return { values: { invite, name, representativeId, description, image } };
     } catch (err) {
         Logger.warn(`Partner image could not be processed: ${err}`, "partner");
-        return { problem: "I couldn't read that image. Try a PNG or JPG." };
+        return { problem: L("I couldn't read that image. Try a PNG or JPG.", "ما قدرت أقرأ الصورة. جرب PNG أو JPG.") };
     }
 }
 
 /** A warning line for an invite that will stop working, or "" for a permanent one. */
 export function inviteExpiryNote(invite: Invite): string {
     return invite.expiresAt
-        ? `\n⚠️ This invite expires <t:${Math.floor(invite.expiresAt.getTime() / 1000)}:R> — ask them for a permanent one.`
+        ? L(`\n⚠️ This invite expires <t:${Math.floor(invite.expiresAt.getTime() / 1000)}:R>: ask them for a permanent one.`, `\n⚠️ هذي الدعوة تنتهي <t:${Math.floor(invite.expiresAt.getTime() / 1000)}:R>: اطلب منهم دعوة دائمة.`)
         : "";
 }

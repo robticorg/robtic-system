@@ -1,4 +1,5 @@
 /** Verifies the partner feature's banner rendering and Components V2 payloads — no database, no gateway. */
+import "./_english";
 import { readFileSync } from "node:fs";
 import { loadImage } from "@napi-rs/canvas";
 import { ComponentType, ButtonStyle } from "discord.js";

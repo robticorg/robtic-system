@@ -3,6 +3,7 @@ import type { ComponentHandler } from "@typings/command";
 import { GuildPanelRepository } from "@database/repositories";
 import { Logger } from "@logger";
 
+import { L } from "@utils";
 /**
  * Buttons and menu options of a dashboard-built panel. Custom ids: `gp:<panelId>:<itemId>` for a button, and
  * `gp:<panelId>:<selectId>` for a menu (the chosen value is the option's id). Each item either replies (only the
@@ -36,7 +37,7 @@ async function act(interaction: ButtonInteraction | StringSelectMenuInteraction,
     const member = interaction.member as GuildMember | null;
     if (!member) return;
     if (!allowed(member, item)) {
-        await interaction.reply({ content: "You can't use this.", flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: L("You can't use this.", "ما تقدر تستخدم هذا."), flags: MessageFlags.Ephemeral });
         return;
     }
     const action = item.action ?? { kind: "none" };
@@ -49,10 +50,10 @@ async function act(interaction: ButtonInteraction | StringSelectMenuInteraction,
         try {
             if (has) await member.roles.remove(action.roleId, "Panel button");
             else await member.roles.add(action.roleId, "Panel button");
-            await interaction.reply({ content: `${has ? "Removed" : "Added"} <@&${action.roleId}>.`, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+            await interaction.reply({ content: L(`${has ? "Removed" : "Added"} <@&${action.roleId}>.`, `${has ? "انسحبت" : "انضافت"} <@&${action.roleId}>.`), flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
         } catch (err) {
             Logger.warn(`Panel role toggle failed in ${interaction.guildId}: ${err}`, "panels");
-            await interaction.reply({ content: "I couldn't change that role. My role may be below it.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L("I couldn't change that role. My role may be below it.", "ما قدرت أغير هذي الرتبة. يمكن رتبتي تحتها."), flags: MessageFlags.Ephemeral });
         }
         return;
     }
@@ -63,7 +64,7 @@ async function resolve(interaction: ButtonInteraction | StringSelectMenuInteract
     const [, panelId, itemId] = interaction.customId.split(":");
     const panel = interaction.guildId ? await GuildPanelRepository.get(interaction.guildId, panelId!) : null;
     if (!panel) {
-        await interaction.reply({ content: "This panel was removed.", flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: L("This panel was removed.", "هذي اللوحة انحذفت."), flags: MessageFlags.Ephemeral });
         return null;
     }
     return { definition: panel.definition, itemId: itemId! };
@@ -78,7 +79,7 @@ export const guildPanelHandler: ComponentHandler<ButtonInteraction | StringSelec
         const target = find(found.definition, found.itemId);
         const item = interaction.isStringSelectMenu() ? target?.options?.find(o => o.id === interaction.values[0]) : target;
         if (!item) {
-            await interaction.reply({ content: "This was removed from the panel.", flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: L("This was removed from the panel.", "هذا انحذف من اللوحة."), flags: MessageFlags.Ephemeral });
             return;
         }
         await act(interaction, item);

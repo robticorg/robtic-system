@@ -25,6 +25,8 @@ export async function  connectDatabase(url: string): Promise<void> {
 const RETIRED_INDEXES: readonly [collection: string, index: string][] = [
     ["logconfigs", "key_1"],
     ["reasons", "key_1"],
+    // Case ids are numbered per server, so the second server's CASE-00001 collided with the first's.
+    ["punishments", "caseId_1"],
 ];
 
 async function dropRetiredIndexes(): Promise<void> {

@@ -8,6 +8,7 @@ import { renderPartnerPost } from "../utils/partner-post";
 import { grantPartnerRole } from "../utils/partner-role";
 import { ROLE_NOTE } from "../utils/role-note";
 
+import { L } from "@utils";
 /**
  * `/partner add` submitted: validate everything first, then render, post, and only then keep —
  * so a failed post never leaves a partner behind that nobody can see.
@@ -43,13 +44,13 @@ export const partnerAddModalHandler: ComponentHandler<ModalSubmitInteraction> = 
 
             const roleNote = ROLE_NOTE[await grantPartnerRole(guild, representativeId)](representativeId);
             await interaction.editReply({
-                content: `**${name}** is now a partner — posted in <#${message.channelId}>.\n${roleNote}${inviteExpiryNote(invite)}`,
+                content: L(`**${name}** is now a partner, posted in <#${message.channelId}>.\n${roleNote}${inviteExpiryNote(invite)}`, `**${name}** صار شريك، انرسل في <#${message.channelId}>.\n${roleNote}${inviteExpiryNote(invite)}`),
                 allowedMentions: { parse: [] },
             });
         } catch (err) {
             await PartnerServerRepository.delete(guild.id, String(partner._id));
             Logger.warn(`Partner post failed in ${guild.id}: ${err}`, "partner");
-            await fail("I couldn't post in the partner channel, so the partner wasn't added. Check my permissions there.");
+            await fail(L("I couldn't post in the partner channel, so the partner wasn't added. Check my permissions there.", "ما قدرت أرسل في روم الشراكات، فما انضاف الشريك. تأكد من صلاحياتي هناك."));
         }
     },
 };
