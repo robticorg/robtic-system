@@ -57,54 +57,6 @@ function decrypt(value: string, key: Uint8Array): string {
   return Buffer.concat([d.update(new Uint8Array(Buffer.from(data, "base64"))), d.final()] as unknown as Uint8Array[]).toString("utf8");
 }
 
-let reloadEnv: (() => Promise<void>) | null = null;
-
-if (URI && KEY && REMOTE) {
-  const key = new Uint8Array(Buffer.from(KEY, "base64"));
-  if (key.length !== 32) throw new Error("[remote-config] ROBTIC_CONFIG_KEY must be 32 bytes, base64.");
-
-  const conn = await mongoose.createConnection(URI, { serverSelectionTimeoutMS: 20_000 }).asPromise();
-  const read = () => conn.collection<ConfigDoc>(COLLECTION).findOne({ _id: BOT } as never) as Promise<ConfigDoc | null>;
-  // No settings yet is fine: the bot waits for its token below instead of failing.
-  const doc: ConfigDoc = (await read()) ?? { _id: BOT };
-
-  const apply = (d: ConfigDoc): number => {
-    let n = 0;
-    for (const [name, value] of Object.entries(d.env ?? {})) {
-      try {
-        process.env[name] = decrypt(value, key);
-        n++;
-      } catch {
-        // Never print the value. A wrong key fails every variable, so stop rather than run half-configured.
-        throw new Error(`[remote-config] could not decrypt ${name}: is ROBTIC_CONFIG_KEY right?`);
-      }
-    }
-    return n;
-  };
-  const count = apply(doc);
-  reloadEnv = async () => { const d = await read(); if (d) apply(d); };
-  blocked = new Set((doc.blacklist ?? []).map((b) => b.guildId));
-  emojis = { ...(doc.emojis ?? {}) };
-  console.log(`[remote-config] ${count} settings loaded for ${BOT}, ${blocked.size} blocked server(s).`);
-
-  const timer = setInterval(async () => {
-    try {
-      const fresh = await read();
-      emojis = { ...(fresh?.emojis ?? {}) };
-      const next = new Set((fresh?.blacklist ?? []).map((b) => b.guildId));
-      const changed = next.size !== blocked.size || [...next].some((id) => !blocked.has(id));
-      blocked = next;
-      if (changed) for (const fn of listeners) fn([...next]);
-    } catch (err) {
-      console.warn("[remote-config] could not refresh the blocked servers and emojis", err);
-    }
-  }, REFRESH_MS);
-  timer.unref?.();
-
-  startLogShipping(conn);
-  watchRestart(() => conn.collection<ConfigDoc>(COLLECTION).findOne({ _id: BOT } as never, { projection: { restartAt: 1 } }) as Promise<ConfigDoc | null>);
-}
-
 /* ------------------------------------------------------------------ restart and logs, from the admin console */
 
 // The admin console can restart a bot (Discord → Bot settings → Restart) and read its recent output, without touching
@@ -182,6 +134,54 @@ function watchRestart(read: () => Promise<ConfigDoc | null>): void {
     }
   }, RESTART_CHECK_MS);
   timer.unref?.();
+}
+
+let reloadEnv: (() => Promise<void>) | null = null;
+
+if (URI && KEY && REMOTE) {
+  const key = new Uint8Array(Buffer.from(KEY, "base64"));
+  if (key.length !== 32) throw new Error("[remote-config] ROBTIC_CONFIG_KEY must be 32 bytes, base64.");
+
+  const conn = await mongoose.createConnection(URI, { serverSelectionTimeoutMS: 20_000 }).asPromise();
+  const read = () => conn.collection<ConfigDoc>(COLLECTION).findOne({ _id: BOT } as never) as Promise<ConfigDoc | null>;
+  // No settings yet is fine: the bot waits for its token below instead of failing.
+  const doc: ConfigDoc = (await read()) ?? { _id: BOT };
+
+  const apply = (d: ConfigDoc): number => {
+    let n = 0;
+    for (const [name, value] of Object.entries(d.env ?? {})) {
+      try {
+        process.env[name] = decrypt(value, key);
+        n++;
+      } catch {
+        // Never print the value. A wrong key fails every variable, so stop rather than run half-configured.
+        throw new Error(`[remote-config] could not decrypt ${name}: is ROBTIC_CONFIG_KEY right?`);
+      }
+    }
+    return n;
+  };
+  const count = apply(doc);
+  reloadEnv = async () => { const d = await read(); if (d) apply(d); };
+  blocked = new Set((doc.blacklist ?? []).map((b) => b.guildId));
+  emojis = { ...(doc.emojis ?? {}) };
+  console.log(`[remote-config] ${count} settings loaded for ${BOT}, ${blocked.size} blocked server(s).`);
+
+  const timer = setInterval(async () => {
+    try {
+      const fresh = await read();
+      emojis = { ...(fresh?.emojis ?? {}) };
+      const next = new Set((fresh?.blacklist ?? []).map((b) => b.guildId));
+      const changed = next.size !== blocked.size || [...next].some((id) => !blocked.has(id));
+      blocked = next;
+      if (changed) for (const fn of listeners) fn([...next]);
+    } catch (err) {
+      console.warn("[remote-config] could not refresh the blocked servers and emojis", err);
+    }
+  }, REFRESH_MS);
+  timer.unref?.();
+
+  startLogShipping(conn);
+  watchRestart(() => conn.collection<ConfigDoc>(COLLECTION).findOne({ _id: BOT } as never, { projection: { restartAt: 1 } }) as Promise<ConfigDoc | null>);
 }
 
 /* ------------------------------------------------------------------ no token yet: wait quietly */
