@@ -83,7 +83,7 @@ const check = (name: string, ok: boolean, detail = "") => {
 // Manifest.
 {
     const names: string[] = invitesFeature.commands.map(c => c.name);
-    check("commands: /invites, /info, /invites-config", ["invites", "info", "invites-config"].every(n => names.includes(n)));
+    check("commands: /invites, /invited, /invites-config", ["invites", "invited", "invites-config"].every(n => names.includes(n)));
     check("/invites-config is admin-only", invitesFeature.commands.find(c => c.name === "invites-config")?.access === "admin");
 }
 

@@ -10,7 +10,7 @@ import { configChannel } from "./commands/config-channel";
 
 export default buildFeatureCommands(invitesFeature, {
     invites,
-    info,
+    invited: info,
 
     "invites-config": async (interaction: CommandInteractionLike, client: BotClient) => {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });

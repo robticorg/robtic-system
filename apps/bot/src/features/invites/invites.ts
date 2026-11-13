@@ -13,7 +13,7 @@ const USER_OPTION = { name: "user", description: "Member to check (defaults to y
  */
 export const invitesFeature = defineFeature({
     key: "invites",
-    description: "Invite tracking: join/leave announcements, /invites and /info",
+    description: "Invite tracking: join/leave announcements, /invites and /invited",
     activation: "default-on",
     commands: [
         {
@@ -25,7 +25,8 @@ export const invitesFeature = defineFeature({
             options: [USER_OPTION],
         },
         {
-            name: "info",
+            // Not "info": the info-panels feature owns /info, and two commands with one name means one is dropped.
+            name: "invited",
             description: "Everyone a member has invited",
             scope: "guild",
             access: "general",

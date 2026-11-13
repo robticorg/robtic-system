@@ -15,11 +15,11 @@ import { createdByTicketBot, forgetTicketChannel, hasTicketName, rememberTicketC
  * The one place invites are tracked. Each join is attributed once, then feeds three things:
  *
  * - the Invite reward credit (`recordInviteeJoin` — slots, expiry and "once per member, ever"),
- * - the join history behind `/invites` and `/info` (`InviteJoin`),
+ * - the join history behind `/invites` and `/invited` (`InviteJoin`),
  * - the announcement in the configured channel.
  *
  * A rejoin within `fakeWindowDays` of the member's last real join is recorded as fake, so it shows
- * on `/info` but is never credited to anyone. Leaves are announced in the same channel.
+ * on `/invited` but is never credited to anyone. Leaves are announced in the same channel.
  *
  * Also answers bare `info @user` / `invites @user` in the ticket bot's `ticket-…` channels.
  *

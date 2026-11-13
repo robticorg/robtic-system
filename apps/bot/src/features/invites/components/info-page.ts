@@ -4,7 +4,7 @@ import { verifyInvoker } from "@bot/utils/interaction";
 import { buildInfoView, INFO_PAGE_ID } from "../utils/info-view";
 import { orInvitesUnavailable } from "../utils/service-errors";
 
-/** Prev/Next under `/info`. Only whoever opened the panel can turn its pages. */
+/** Prev/Next under `/invited`. Only whoever opened the panel can turn its pages. */
 export const invitesInfoPageHandler: ComponentHandler<ButtonInteraction> = {
     customId: INFO_PAGE_ID,
 

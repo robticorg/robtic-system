@@ -2,7 +2,7 @@ import type { FeatureSubcommandHandler } from "@typings/feature";
 import { buildInfoView } from "../utils/info-view";
 import { orInvitesUnavailable } from "../utils/service-errors";
 
-/** `/info [user]` — everyone the member has invited, 10 per page. */
+/** `/invited [user]` — everyone the member has invited, 10 per page. */
 export const info: FeatureSubcommandHandler = async (interaction, _client) => {
     await interaction.deferReply();
 
