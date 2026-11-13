@@ -1,4 +1,5 @@
 import type { Client, Guild, GuildMember, VoiceBasedChannel } from "discord.js";
+import { liveBump } from "@database/live-feed";
 import { PeriodicStatRepository, VoiceSettingsRepository } from "@database/repositories";
 import { isFeatureEnabled } from "@core/features";
 import { publishMetric } from "@core/metrics";
@@ -105,6 +106,7 @@ async function tickGuild(guild: Guild, settings: Awaited<ReturnType<typeof Voice
     for (const { memberId, username, xp } of earned) {
         await grantVoiceXp(guild, memberId, username, xp, TICK_MINUTES);
         await PeriodicStatRepository.incrementAllPeriods(guild.id, "voiceTime", memberId, TICK_SECONDS);
+        liveBump(guild.id, "voiceSeconds", TICK_SECONDS);
         publishMetric({ guildId: guild.id, discordId: memberId, username, metric: "voiceTime", value: TICK_SECONDS });
     }
 }

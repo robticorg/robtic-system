@@ -8,6 +8,7 @@ import { countHourlyMessage, messageBufferField } from "@core/activity";
 import { awardMessageMilestone } from "@core/staff-api";
 import { bufferMessage, isRedisConfigured } from "@queue";
 import { Logger } from "@logger";
+import { liveBump } from "@database/live-feed";
 import { isExcludedChannel } from "@bot/services/community/xp";
 
 /**
@@ -36,6 +37,7 @@ export default {
         if (await isExcludedChannel(message.guild.id, message.channel.id)) return;
 
         countHourlyMessage(message.guild.id, message.createdAt);
+        liveBump(message.guild.id, "messages");
 
         try {
             if (isRedisConfigured()) {
