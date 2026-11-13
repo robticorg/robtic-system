@@ -63,6 +63,6 @@ export default {
             }
 
             await interaction.editReply({ embeds: [await applyPunishment(client, guild, p)] });
-        });
+        }, p.guildId);
     },
 };

@@ -39,7 +39,7 @@ export function registerEventModule(client: BotClient, exported: unknown, path: 
 
         const name = entry.name as keyof ClientEvents;
         const execute = entry.execute as (...a: unknown[]) => unknown;
-        const run = async (args: unknown[]) => runWithLang(await langFor(args), () => execute(...args, client));
+        const run = async (args: unknown[]) => runWithLang(await langFor(args), () => execute(...args, client), guildIdOf(args));
         // Split-brain gate: if another Gateway already took this event, this one doesn't handle it.
         const listener = (...args: unknown[]) => {
             const verdict = shouldHandle(name, args);

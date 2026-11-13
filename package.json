@@ -16,6 +16,7 @@
     "test:workspaces": "bun --preload ./libs/shared/src/preload.ts scripts/workspace-check.ts",
     "test:rewards": "bun --preload ./libs/shared/src/preload.ts scripts/reward-checks.ts",
     "test:invites": "bun --preload ./libs/shared/src/preload.ts scripts/invites-check.ts",
+    "test:emoji": "bun --preload ./libs/shared/src/preload.ts scripts/emoji-check.ts",
     "test:partner": "bun --preload ./libs/shared/src/preload.ts scripts/partner-check.ts",
     "test:boost": "bun --preload ./libs/shared/src/preload.ts scripts/boost-check.ts",
     "test:level-card": "bun --preload ./libs/shared/src/preload.ts scripts/level-card-check.ts",

@@ -21,5 +21,5 @@ export async function getUserLang(member: GuildMember | null | undefined): Promi
 
 /** Runs `fn` in a server's language: for work that doesn't come from an event (schedulers, queued jobs). */
 export async function inGuildLang<T>(guildId: string | null | undefined, fn: () => Promise<T>): Promise<T> {
-    return runWithLang(await getGuildLang(guildId), fn);
+    return runWithLang(await getGuildLang(guildId), fn, guildId);
 }

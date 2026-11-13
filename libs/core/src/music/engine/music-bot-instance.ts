@@ -104,7 +104,7 @@ export class MusicBotInstance {
         // A music bot is its own client, outside the main bot's event loader, so it picks its server's language here.
         const inLang = <T>(fn: () => Promise<T>) => ServerConfigRepository.getLanguage(this.settings.guildId)
             .catch(() => null)
-            .then(lang => runWithLang(lang ?? DEFAULT_LANG, fn));
+            .then(lang => runWithLang(lang ?? DEFAULT_LANG, fn, this.settings.guildId));
         this.client.on("messageCreate", message => void inLang(() => this.onMessage(message)).catch(e => this.warn("message", e)));
         this.client.on("interactionCreate", interaction => void inLang(() => this.onInteraction(interaction)).catch(e => this.warn("interaction", e)));
         this.client.on("error", e => this.warn("client", e));

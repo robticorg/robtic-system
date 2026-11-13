@@ -43,6 +43,8 @@ export interface IServerConfig extends Document {
     topStyle?: { accent?: string; chart?: boolean } | null;
     /** The language the bot answers in on this server (dashboard → General). Unset: Arabic, as before. */
     language?: "en" | "ar";
+    /** This server's own emojis, slot -> emoji (dashboard → Emojis). Empty slots use the admin console's, then the bot's. */
+    emojis?: Record<string, string> | null;
     /** Prefix for main-bot text commands in this guild (e.g. "!"). Falls back to DEFAULT_PREFIX when unset. */
     prefix?: string;
     /** Channel where plain chat is auto-deleted, keeping it command-only (see commands-channel-guard.ts). */
@@ -119,6 +121,7 @@ const serverConfigSchema = new Schema<IServerConfig>(
         lineRoleIds: { type: [String], default: [] },
         prefix: { type: String },
         language: { type: String, enum: ["en", "ar"] },
+        emojis: { type: Schema.Types.Mixed, default: null },
         topStyle: { type: Schema.Types.Mixed, default: null },
         commandsChannelId: { type: String },
         inviteLogChannelId: { type: String },

@@ -12,15 +12,18 @@ import type { Lang } from "@typings/lang";
 /** What a server that never picked a language gets: the bot was Arabic-only before the choice existed. */
 export const DEFAULT_LANG: Lang = "ar";
 
-const store = new AsyncLocalStorage<Lang>();
+const store = new AsyncLocalStorage<{ lang: Lang; guildId: string | null }>();
 
 /** The language outside any server: the default, unless a script changed it (enterLang). */
 let fallback: Lang = DEFAULT_LANG;
 
-export const currentLang = (): Lang => store.getStore() ?? fallback;
+export const currentLang = (): Lang => store.getStore()?.lang ?? fallback;
 
-/** Runs `fn` with `lang` as the current language. */
-export const runWithLang = <T>(lang: Lang, fn: () => T): T => store.run(lang, fn);
+/** The server whatever the bot is handling came from, when it came from one (for its own emojis). */
+export const currentGuildId = (): string | null => store.getStore()?.guildId ?? null;
+
+/** Runs `fn` with `lang` as the current language (and `guildId` as the current server, when there is one). */
+export const runWithLang = <T>(lang: Lang, fn: () => T, guildId: string | null = null): T => store.run({ lang, guildId }, fn);
 
 /** Sets the language outside any server for the rest of the run (scripts and tests). Never used by the bot. */
 export const enterLang = (lang: Lang): void => { fallback = lang; };

@@ -1,4 +1,5 @@
 import { getEmojiOverride } from "../../shared/src/remote-config";
+import { currentGuildId } from "../../utils/src/lang-context";
 
 /**
  * The bot's emojis. Each key is a slot the admin console can fill (admin.robtic.org → Discord → Emojis); an empty slot
@@ -36,8 +37,15 @@ const DEFAULT_EMOJIS = {
 
 export type EmojiKey = keyof typeof DEFAULT_EMOJIS;
 
-/** The emoji for a slot: the admin console's choice, else the default. */
-export const emoji = (key: EmojiKey): string => getEmojiOverride(key) ?? DEFAULT_EMOJIS[key];
+/** How a server's own emojis are found (set by the server cache in @core/style/accent, which loads them). */
+let guildLookup: ((guildId: string, key: string) => string | undefined) | null = null;
+export const setGuildEmojiLookup = (fn: typeof guildLookup): void => { guildLookup = fn; };
+
+/** The emoji for a slot: the current server's own (dashboard), else the admin console's, else the default. */
+export function emoji(key: EmojiKey): string {
+    const guildId = currentGuildId();
+    return (guildId ? guildLookup?.(guildId, key) : undefined) ?? getEmojiOverride(key) ?? DEFAULT_EMOJIS[key];
+}
 
 /**
  * The same emojis under the old name. Every read goes through `emoji()`, so existing code picks up the admin console's
