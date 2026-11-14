@@ -43,7 +43,7 @@ export class MusicBotRepository {
     }
 
     /** What the running bot reports for the dashboard, each sync. Never touches its settings or token. */
-    static async report(botId: string, state: { inGuild: boolean; connectedChannelId: string | null; nowPlaying: string | null }): Promise<void> {
+    static async report(botId: string, state: { inGuild: boolean; connectedChannelId: string | null; nowPlaying: string | null; readsMessages: boolean }): Promise<void> {
         await MusicBot.updateOne({ botId }, { $set: { ...state, lastSeenAt: new Date() } }, { timestamps: false });
     }
 

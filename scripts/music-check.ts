@@ -6,6 +6,7 @@ import { generateDependencyReport } from "@discordjs/voice";
 import { MUSIC_CONFIG } from "@constants";
 import { createMusicBot, parseMusicCommand, pickBot, pickProblem, youtubeIdOf, decryptToken, encryptToken, inspectBotToken, looksLikeBotToken, musicBotInviteUrl, musicTokenKey, type CreateMusicBotInput } from "@core/music";
 import { MusicBotRepository, resolveMusicSettings } from "@database/repositories";
+import { isDisallowedIntents } from "@core/music/engine/music-bot-instance";
 import { BOT_CREATE_MODAL_ID, BOT_DELETE_MODAL_ID, buildBotCreateModal, buildBotDeleteModal } from "@bot/features/bots/utils/forms";
 import { musicFeature } from "@bot/features/music/music";
 import { botsFeature } from "@bot/features/bots/bots";
@@ -226,6 +227,13 @@ await (async () => {
 {
     check("links: YouTube ids are read from every link shape", ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://youtu.be/dQw4w9WgXcQ?t=3", "https://youtube.com/shorts/dQw4w9WgXcQ", "https://music.youtube.com/watch?v=dQw4w9WgXcQ&list=x"].every(u => youtubeIdOf(u) === "dQw4w9WgXcQ"));
     check("links: a song name is not a link", youtubeIdOf("never gonna give you up") === null);
+}
+
+// Message Content intent off in the Developer Portal: recognised, so the bot logs in again without it.
+{
+    check("intents: close code 4014 is recognised", isDisallowedIntents({ code: 4014 }));
+    check("intents: discord.js's message is recognised", isDisallowedIntents(new Error("Used disallowed intents")));
+    check("intents: a bad token is not mistaken for it", !isDisallowedIntents(new Error("An invalid token was provided.")));
 }
 
 if (failures > 0) {

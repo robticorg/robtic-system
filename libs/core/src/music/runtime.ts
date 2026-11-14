@@ -154,6 +154,7 @@ export async function syncMusicBots(): Promise<void> {
             inGuild: instance.online && instance.inGuild,
             connectedChannelId: instance.connectedChannelId,
             nowPlaying: instance.nowPlayingTitle,
+            readsMessages: instance.readsMessages,
         }).catch(() => null);
     }
 }

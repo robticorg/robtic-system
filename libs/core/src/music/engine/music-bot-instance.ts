@@ -61,6 +61,12 @@ interface PlayingTrack extends Track {
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+/** Discord closes with 4014 when a bot asks for a privileged intent its owner hasn't turned on. */
+export function isDisallowedIntents(err: unknown): boolean {
+    const e = err as { code?: unknown; message?: unknown } | null;
+    return e?.code === 4014 || e?.code === "DisallowedIntents" || /disallowed intents/i.test(String(e?.message ?? ""));
+}
+
 /**
  * One music bot: its own Discord client, voice connection, queue and now-playing card.
  *
@@ -70,7 +76,12 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
  * server that isn't its own.
  */
 export class MusicBotInstance {
-    readonly client: Client;
+    client: Client;
+    /**
+     * Whether it can read typed commands: Discord gives message text only with the Message Content intent, which each
+     * bot's owner turns on in the Developer Portal. Without it the bot still logs in and the control panel works.
+     */
+    readsMessages = true;
     private readonly ctx: string;
     private readonly player = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Pause } });
 
@@ -100,14 +111,7 @@ export class MusicBotInstance {
 
     constructor(public settings: MusicBotSettings, private readonly token: string, private readonly hooks: MusicBotHooks) {
         this.ctx = `music:${settings.name}`;
-        this.client = new Client({
-            intents: [
-                GatewayIntentBits.Guilds,
-                GatewayIntentBits.GuildMessages,
-                GatewayIntentBits.MessageContent,
-                GatewayIntentBits.GuildVoiceStates,
-            ],
-        });
+        this.client = this.makeClient(true);
 
         this.player.on(AudioPlayerStatus.Idle, () => {
             if (this.holdIdle || this.loadingTrack) return;
@@ -118,11 +122,24 @@ export class MusicBotInstance {
             if (!this.holdIdle && this.current && !this.loadingTrack) this.next().catch(err => this.warn("next", err));
         });
 
-        this.client.once("clientReady", () => this.onReady().catch(e => this.warn("ready", e)));
-        this.client.on("guildCreate", guild => this.enforceGuild(guild));
-        this.client.on("messageCreate", message => void this.inLang(() => this.hooks.onMessage(this, message)).catch(e => this.warn("message", e)));
-        this.client.on("interactionCreate", interaction => void this.inLang(() => this.onInteraction(interaction)).catch(e => this.warn("interaction", e)));
-        this.client.on("error", e => this.warn("client", e));
+    }
+
+    /** Its Discord client, with or without the Message Content intent. */
+    private makeClient(withMessageContent: boolean): Client {
+        const client = new Client({
+            intents: [
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMessages,
+                ...(withMessageContent ? [GatewayIntentBits.MessageContent] : []),
+                GatewayIntentBits.GuildVoiceStates,
+            ],
+        });
+        client.once("clientReady", () => this.onReady().catch(e => this.warn("ready", e)));
+        client.on("guildCreate", guild => this.enforceGuild(guild));
+        client.on("messageCreate", message => void this.inLang(() => this.hooks.onMessage(this, message)).catch(e => this.warn("message", e)));
+        client.on("interactionCreate", interaction => void this.inLang(() => this.onInteraction(interaction)).catch(e => this.warn("interaction", e)));
+        client.on("error", e => this.warn("client", e));
+        return client;
     }
 
     /** A music bot is its own client, outside the main bot's event loader, so it picks its server's language here. */
@@ -170,8 +187,21 @@ export class MusicBotInstance {
 
     // ── lifecycle ────────────────────────────────────────────────────────────
 
+    /**
+     * Logs in. If Discord refuses the Message Content intent (not turned on in the Developer Portal), it logs in again
+     * without it: typed commands are off for this bot, the control panel works the same.
+     */
     async start(): Promise<void> {
-        await this.client.login(this.token);
+        try {
+            await this.client.login(this.token);
+        } catch (err) {
+            if (!isDisallowedIntents(err) || this.destroyed) throw err;
+            Logger.warn("Message Content intent is off in the Developer Portal — logged in without it: typed commands are off, the panel works", this.ctx);
+            await this.client.destroy().catch(() => null);
+            this.readsMessages = false;
+            this.client = this.makeClient(false);
+            await this.client.login(this.token);
+        }
     }
 
     /** Leaves voice, stops everything, logs out. The instance can't be started again. */

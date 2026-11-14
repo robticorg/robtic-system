@@ -32,6 +32,8 @@ export interface IMusicBot extends Document {
     inGuild?: boolean;
     connectedChannelId?: string | null;
     nowPlaying?: string | null;
+    /** False when its Message Content intent is off: typed commands can't reach it. */
+    readsMessages?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -51,6 +53,7 @@ const musicBotSchema = new Schema<IMusicBot>(
         inGuild: { type: Boolean, default: false },
         connectedChannelId: { type: String, default: null },
         nowPlaying: { type: String, default: null },
+        readsMessages: { type: Boolean, default: true },
     },
     { timestamps: true }
 );
