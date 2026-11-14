@@ -6,6 +6,7 @@ import {
     TextInputStyle,
     type ButtonInteraction,
     type ModalSubmitInteraction,
+    type StringSelectMenuInteraction,
 } from "discord.js";
 import type { ComponentHandler } from "@typings/command";
 import { MUSIC_CONFIG } from "@constants";
@@ -22,7 +23,9 @@ import { L } from "@utils";
  *           none). The now-playing card goes to that voice channel's chat.
  *   Pause / Resume / Skip / Stop / Volume → that channel's bot.
  *
- * Everyone in the voice channel may use it (no DJ role). Answers are only visible to the person who pressed.
+ * The dashboard shows the controls as buttons (`music-panel:<action>`) or as one menu (`music-panel:menu`, the action
+ * is the picked value); both do the same. Everyone in the voice channel may use it (no DJ role). Answers are only
+ * visible to the person who used it.
  */
 
 export const MUSIC_PANEL_PREFIX = "music-panel:";
@@ -31,57 +34,70 @@ export type MusicPanelAction = (typeof MUSIC_PANEL_ACTIONS)[number];
 const MODAL_ID = `${MUSIC_PANEL_PREFIX}modal`;
 const QUERY_FIELD = "query";
 
-const voiceOf = (i: ButtonInteraction | ModalSubmitInteraction) => (i.inCachedGuild() ? i.member.voice.channelId : null);
+type ControlInteraction = ButtonInteraction | StringSelectMenuInteraction;
+
+const voiceOf = (i: ControlInteraction | ModalSubmitInteraction) => (i.inCachedGuild() ? i.member.voice.channelId : null);
 const ephemeral = (content: string) => ({ content, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } }) as const;
 
 async function panelOn(guildId: string): Promise<boolean> {
     return (await MusicSettingsRepository.get(guildId)).panel;
 }
 
+/** One control, from a button or the menu: the same for both. */
+async function runControl(interaction: ControlInteraction, action: MusicPanelAction) {
+    const guildId = interaction.guildId!;
+    if (!(await panelOn(guildId))) return interaction.reply(ephemeral(L("The music panel is turned off on this server.", "لوحة التحكم بالموسيقى معطّلة في هذا السيرفر.")));
+
+    const bots = musicBotsInGuild(guildId);
+    const voice = voiceOf(interaction);
+    const pick = pickBot(bots, voice, { starting: action === "play" });
+    if (!pick.ok) return interaction.reply(ephemeral(pickProblem(pick.reason, bots)));
+    const bot = pick.bot;
+
+    if (action === "play") {
+        const input = new TextInputBuilder()
+            .setCustomId(QUERY_FIELD)
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMaxLength(300)
+            .setPlaceholder(L("A song name, or a YouTube / Spotify / SoundCloud link", "اسم الأغنية، أو رابط YouTube / Spotify / SoundCloud"));
+        const modal = new ModalBuilder()
+            .setCustomId(MODAL_ID)
+            .setTitle(L("Play music", "تشغيل الموسيقى"))
+            .addLabelComponents(new LabelBuilder().setLabel(L("Song or link", "الأغنية أو الرابط")).setTextInputComponent(input));
+        return interaction.showModal(modal);
+    }
+
+    switch (action) {
+        case "pause":
+            return interaction.reply(ephemeral(bot.pause() ? L("⏸️ Paused.", "⏸️ تم الإيقاف المؤقت.") : L("Nothing is playing.", "لا يوجد تشغيل حالياً.")));
+        case "resume":
+            return interaction.reply(ephemeral(bot.resume() ? L("▶️ Resumed.", "▶️ تمت المتابعة.") : L("Nothing is paused.", "لا يوجد تشغيل متوقف مؤقتاً.")));
+        case "skip":
+            return interaction.reply(ephemeral(bot.skip() ? L("⏭️ Skipped.", "⏭️ تم التخطي.") : L("Nothing to skip to.", "لا توجد أغنية تالية.")));
+        case "stop":
+            return interaction.reply(ephemeral((await bot.stop()) ? L("⏹️ Stopped and cleared the queue.", "⏹️ تم إيقاف التشغيل ومسح القائمة.") : L("Nothing is playing.", "لا يوجد تشغيل حالياً.")));
+        case "vdown":
+        case "vup": {
+            const v = bot.changeVolume(action === "vup" ? MUSIC_CONFIG.volumeStep : -MUSIC_CONFIG.volumeStep);
+            return interaction.reply(ephemeral(L(`🔊 Volume: **${v}%**`, `🔊 مستوى الصوت: **${v}%**`)));
+        }
+    }
+}
+
 export const musicPanelButtonHandler: ComponentHandler<ButtonInteraction> = {
     customId: new RegExp(`^${MUSIC_PANEL_PREFIX}(${MUSIC_PANEL_ACTIONS.join("|")})$`),
     feature: "music",
+    run: (interaction: ButtonInteraction) => runControl(interaction, interaction.customId.slice(MUSIC_PANEL_PREFIX.length) as MusicPanelAction),
+};
 
-    async run(interaction: ButtonInteraction) {
-        const guildId = interaction.guildId!;
-        if (!(await panelOn(guildId))) return interaction.reply(ephemeral(L("The music panel is turned off on this server.", "لوحة التحكم بالموسيقى معطّلة في هذا السيرفر.")));
-
-        const action = interaction.customId.slice(MUSIC_PANEL_PREFIX.length) as MusicPanelAction;
-        const bots = musicBotsInGuild(guildId);
-        const voice = voiceOf(interaction);
-        const pick = pickBot(bots, voice, { starting: action === "play" });
-        if (!pick.ok) return interaction.reply(ephemeral(pickProblem(pick.reason, bots)));
-        const bot = pick.bot;
-
-        if (action === "play") {
-            const input = new TextInputBuilder()
-                .setCustomId(QUERY_FIELD)
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true)
-                .setMaxLength(300)
-                .setPlaceholder(L("A song name, or a YouTube / Spotify / SoundCloud link", "اسم الأغنية، أو رابط YouTube / Spotify / SoundCloud"));
-            const modal = new ModalBuilder()
-                .setCustomId(MODAL_ID)
-                .setTitle(L("Play music", "تشغيل الموسيقى"))
-                .addLabelComponents(new LabelBuilder().setLabel(L("Song or link", "الأغنية أو الرابط")).setTextInputComponent(input));
-            return interaction.showModal(modal);
-        }
-
-        switch (action) {
-            case "pause":
-                return interaction.reply(ephemeral(bot.pause() ? L("⏸️ Paused.", "⏸️ تم الإيقاف المؤقت.") : L("Nothing is playing.", "لا يوجد تشغيل حالياً.")));
-            case "resume":
-                return interaction.reply(ephemeral(bot.resume() ? L("▶️ Resumed.", "▶️ تمت المتابعة.") : L("Nothing is paused.", "لا يوجد تشغيل متوقف مؤقتاً.")));
-            case "skip":
-                return interaction.reply(ephemeral(bot.skip() ? L("⏭️ Skipped.", "⏭️ تم التخطي.") : L("Nothing to skip to.", "لا توجد أغنية تالية.")));
-            case "stop":
-                return interaction.reply(ephemeral((await bot.stop()) ? L("⏹️ Stopped and cleared the queue.", "⏹️ تم إيقاف التشغيل ومسح القائمة.") : L("Nothing is playing.", "لا يوجد تشغيل حالياً.")));
-            case "vdown":
-            case "vup": {
-                const v = bot.changeVolume(action === "vup" ? MUSIC_CONFIG.volumeStep : -MUSIC_CONFIG.volumeStep);
-                return interaction.reply(ephemeral(L(`🔊 Volume: **${v}%**`, `🔊 مستوى الصوت: **${v}%**`)));
-            }
-        }
+export const musicPanelMenuHandler: ComponentHandler<StringSelectMenuInteraction> = {
+    customId: `${MUSIC_PANEL_PREFIX}menu`,
+    feature: "music",
+    async run(interaction: StringSelectMenuInteraction) {
+        const action = interaction.values[0] as MusicPanelAction | undefined;
+        if (!action || !(MUSIC_PANEL_ACTIONS as readonly string[]).includes(action)) return interaction.reply(ephemeral(L("Pick a control from the menu.", "يرجى اختيار أمر من القائمة.")));
+        return runControl(interaction, action);
     },
 };
 

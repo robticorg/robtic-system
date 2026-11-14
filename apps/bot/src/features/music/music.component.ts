@@ -1,7 +1,7 @@
 import type { FeatureComponentIndex } from "@typings/feature";
-import { musicPanelButtonHandler, musicPanelModalHandler } from "./components/panel";
+import { musicPanelButtonHandler, musicPanelMenuHandler, musicPanelModalHandler } from "./components/panel";
 
 export default {
     feature: "music",
-    handlers: [musicPanelButtonHandler, musicPanelModalHandler],
+    handlers: [musicPanelButtonHandler, musicPanelMenuHandler, musicPanelModalHandler],
 } satisfies FeatureComponentIndex;
