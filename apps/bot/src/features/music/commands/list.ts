@@ -11,7 +11,7 @@ export const list: FeatureSubcommandHandler = async (interaction, _client) => {
     const bots = await listMusicBots(interaction.guildId!);
 
     if (!bots.length) {
-        await interaction.editReply({ content: L("No music bots yet. Add one with `/bot create`.", "ما في بوتات موسيقى لين الحين. أضف واحد بـ `/bot create`.") });
+        await interaction.editReply({ content: L("No music bots yet. Add them on the RobTic Music dashboard.", "لا توجد بوتات موسيقى بعد. يمكنك إضافتها من لوحة RobTic Music.") });
         return;
     }
 
@@ -20,8 +20,8 @@ export const list: FeatureSubcommandHandler = async (interaction, _client) => {
             ? "🔴 offline"
             : bot.status === "online"
                 ? "🟢 online"
-                : `🟡 not in the server — [invite it](${musicBotInviteUrl(bot.applicationId, bot.guildId)})`;
-        return `**${i + 1}. ${bot.name}** · <@${bot.botId}> · <#${bot.voiceChannelId}> · ${status}`;
+                : `🟡 not in the server — [invite it](${musicBotInviteUrl(bot.applicationId, bot.guildId, bot.mode)})`;
+        return `**${i + 1}. ${bot.name}** · <@${bot.botId}> · ${bot.voiceChannelId ? `<#${bot.voiceChannelId}>` : L("moves between channels", "يتنقل بين الرومات")} · ${status}`;
     });
 
     await interaction.editReply({

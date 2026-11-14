@@ -1,11 +1,11 @@
 /** Verifies music-bot token encryption, token checks, the invite link, the create form, the manifest and the create service — no database, no gateway. */
 import "./_english";
 import { randomBytes } from "node:crypto";
-import { ChannelType, ComponentType } from "discord.js";
+import { ChannelType, ComponentType, PermissionFlagsBits } from "discord.js";
 import { generateDependencyReport } from "@discordjs/voice";
 import { MUSIC_CONFIG } from "@constants";
-import { createMusicBot, decryptToken, encryptToken, inspectBotToken, looksLikeBotToken, musicBotInviteUrl, musicTokenKey, type CreateMusicBotInput } from "@core/music";
-import { MusicBotRepository } from "@database/repositories";
+import { createMusicBot, parseMusicCommand, pickBot, pickProblem, youtubeIdOf, decryptToken, encryptToken, inspectBotToken, looksLikeBotToken, musicBotInviteUrl, musicTokenKey, type CreateMusicBotInput } from "@core/music";
+import { MusicBotRepository, resolveMusicSettings } from "@database/repositories";
 import { BOT_CREATE_MODAL_ID, BOT_DELETE_MODAL_ID, buildBotCreateModal, buildBotDeleteModal } from "@bot/features/bots/utils/forms";
 import { musicFeature } from "@bot/features/music/music";
 import { botsFeature } from "@bot/features/bots/bots";
@@ -171,6 +171,61 @@ await (async () => {
     const noKey = await createMusicBot(input, deps());
     check("create: without MUSIC_TOKEN_KEY nothing is created", !noKey.ok && noKey.problem.includes("MUSIC_TOKEN_KEY"));
     if (previousKey !== undefined) process.env.MUSIC_TOKEN_KEY = previousKey;
+}
+
+// Which bot answers in a voice channel (router).
+{
+    type Fake = Parameters<typeof pickBot>[0][number];
+    const bot = (botId: string, mode: "fixed" | "roaming", assigned: string | null, connected: string | null, busy = false) =>
+        ({ online: true, inGuild: true, busy, assignedChannelId: mode === "fixed" ? assigned : null, connectedChannelId: connected, settings: { botId, mode, voiceChannelId: assigned, name: botId, guildId: "g" } }) as unknown as Fake;
+    const fixedA = bot("1", "fixed", "vcA", "vcA");
+    const roamFree = bot("3", "roaming", null, null);
+    const roamFree2 = bot("2", "roaming", null, null);
+    const roamBusy = bot("4", "roaming", null, "vcB", true);
+    const all = [fixedA, roamFree, roamFree2, roamBusy];
+
+    const pick = (vc: string | null, starting = true, bots = all) => pickBot(bots, vc, { starting });
+    const id = (p: ReturnType<typeof pickBot>) => (p.ok ? p.bot.settings.botId : p.reason);
+    check("router: not in voice → told to join one", id(pick(null)) === "no-voice");
+    check("router: a channel's fixed bot answers there", id(pick("vcA")) === "1");
+    check("router: a roaming bot already in the channel answers there", id(pick("vcB")) === "4");
+    check("router: a channel without a bot gets a free roaming bot, the same one each time (lowest id)", id(pick("vcC")) === "2" && id(pick("vcC")) === "2");
+    check("router: a roaming bot never takes a channel that has a fixed bot, even with free roaming bots around", id(pick("vcA", true, [roamFree, roamFree2, fixedA])) === "1");
+    check("router: with only busy roaming bots, they're busy", id(pick("vcC", true, [fixedA, roamBusy])) === "busy");
+    check("router: no roaming bots at all → this channel has none", id(pick("vcC", true, [fixedA])) === "none");
+    check("router: stop/skip in a channel with nothing playing → nothing here (no bot joins)", id(pick("vcC", false)) === "nothing-here");
+    check("router: offline bots are skipped", id(pick("vcA", true, [{ ...fixedA, online: false } as Fake])) === "none");
+    check("router: the hint lists the music channels", pickProblem("no-voice", all).includes("<#vcA>") && pickProblem("no-voice", all).includes("<#vcB>"));
+}
+
+// Text command words (per server).
+{
+    const words = resolveMusicSettings({ words: { play: ["ش", "play", "p"], volume: [] } }).words;
+    check("words: play with a song", JSON.stringify(parseMusicCommand("ش عزرائيل", words)) === JSON.stringify({ command: "play", rest: "عزرائيل" }));
+    check("words: case doesn't matter", parseMusicCommand("PLAY Never", words)?.command === "play");
+    check("words: a longer word wins over a shorter one it starts with", parseMusicCommand("pause", words)?.command === "pause");
+    check("words: a word inside another word is not a command", parseMusicCommand("playful day", words) === null && parseMusicCommand("ششش", words) === null);
+    check("words: an emptied list keeps the defaults", words.volume.includes("volume") && parseMusicCommand("صوت 70", words)?.rest === "70");
+    const odd = resolveMusicSettings({ words: { stop: ["  STOP ", "two words", "x".repeat(30), "stop"] } }).words.stop;
+    check("words: trimmed, lower-cased, no spaces or overlong words, no repeats", JSON.stringify(odd) === JSON.stringify(["stop"]), JSON.stringify(odd));
+    const d = resolveMusicSettings(null);
+    check("settings: defaults are commands on, panel on, bots stay in their channel", d.commands && d.panel && d.stay);
+    check("settings: a server's own choices are kept", JSON.stringify(resolveMusicSettings({ commands: false, panel: true, stay: false })) .includes('"commands":false'));
+}
+
+// A roaming bot is invited with voice permissions; a fixed one with none.
+{
+    const roam = new URL(musicBotInviteUrl("222", "999", "roaming")).searchParams.get("permissions")!;
+    const bits = BigInt(roam);
+    check("roaming invite: can join and speak anywhere", (bits & PermissionFlagsBits.Connect) !== 0n && (bits & PermissionFlagsBits.Speak) !== 0n);
+    check("roaming invite: nothing that manages", (bits & (PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageChannels | PermissionFlagsBits.MoveMembers | PermissionFlagsBits.ManageRoles)) === 0n);
+    check("fixed invite: still no permissions", new URL(musicBotInviteUrl("222", "999", "fixed")).searchParams.get("permissions") === "0");
+}
+
+// Links.
+{
+    check("links: YouTube ids are read from every link shape", ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://youtu.be/dQw4w9WgXcQ?t=3", "https://youtube.com/shorts/dQw4w9WgXcQ", "https://music.youtube.com/watch?v=dQw4w9WgXcQ&list=x"].every(u => youtubeIdOf(u) === "dQw4w9WgXcQ"));
+    check("links: a song name is not a link", youtubeIdOf("never gonna give you up") === null);
 }
 
 if (failures > 0) {

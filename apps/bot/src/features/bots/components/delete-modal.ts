@@ -11,15 +11,15 @@ import { L } from "@utils";
 async function deleteMusic(interaction: ModalSubmitInteraction, botId: string): Promise<void> {
     const guild = interaction.guild!;
     const record = await removeMusicBot(guild.id, botId);
-    if (!record) return void await interaction.editReply({ content: L("That music bot is already gone.", "بوت الموسيقى هذا محذوف من قبل.") });
+    if (!record) return void await interaction.editReply({ content: L("That music bot is already gone.", "بوت الموسيقى هذا محذوف مسبقاً.") });
 
-    const channel = guild.channels.cache.get(record.voiceChannelId);
+    const channel = record.voiceChannelId ? guild.channels.cache.get(record.voiceChannelId) : null;
     if (channel && "permissionOverwrites" in channel) {
         await channel.permissionOverwrites.delete(botId, "Music bot removed").catch(() => null);
     }
 
     Logger.info(`Music bot ${record.name} (${botId}) removed from ${guild.id} by ${interaction.user.id}`, "bots");
-    await interaction.editReply({ content: L(`**${record.name}** was deleted: it left the server and its token was deleted.`, `تم حذف **${record.name}**: طلع من السيرفر وانحذف التوكن.`) });
+    await interaction.editReply({ content: L(`**${record.name}** was deleted: it left the server and its token was deleted.`, `تم حذف **${record.name}**: غادر السيرفر وتم حذف التوكن.`) });
 }
 
 async function deleteMinecraft(interaction: ModalSubmitInteraction): Promise<void> {

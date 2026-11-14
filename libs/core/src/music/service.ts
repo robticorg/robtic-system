@@ -22,7 +22,8 @@ export interface MusicBotView {
     applicationId: string;
     name: string;
     guildId: string;
-    voiceChannelId: string;
+    mode: "fixed" | "roaming";
+    voiceChannelId: string | null;
     status: MusicBotStatus;
 }
 
@@ -52,7 +53,8 @@ export function musicBotView(record: IMusicBot): MusicBotView {
         applicationId: record.applicationId,
         name: record.name,
         guildId: record.guildId,
-        voiceChannelId: record.voiceChannelId,
+        mode: record.mode === "roaming" ? "roaming" : "fixed",
+        voiceChannelId: record.voiceChannelId ?? null,
         status: !instance?.online ? "offline" : instance.inGuild ? "online" : "not-in-guild",
     };
 }
@@ -64,18 +66,18 @@ export function musicBotView(record: IMusicBot): MusicBotView {
  */
 export async function createMusicBot(input: CreateMusicBotInput, deps: MusicServiceDeps = defaultDeps): Promise<CreateMusicBotResult> {
     const key = musicTokenKey();
-    if (!key) return { ok: false, problem: L("Music bots aren't set up yet: `MUSIC_TOKEN_KEY` is missing from the bot's environment.", "بوتات الموسيقى غير مجهزة لين الحين: `MUSIC_TOKEN_KEY` ناقص في إعدادات البوت.") };
+    if (!key) return { ok: false, problem: L("Music bots aren't set up yet: `MUSIC_TOKEN_KEY` is missing from the bot's environment.", "بوتات الموسيقى غير مُعدّة بعد: `MUSIC_TOKEN_KEY` غير موجود في إعدادات البوت.") };
 
     if (await MusicBotRepository.countByGuild(input.guildId) >= MUSIC_CONFIG.maxBotsPerGuild) {
-        return { ok: false, problem: L(`This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one with \`/bot delete\` first.`, `هذا السيرفر عنده ${MUSIC_CONFIG.maxBotsPerGuild} بوتات موسيقى. احذف واحد بـ \`/bot delete\` أول.`) };
+        return { ok: false, problem: L(`This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one with \`/bot delete\` first.`, `لدى هذا السيرفر ${MUSIC_CONFIG.maxBotsPerGuild} بوتات موسيقى. يرجى حذف أحدها أولاً.`) };
     }
 
     const token = input.token.trim();
-    if (!looksLikeBotToken(token)) return { ok: false, problem: L("That doesn't look like a bot token.", "هذا ما يبدو توكن بوت.") };
+    if (!looksLikeBotToken(token)) return { ok: false, problem: L("That doesn't look like a bot token.", "هذا لا يبدو توكن بوت.") };
 
     const account = await deps.inspect(token);
-    if (!account) return { ok: false, problem: L("Discord didn't accept that token. Copy a fresh one from the Developer Portal (Bot → Reset Token).", "ديسكورد ما قبل التوكن. انسخ واحد جديد من Developer Portal (Bot → Reset Token).") };
-    if (account.botId === input.mainBotId) return { ok: false, problem: "That's my own token — use a different bot." };
+    if (!account) return { ok: false, problem: L("Discord didn't accept that token. Copy a fresh one from the Developer Portal (Bot → Reset Token).", "رفض ديسكورد هذا التوكن. انسخ توكناً جديداً من Developer Portal (Bot → Reset Token).") };
+    if (account.botId === input.mainBotId) return { ok: false, problem: L("That's my own token. Use a different bot.", "هذا توكن البوت الرئيسي، يرجى استخدام بوت آخر.") };
 
     const record = await MusicBotRepository.create({
         guildId: input.guildId,
@@ -86,12 +88,12 @@ export async function createMusicBot(input: CreateMusicBotInput, deps: MusicServ
         encryptedToken: encryptToken(token, key),
         createdBy: input.createdBy,
     });
-    if (!record) return { ok: false, problem: `**${account.username}** is already a music bot (here or in another server).` };
+    if (!record) return { ok: false, problem: L(`**${account.username}** is already a music bot (here or in another server).`, `**${account.username}** مُضاف مسبقاً كبوت موسيقى (هنا أو في سيرفر آخر).`) };
 
     const started = await deps.start(record);
     if (!started.ok) {
         await MusicBotRepository.delete(input.guildId, record.botId);
-        return { ok: false, problem: `I couldn't start it, so it wasn't added: ${started.problem}.` };
+        return { ok: false, problem: L(`I couldn't start it, so it wasn't added: ${started.problem}.`, `تعذّر تشغيله فلم تتم إضافته: ${started.problem}.`) };
     }
 
     Logger.info(`Music bot ${record.name} (${record.botId}) created in ${input.guildId} by ${input.createdBy}`, "music");
@@ -103,7 +105,7 @@ export async function listMusicBots(guildId: string): Promise<MusicBotView[]> {
 }
 
 /** Deletes a music bot: it leaves the server, goes offline, and its encrypted token is gone. `null` = no such bot here. */
-export async function removeMusicBot(guildId: string, botId: string): Promise<{ name: string; voiceChannelId: string } | null> {
+export async function removeMusicBot(guildId: string, botId: string): Promise<{ name: string; voiceChannelId: string | null } | null> {
     const record = await MusicBotRepository.delete(guildId, botId);
     if (!record) return null;
 

@@ -1,4 +1,4 @@
-import { MusicBot, type IMusicBot } from "@database/models/MusicBot";
+import { MusicBot, type IMusicBot, type MusicBotMode } from "@database/models/MusicBot";
 
 export class MusicBotRepository {
     /** Returns `null` when this bot account is already registered (the `botId` index is unique). */
@@ -7,7 +7,8 @@ export class MusicBotRepository {
         botId: string;
         applicationId: string;
         name: string;
-        voiceChannelId: string;
+        voiceChannelId: string | null;
+        mode?: MusicBotMode;
         encryptedToken: string;
         createdBy: string;
     }): Promise<IMusicBot | null> {
@@ -39,5 +40,15 @@ export class MusicBotRepository {
     /** Deletes a guild's music bot. Scoped to the guild, so one server can't remove another's. */
     static async delete(guildId: string, botId: string): Promise<IMusicBot | null> {
         return MusicBot.findOneAndDelete({ guildId, botId });
+    }
+
+    /** What the running bot reports for the dashboard, each sync. Never touches its settings or token. */
+    static async report(botId: string, state: { inGuild: boolean; connectedChannelId: string | null; nowPlaying: string | null }): Promise<void> {
+        await MusicBot.updateOne({ botId }, { $set: { ...state, lastSeenAt: new Date() } }, { timestamps: false });
+    }
+
+    /** A restart was carried out: clear the request so it runs once. */
+    static async clearRestart(botId: string): Promise<void> {
+        await MusicBot.updateOne({ botId }, { $set: { restartAt: null } }, { timestamps: false });
     }
 }

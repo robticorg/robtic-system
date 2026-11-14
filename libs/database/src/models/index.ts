@@ -48,7 +48,8 @@ export { InviteJoin, type IInviteJoin, type InviteJoinSource } from "./InviteJoi
 export { PartnerServer, type IPartnerServer } from "./PartnerServer";
 export { InfoPanel, INFO_PANEL_TYPES, INFO_BUTTON_STYLES, type IInfoPanel, type IInfoOption, type InfoPanelType, type InfoButtonStyle } from "./InfoPanel";
 export { BranchAsset, type IBranchAsset } from "./BranchAsset";
-export { MusicBot, type IMusicBot } from "./MusicBot";
+export { MusicBot, type IMusicBot, type MusicBotMode } from "./MusicBot";
+export { MusicSettings, type IMusicSettings, type MusicWords, MUSIC_WORD_KEYS, type MusicWordKey } from "./MusicSettings";
 export { ReferralCode, type IReferralCode } from "./ReferralCode";
 export { ReferralCodeUse, type IReferralCodeUse } from "./ReferralCodeUse";
 export {

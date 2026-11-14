@@ -1,10 +1,10 @@
 import { defineFeature } from "@typings/feature";
 
 /**
- * Music bots. The main bot is not a music bot itself: `/bot create` (the `bots` feature) registers
- * a separate bot account (its token, encrypted at rest) which the main bot then runs as a 24/7
- * music bot, locked to this server and one voice channel. `/music list` shows them; `/bot delete`
- * deletes one.
+ * Music bots (RobTic Music). The main bot is not a music bot itself: separate bot accounts (added on the RobTic Music
+ * dashboard or with `/bot create`, tokens encrypted at rest) which the main bot runs, each locked to this server.
+ * A fixed bot has one voice channel; a roaming bot joins whichever channel music is asked for in. People play music
+ * with text commands in a voice channel's chat and with the control panel (components/panel.ts).
  *
  * Server admins only — this shows bot accounts and their channels.
  */
@@ -25,4 +25,5 @@ export const musicFeature = defineFeature({
         },
     ],
     events: ["clientReady", "guildMemberAdd"],
+    components: ["music"],
 });

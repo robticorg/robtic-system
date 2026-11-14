@@ -49,6 +49,7 @@ export * from "./PartnerServerRepository";
 export * from "./InfoPanelRepository";
 export * from "./BranchAssetRepository";
 export * from "./MusicBotRepository";
+export * from "./MusicSettingsRepository";
 export * from "./ReferralCodeRepository";
 export * from "./ReferralCodeUseRepository";
 export * from "./GuildPanelRepository";

@@ -3,7 +3,7 @@ import type { EventConfig } from "@typings/event";
 import { handleError, BotError } from "@core/handlers";
 import { MusicBotRepository } from "@database/repositories";
 import { Logger } from "@logger";
-import { ensureAllMusicBots } from "@core/music";
+import { ensureAllMusicBots, setMusicChannelHook, startMusicSync } from "@core/music";
 import { grantVoicePermissions } from "./utils/voice-permissions";
 
 const CTX = "main/music";
@@ -18,11 +18,19 @@ export default [
         once: true,
         execute: client => {
             void (async () => {
+                // A fixed bot given a new channel on the dashboard gets its permissions there (only the main bot can).
+                setMusicChannelHook(async record => {
+                    const guild = client.guilds.cache.get(record.guildId);
+                    const problem = guild ? await grantVoicePermissions(guild, record) : null;
+                    if (problem) Logger.warn(`Music bot ${record.name}: ${problem}`, "music");
+                });
                 await ensureAllMusicBots();
                 for (const record of await MusicBotRepository.listAll()) {
                     const guild = client.guilds.cache.get(record.guildId);
                     if (guild) await grantVoicePermissions(guild, record);
                 }
+                // From here on, changes made on the RobTic Music dashboard reach the running bots within seconds.
+                startMusicSync();
             })().catch(err => handleError(new BotError(`Failed to start music bots: ${err}`, "EVENT"), CTX));
         },
     } satisfies EventConfig<Events.ClientReady>,

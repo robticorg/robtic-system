@@ -1,5 +1,7 @@
 import { Schema, model, type Document } from "mongoose";
 
+export type MusicBotMode = "fixed" | "roaming";
+
 /**
  * A music bot created with `/bot create`: a separate bot account the main bot logs in and runs.
  *
@@ -14,9 +16,22 @@ export interface IMusicBot extends Document {
     botId: string;
     applicationId: string;
     name: string;
-    voiceChannelId: string;
+    /**
+     * `fixed`: lives in `voiceChannelId` and only plays there. `roaming`: no channel of its own; it joins whichever
+     * voice channel someone asks for music in, when that channel has no fixed bot (RobTic Music dashboard → Bots).
+     */
+    mode: MusicBotMode;
+    /** The fixed bot's channel. Null for a roaming bot. */
+    voiceChannelId: string | null;
     encryptedToken: string;
     createdBy: string;
+    /** Set by the dashboard's Restart: the bot is logged out and in again on the next sync. */
+    restartAt?: Date | null;
+    /** Written by the running bot every sync, for the dashboard: when it last checked in, and where it is. */
+    lastSeenAt?: Date | null;
+    inGuild?: boolean;
+    connectedChannelId?: string | null;
+    nowPlaying?: string | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -27,9 +42,15 @@ const musicBotSchema = new Schema<IMusicBot>(
         botId: { type: String, required: true, unique: true },
         applicationId: { type: String, required: true },
         name: { type: String, required: true },
-        voiceChannelId: { type: String, required: true },
+        mode: { type: String, enum: ["fixed", "roaming"], default: "fixed" },
+        voiceChannelId: { type: String, default: null },
         encryptedToken: { type: String, required: true },
         createdBy: { type: String, required: true },
+        restartAt: { type: Date, default: null },
+        lastSeenAt: { type: Date, default: null },
+        inGuild: { type: Boolean, default: false },
+        connectedChannelId: { type: String, default: null },
+        nowPlaying: { type: String, default: null },
     },
     { timestamps: true }
 );

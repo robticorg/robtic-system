@@ -1,3 +1,6 @@
+import { PermissionsBitField } from "discord.js";
+import { MUSIC_CONFIG } from "@constants";
+
 const API = "https://discord.com/api/v10";
 
 export interface BotAccount {
@@ -30,15 +33,19 @@ export async function inspectBotToken(token: string, fetcher: typeof fetch = fet
     return { botId: user.id, applicationId: application.id, username: user.username };
 }
 
+/** What a roaming music bot is invited with: join, speak and post its card in any voice channel. Nothing that manages. */
+export const ROAMING_PERMISSIONS = PermissionsBitField.resolve([...MUSIC_CONFIG.channelPermissions]).toString();
+
 /**
- * The invite for a music bot: no server-wide permissions at all (`permissions=0`), locked to one
- * guild. What it may do is granted afterwards on its own voice channel only.
+ * The invite for a music bot, locked to one guild. A fixed bot asks for no server-wide permissions at all
+ * (`permissions=0`): what it may do is granted afterwards on its own voice channel only. A roaming bot moves between
+ * channels, so it asks for the same few voice permissions server-wide.
  */
-export function musicBotInviteUrl(applicationId: string, guildId: string): string {
+export function musicBotInviteUrl(applicationId: string, guildId: string, mode: "fixed" | "roaming" = "fixed"): string {
     const params = new URLSearchParams({
         client_id: applicationId,
         scope: "bot",
-        permissions: "0",
+        permissions: mode === "roaming" ? ROAMING_PERMISSIONS : "0",
         guild_id: guildId,
         disable_guild_select: "true",
     });

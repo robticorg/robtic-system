@@ -50,7 +50,7 @@ export async function generateBanner(state: BannerState): Promise<{ banner: Atta
         ctx.roundRect(x, y, width, height, 4);
         ctx.fill();
 
-        ctx.fillStyle = "#f1c40f";
+        ctx.fillStyle = MUSIC_CONFIG.barColor;
         ctx.beginPath();
         ctx.roundRect(x, y, filled, height, 4);
         ctx.fill();

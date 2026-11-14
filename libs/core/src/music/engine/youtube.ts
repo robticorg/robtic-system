@@ -144,7 +144,69 @@ export function formatDuration(sec: number): string {
     return h ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}` : `${m}:${String(r).padStart(2, "0")}`;
 }
 
-/** Up to `limit` YouTube results for a query. Throws (in Arabic, for the reply) when there are none. */
+const YOUTUBE_ID = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/|embed\/)|youtu\.be\/|music\.youtube\.com\/watch\?(?:.*&)?v=)([\w-]{11})/i;
+
+/** The YouTube video id in a link, or null. */
+export function youtubeIdOf(text: string): string | null {
+    return YOUTUBE_ID.exec(text)?.[1] ?? null;
+}
+
+const isLink = (text: string) => /^https?:\/\/\S+$/i.test(text.trim());
+
+/** A Spotify track's "Song · Artist", from Spotify's public oEmbed (no account needed), to search YouTube with. */
+async function spotifyTitle(url: string): Promise<string | null> {
+    const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`).catch(() => null);
+    if (!res?.ok) return null;
+    const body = await res.json().catch(() => null) as { title?: string } | null;
+    return body?.title?.trim() || null;
+}
+
+/** Any other link yt-dlp can play (SoundCloud, a direct audio file…): its title and length from yt-dlp itself. */
+async function linkTrack(url: string): Promise<Track> {
+    const ytdlp = await ensureYtDlp();
+    const out = await new Promise<string>((resolve, reject) => {
+        const p = spawn(ytdlp, [url, "--dump-single-json", "--no-playlist", "--quiet", "--no-warnings", "--js-runtimes", process.env.YTDLP_JS_RUNTIME || "bun"], { stdio: ["ignore", "pipe", "pipe"] });
+        let data = "";
+        p.stdout!.on("data", d => { data += d.toString(); });
+        p.once("error", reject);
+        p.once("close", code => (code === 0 ? resolve(data) : reject(new Error(L("That link can't be played", "لا يمكن تشغيل هذا الرابط")))));
+    });
+    const info = JSON.parse(out) as { id?: string; webpage_url?: string; title?: string; duration?: number; thumbnail?: string; uploader?: string };
+    return {
+        id: String(info.id ?? url),
+        url: info.webpage_url ?? url,
+        title: info.title ?? url,
+        durationSeconds: Math.round(info.duration ?? 0),
+        thumbnail: info.thumbnail ?? "",
+        author: info.uploader ?? "",
+    };
+}
+
+/**
+ * What to play for what someone typed: a song name (searched on YouTube), a YouTube link, a Spotify track link (its
+ * name is searched on YouTube, since Spotify audio can't be streamed), or any other link yt-dlp can play.
+ * The first result plays; the rest are offered as suggestions.
+ */
+export async function resolveQuery(query: string, limit: number): Promise<Track[]> {
+    const text = query.trim();
+    const id = youtubeIdOf(text);
+    if (id) {
+        const v = await ytSearch({ videoId: id }).catch(() => null);
+        if (!v) throw new Error(L("Couldn't open that YouTube link", "تعذّر فتح رابط YouTube"));
+        const first: Track = { id, url: `https://www.youtube.com/watch?v=${id}`, title: v.title, durationSeconds: v.seconds || 0, thumbnail: v.thumbnail ?? v.image, author: v.author?.name || "YouTube" };
+        const more = await searchVideos(v.title, limit).catch(() => []);
+        return [first, ...more.filter(t => t.id !== id)].slice(0, limit);
+    }
+    if (/open\.spotify\.com\//i.test(text)) {
+        const title = await spotifyTitle(text);
+        if (!title) throw new Error(L("Couldn't read that Spotify link. Write the song name instead.", "تعذّرت قراءة رابط Spotify. اكتب اسم الأغنية بدلاً منه."));
+        return searchVideos(title, limit);
+    }
+    if (isLink(text)) return [await linkTrack(text)];
+    return searchVideos(text, limit);
+}
+
+/** Up to `limit` YouTube results for a query. Throws (in the server's language, for the reply) when there are none. */
 export async function searchVideos(query: string, limit: number): Promise<Track[]> {
     const result = await ytSearch(query);
     const videos = (result.videos || []).filter(v => v.videoId).slice(0, limit).map(v => ({
@@ -155,6 +217,6 @@ export async function searchVideos(query: string, limit: number): Promise<Track[
         thumbnail: v.thumbnail ?? v.image,
         author: v.author?.name || "YouTube",
     }));
-    if (!videos.length) throw new Error(L("Couldn't find that song on YouTube", "ما لقيت الأغنية على YouTube"));
+    if (!videos.length) throw new Error(L("Couldn't find that song on YouTube", "لم يتم العثور على الأغنية في YouTube"));
     return videos;
 }

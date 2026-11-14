@@ -10,15 +10,17 @@ import { L } from "@utils";
  * server. Returns a problem to show staff, or `null` when it worked.
  */
 export async function grantVoicePermissions(guild: Guild, record: Pick<IMusicBot, "botId" | "voiceChannelId">): Promise<string | null> {
+    // A roaming bot has no channel of its own: it was invited with its voice permissions server-wide.
+    if (!record.voiceChannelId) return null;
     const channel = guild.channels.cache.get(record.voiceChannelId) ?? await guild.channels.fetch(record.voiceChannelId).catch(() => null);
-    if (!channel?.isVoiceBased()) return L("its voice channel no longer exists", "رومه الصوتي ما عاد موجود");
-    if (!guild.members.cache.has(record.botId) && !(await guild.members.fetch(record.botId).catch(() => null))) return L("it isn't in the server yet", "مو موجود في السيرفر لين الحين");
+    if (!channel?.isVoiceBased()) return L("its voice channel no longer exists", "رومه الصوتية لم تعد موجودة");
+    if (!guild.members.cache.has(record.botId) && !(await guild.members.fetch(record.botId).catch(() => null))) return L("it isn't in the server yet", "لم تتم إضافته إلى السيرفر بعد");
 
     const allow = Object.fromEntries(MUSIC_CONFIG.channelPermissions.map(name => [name, true]));
     try {
         await channel.permissionOverwrites.edit(record.botId, allow, { reason: "Music bot: its assigned voice channel" });
         return null;
     } catch {
-        return L(`I couldn't set its permissions on <#${channel.id}>: I need **Manage Roles** (Manage Permissions) there`, `ما قدرت أضبط صلاحياته في <#${channel.id}>: أحتاج **Manage Roles** هناك`);
+        return L(`I couldn't set its permissions on <#${channel.id}>: I need **Manage Roles** (Manage Permissions) there`, `تعذّر ضبط صلاحياته في <#${channel.id}>: أحتاج صلاحية **Manage Roles** هناك`);
     }
 }
