@@ -3,11 +3,14 @@ import { Logger } from "@logger";
 import type { BotClient } from "@core/bot-client";
 import { isAllowedGuild } from "./allowed-guilds";
 import { sendGuardLog } from "./send-guard-log";
-import { isGuildBlocked, onBlockedChange } from "../../../../libs/shared/src/remote-config";
+import { isGuildAllowed, isGuildBlocked, onAccessChange, onBlockedChange } from "../../../../libs/shared/src/remote-config";
 
 async function leaveIfUnauthorized(client: BotClient, guild: Guild, reason: "left" | "blocked"): Promise<void> {
-    // Blocked in the admin console beats the allowlist.
-    if (!isGuildBlocked(guild.id) && (await isAllowedGuild(guild.id))) return;
+    // The admin console's shared list (every Robtic bot, or "open to everyone") decides; blocked beats it. Until that
+    // list exists, the bot's own allowlist does, as before.
+    const shared = isGuildAllowed(guild.id);
+    if (shared === true) return;
+    if (shared === null && !isGuildBlocked(guild.id) && (await isAllowedGuild(guild.id))) return;
 
     Logger.warn(
         reason === "blocked"
@@ -30,6 +33,13 @@ export async function setupGuildGuard(client: BotClient): Promise<void> {
 
     client.on("guildCreate", (guild: Guild) => {
         void leaveIfUnauthorized(client, guild, "blocked");
+    });
+
+    // Taken off the shared list, or no longer open to everyone: leave within a minute.
+    onAccessChange(() => {
+        for (const guild of client.guilds.cache.values()) {
+            if (isGuildAllowed(guild.id) === false) void leaveIfUnauthorized(client, guild, "blocked");
+        }
     });
 
     // A server blocked later in the admin console: leave it within a minute.

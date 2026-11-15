@@ -229,6 +229,9 @@ services:
       ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
       ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
       TRANSCRIPT_BASE_URL: ${TICKET_TRANSCRIPT_BASE_URL:-https://robtic.org/discord/transcripts}
+      # Robtic Staff link: points for claimed tickets (Robtic Ticket → Settings → Robtic Staff), as robtic-system does.
+      STAFF_POINTS_API_URL: http://robtic-staff:8788/internal/staff/points
+      STAFF_POINTS_API_TOKEN: ${STAFF_INTERNAL_API_TOKEN:-}
     networks: [internal]
 
   # The ticket transcript page and its API (same image), public as robtic.org/discord/transcripts/<id>: Nginx Proxy
