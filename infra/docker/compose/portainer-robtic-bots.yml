@@ -223,6 +223,10 @@ services:
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *logging
+    # Cloudflare R2 for transcript pictures (R2_*): compose/3/r2.env on the host, beside the stack's version folders.
+    env_file:
+      - path: ../../../../r2.env
+        required: false
     environment:
       NODE_ENV: production
       ROBTIC_BOT: ticket
