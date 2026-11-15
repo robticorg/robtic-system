@@ -214,6 +214,46 @@ services:
       retries: 3
       start_period: 30s
 
+  # Ticket bot (robticorg/robtic-monorepo → ghcr.io/robticorg/robtic-ticket). Everything it needs (token, client id,
+  # its database, TRANSCRIPT_BASE_URL) is set in the admin console (Discord → Bot settings → Robtic Ticket); until a
+  # token is saved there it waits quietly. Values here are only defaults the console overrides.
+  robtic-ticket:
+    image: ghcr.io/robticorg/robtic-ticket:${TICKET_IMAGE_TAG:-production}
+    container_name: robtic-ticket
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      ROBTIC_BOT: ticket
+      ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
+      ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
+      TRANSCRIPT_BASE_URL: ${TICKET_TRANSCRIPT_BASE_URL:-https://robtic.org/discord/transcripts}
+    networks: [internal]
+
+  # The ticket transcript page and its API (same image), public as robtic.org/discord/transcripts/<id>: Nginx Proxy
+  # Manager forwards that path, unchanged, to http://robtic-ticket-transcripts:5180. Reads the ticket bot's database.
+  robtic-ticket-transcripts:
+    image: ghcr.io/robticorg/robtic-ticket:${TICKET_IMAGE_TAG:-production}
+    container_name: robtic-ticket-transcripts
+    command: ["bun", "apps/transcript/server.ts"]
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      ROBTIC_BOT: ticket
+      ROBTIC_LOG_SOURCE: transcripts
+      ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
+      ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
+      TRANSCRIPT_PORT: "5180"
+    networks: [internal, proxy]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:5180/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
   # Scam guard bot (robticorg/robtic-guard-). MongoDB only (database `scamguard`). The app reads its
   # tuning with `??`, so an empty value would become 0: every default here is the production value.
   robtic-guard:
