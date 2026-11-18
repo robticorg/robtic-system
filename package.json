@@ -20,7 +20,7 @@
     "test:partner": "bun --preload ./libs/shared/src/preload.ts scripts/partner-check.ts",
     "test:boost": "bun --preload ./libs/shared/src/preload.ts scripts/boost-check.ts",
     "test:level-card": "bun --preload ./libs/shared/src/preload.ts scripts/level-card-check.ts",
-    "test:tag":"bun --preload ./libs/shared/src/preload.ts scripts/tag-check.ts",
+    "test:tag": "bun --preload ./libs/shared/src/preload.ts scripts/tag-check.ts",
     "test:music": "bun --preload ./libs/shared/src/preload.ts scripts/music-check.ts",
     "test:roles": "bun --preload ./libs/shared/src/preload.ts scripts/roles-check.ts",
     "test:internal": "bun --preload ./libs/shared/src/preload.ts scripts/internal-arch-check.ts",
@@ -67,6 +67,7 @@
     "mongoose": "^9.7.2",
     "node-cron": "^4.5.0",
     "opusscript": "^0.1.0",
+    "re2js": "2.10.0",
     "tesseract.js": "^7.0.0",
     "yt-search": "^2.13.1"
   }

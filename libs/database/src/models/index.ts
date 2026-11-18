@@ -14,6 +14,7 @@ export { ActivityLog, type IActivityLog, type ActivityLogType } from "./Activity
 export { AuditLog, type IAuditLog } from "./AuditLog";
 export { ServerConfig, type IServerConfig, type ISentPanel } from "./ServerConfig";
 export { Shortcut, type IShortcutDoc } from "./Shortcut";
+export { AutoReply, type IAutoReplyDoc, type IAutoReplyVariant, type IAutoReplyAttachment, type AutoReplyMatchMode } from "./AutoReply";
 export { Streak, type IStreak } from "./Streak";
 export { StreakSettings, type IStreakSettings } from "./StreakSettings";
 export { StreakRecovery, type IStreakRecovery } from "./StreakRecovery";

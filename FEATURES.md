@@ -434,6 +434,26 @@ one it contains. Each shortcut counts its uses.
 
 Cleanup modes: delete the trigger and the reply · delete only the reply · keep both.
 
+### autoreply
+
+`default-on` · no command (set up on the dashboard: System → Tools → Auto reply) · rules in `autoreplies`
+
+A message matching a rule's trigger gets one of the rule's replies (1–5, random or weighted) and/or a reaction.
+
+- **Match:** exact · whole word (Arabic-aware) · contains · starts with · ends with · regex. Regex runs on RE2
+  (`re2js`), so a pattern can't freeze the bot. Only the first 1,000 characters are checked.
+- **Arabic normalization** (أ/إ/آ→ا, ة→ه, ى→ي, diacritics, tatweel) when the server's language is Arabic.
+- **Who and where:** only / never these roles, only / never these channels (threads follow their channel),
+  active hours (UTC), chance %.
+- **Cooldowns** per member, channel and server; **no repeat**; **priority** and **stop after match**; at most 3
+  replies per message.
+- **Reply:** a Discord reply or a plain message; up to 3 https attachments; variables `{user}` `{user.name}`
+  `{server}` `{channel}` `{membercount}` `{match}` `{1}`…`{9}`. Mentions only the member who triggered it — never
+  @everyone, @here or roles.
+- **Clean up:** delete the reply after N seconds; delete the member's message.
+- **Never** answers bots, webhooks, prefix commands, or a message that is a shortcut phrase (the shortcut wins).
+- Rules are cached 30 s; uses and last use are counted for the dashboard.
+
 ### panels
 
 `default-on` · `/panels` · category `Configuration` · access `admin`
