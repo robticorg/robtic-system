@@ -1,15 +1,13 @@
-/** Verifies music-bot token encryption, token checks, the invite link, the create form, the manifest and the create service — no database, no gateway. */
+/** Verifies music-bot token encryption, token checks, the invite link, the manifest and the create service — no database, no gateway. */
 import "./_english";
 import { randomBytes } from "node:crypto";
-import { ChannelType, ComponentType, PermissionFlagsBits } from "discord.js";
+import { PermissionFlagsBits } from "discord.js";
 import { generateDependencyReport } from "@discordjs/voice";
 import { MUSIC_CONFIG } from "@constants";
 import { createMusicBot, parseMusicCommand, pickBot, pickProblem, youtubeIdOf, decryptToken, encryptToken, inspectBotToken, looksLikeBotToken, musicBotInviteUrl, musicTokenKey, type CreateMusicBotInput } from "@core/music";
 import { MusicBotRepository, resolveMusicSettings } from "@database/repositories";
 import { isDisallowedIntents } from "@core/music/engine/music-bot-instance";
-import { BOT_CREATE_MODAL_ID, BOT_DELETE_MODAL_ID, buildBotCreateModal, buildBotDeleteModal } from "@bot/features/bots/utils/forms";
 import { musicFeature } from "@bot/features/music/music";
-import { botsFeature } from "@bot/features/bots/bots";
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -73,38 +71,11 @@ await (async () => {
     check("gets no management permissions", !perms.some(p => /Manage|Administrator|Kick|Ban|Mention|Move|Mute|Deafen/.test(p)));
 }
 
-// The /bot create form.
-{
-    const modal = buildBotCreateModal().toJSON() as any;
-    const inner = modal.components.map((label: any) => label.component);
-    check("form id matches its handler", modal.custom_id === BOT_CREATE_MODAL_ID);
-    check("asks for type, token, name and channel", inner.length === 4);
-    check("the type is a select of music and minecraft", inner[0].type === ComponentType.StringSelect
-        && JSON.stringify(inner[0].options.map((o: any) => o.value)) === JSON.stringify(["music", "minecraft"]));
-    check("the channel picker shows voice channels only", inner[3].type === ComponentType.ChannelSelect
-        && JSON.stringify(inner[3].channel_types) === JSON.stringify([ChannelType.GuildVoice]), JSON.stringify(inner[3].channel_types));
-    check("at most one channel, optional (minecraft needs none)", inner[3].min_values === 0 && inner[3].max_values === 1 && inner[3].required === false);
-}
-
-// The /bot delete form.
-{
-    const modal = buildBotDeleteModal([
-        { value: "music:1", label: "Music One", description: "Music · 1", emoji: "🎵" },
-        { value: "minecraft", label: "Robtic MC", description: "Minecraft · online", emoji: "⛏️" },
-    ]).toJSON() as any;
-    const select = modal.components[0].component;
-    check("delete form id matches its handler", modal.custom_id === BOT_DELETE_MODAL_ID);
-    check("lists every existing bot", JSON.stringify(select.options.map((o: any) => o.value)) === JSON.stringify(["music:1", "minecraft"]));
-}
-
 // Manifest.
 {
     const music = musicFeature.commands.find(c => c.name === "music")!;
-    const bot = botsFeature.commands.find(c => c.name === "bot")!;
     check("/music list", music.subcommands.some(x => x.name === "list"));
-    check("/bot create and /bot delete", ["create", "delete"].every(s => bot.subcommands.some(x => x.name === s)));
-    check("/bot opens modals", bot.modalOnly === true);
-    check("server admins only", [...musicFeature.commands, ...botsFeature.commands].every(c => c.access === "admin"));
+    check("server admins only", musicFeature.commands.every(c => c.access === "admin"));
 }
 
 // Voice runtime: what @discordjs/voice can find for encryption, Opus and DAVE.

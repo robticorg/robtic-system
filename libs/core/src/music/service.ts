@@ -69,7 +69,7 @@ export async function createMusicBot(input: CreateMusicBotInput, deps: MusicServ
     if (!key) return { ok: false, problem: L("Music bots aren't set up yet: `MUSIC_TOKEN_KEY` is missing from the bot's environment.", "بوتات الموسيقى غير مُعدّة بعد: `MUSIC_TOKEN_KEY` غير موجود في إعدادات البوت.") };
 
     if (await MusicBotRepository.countByGuild(input.guildId) >= MUSIC_CONFIG.maxBotsPerGuild) {
-        return { ok: false, problem: L(`This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one with \`/bot delete\` first.`, `لدى هذا السيرفر ${MUSIC_CONFIG.maxBotsPerGuild} بوتات موسيقى. يرجى حذف أحدها أولاً.`) };
+        return { ok: false, problem: L(`This server already has ${MUSIC_CONFIG.maxBotsPerGuild} music bots. Remove one on the Robtic Voice dashboard first.`, `لدى هذا السيرفر ${MUSIC_CONFIG.maxBotsPerGuild} بوتات موسيقى. يرجى حذف أحدها أولاً.`) };
     }
 
     const token = input.token.trim();

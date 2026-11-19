@@ -38,7 +38,6 @@ on or off. Everything else is an ordinary command and is always available.
 | boost | default-on | Thanks each booster in the `/boost channel` (Arabic + English) |
 | tag | default-on | Server-tag role: a member wearing the server tag of any whitelisted server gets the `/tag setup` role of every whitelisted server they are in; `log:` (optional) logs each change |
 | music | default-on | Runs separate music bots, each locked to one server and voice channel; `/music list` shows them |
-| bots | default-on | `/bot create` (a form: Music or Minecraft, token, and for music a name and voice channel) and `/bot delete` (a form listing existing bots). Minecraft goes to the Minecraft API, owner/super users only |
 | referral | default-on | Referral codes: `/referral use\|info`, `/referral-config` — the code's bonus (≤ +15%) applies to rewards ([rewards.md](docs/bot/rewards.md)) |
 | [logging](#logging) | default-on | Log-channel routing |
 | [panels](#panels) | default-on | Reusable message panels |
