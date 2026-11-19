@@ -260,6 +260,28 @@ services:
       retries: 3
       start_period: 20s
 
+  # Robtic Engine (robticorg/robtic-engine, Rust): AutoMod. Its own Discord connection with the System bot's token
+  # (read from the admin console like the bot), so protection keeps running while robtic-system restarts. Reads
+  # what the dashboard saved (guildfeatures automod, automodsettings, template versions); acts only on servers that
+  # turned AutoMod on. Warn / mute / jail go to Redis `robtic:automod:moderation`, recorded by robtic-system.
+  # Internal API (/health, /validate) on :8790 inside `internal` only — nothing published.
+  robtic-engine:
+    image: ghcr.io/robticorg/robtic-engine:${ENGINE_IMAGE_TAG:-production}
+    container_name: robtic-engine
+    restart: unless-stopped
+    stop_grace_period: 15s
+    logging: *logging
+    environment:
+      ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
+      ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
+      ENGINE_MONGODB_URI: ${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}
+      ENGINE_REDIS_URL: ${ROBTIC_REDIS_URL:?ROBTIC_REDIS_URL is required}
+      ENGINE_INTERNAL_TOKEN: ${ROBTIC_INTERNAL_API_TOKEN:?ROBTIC_INTERNAL_API_TOKEN is required}
+      # 1 = only log what it would do. AutoMod is still off on every server until its admin turns it on.
+      ENGINE_DRY_RUN: ${ENGINE_DRY_RUN:-0}
+      RUST_LOG: ${ENGINE_LOG:-info}
+    networks: [internal]
+
   # Scam guard bot (robticorg/robtic-guard-). MongoDB only (database `scamguard`). The app reads its
   # tuning with `??`, so an empty value would become 0: every default here is the production value.
   robtic-guard:

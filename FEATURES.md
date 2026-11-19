@@ -567,6 +567,16 @@ a changed file needs a restart.
 
 Not owned by any one feature.
 
+### AutoMod (Robtic Engine)
+
+AutoMod runs outside this bot, in the **Robtic Engine** (robticorg/robtic-engine, Rust, container `robtic-engine`):
+its own Discord connection with this bot's token, so protection keeps running while the bot restarts. The bot holds
+no AutoMod logic. The engine deletes, times out and alerts itself; **warn / mute / jail** belong to this bot's
+moderation system, so the engine pushes them onto Redis `robtic:automod:moderation` and the leading Gateway records
+them as normal cases (`services/automod-moderation`), with the bot as moderator: punishment levels, roles and logs
+as usual. Mute length comes from the template (capped at the mute maximum); jail is 1 day; timeouts are applied by
+the engine and not recorded; records older than 2 days are dropped.
+
 ### XP
 
 5–15 XP per qualifying message, once per 60s cooldown. Level *n* costs `100 × 1.2ⁿ` XP. Voice grants
