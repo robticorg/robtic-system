@@ -5,8 +5,9 @@ import { STREAK_LIMITS } from "@constants";
 /**
  * Daily message streaks.
  *
- * `opt-in`: streaks only count in channels a guild nominates, and they post publicly, hand out a
- * role and DM members. None of that should start happening because a bot was invited.
+ * `default-on`: Streaks is a Robtic plugin, installed by default (Server → Plugins on the dashboard). It
+ * still only counts in channels a guild nominates, so nothing posts, hands out a role or DMs anyone
+ * until a server picks its streak channels.
  *
  * Six top-level commands rather than one `/streak <sub>`: every `ServerConfig.shortcuts` row and
  * every muscle-memory `!streak-top` in existing servers names them individually, and collapsing
@@ -15,7 +16,7 @@ import { STREAK_LIMITS } from "@constants";
 export const streakFeature = defineFeature({
     key: "streak",
     description: "Daily message streaks",
-    activation: "opt-in",
+    activation: "default-on",
     commands: [
         {
             name: "streak",

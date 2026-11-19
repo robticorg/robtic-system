@@ -3,7 +3,6 @@ import { calculateBonusBreakdown } from "./reward-calculator";
 import { resolveServerTagEligibility } from "./server-tag-presence";
 import { getBoosterProgress } from "./booster-state";
 import { getActiveInviteCount } from "./invite-credit";
-import { getReferralCodeBonusBp } from "./referral-code";
 import type { PrimaryGuildIdentity } from "./server-tag";
 import type { RewardBonusBreakdown, RewardBonusInputs } from "./reward-bonus-types";
 
@@ -22,8 +21,7 @@ import type { RewardBonusBreakdown, RewardBonusInputs } from "./reward-bonus-typ
  * who stopped boosting while the bot missed the event gets +0%, and one whose state was never
  * recorded gets their real continuous duration from Discord. Omitting it uses the stored state as
  * the gateway events left it. Invite (`RewardInviteCredit`) needs nothing from the caller — see
- * `booster-state.ts` and `invite-credit.ts`. Referral is deliberately *not* accepted here: it is
- * always read from the member's stored code link, so no caller can pass in a referral bonus.
+ * `booster-state.ts` and `invite-credit.ts`.
  */
 export interface UnwiredRewardBonusInputs {
     /** The member's live `member.user.primaryGuild` snapshot, or omit/null if unavailable. */
@@ -47,9 +45,8 @@ function bestStaffScore(tiers: { score: number; roleIds: string[] }[], roleIds: 
  * `LevelReward` roles (`/level-rewards`) for the level bonus's configured points,
  * `resolveServerTagEligibility` for Server Tag (live Discord state plus
  * the 6-hour continuous-wear requirement), `getBoosterProgress` for Booster (current boost count
- * plus how long it has run, continuously), `getActiveInviteCount` for Invite (unexpired credits
- * only), and `getReferralCodeBonusBp` for Referral (the member's applied code, only while it exists
- * and is active). Nothing here is discord.js-aware — `roleIds` and `unwired.primaryGuild` are all it needs
+ * plus how long it has run, continuously), and `getActiveInviteCount` for Invite (unexpired credits
+ * only). Nothing here is discord.js-aware — `roleIds` and `unwired.primaryGuild` are all it needs
  * from a member.
  *
  * Never throws on a missing record: a member with no streak, no XP row, no staff tier, no booster
@@ -71,7 +68,7 @@ export async function resolveRewardBonuses(
     unwired: UnwiredRewardBonusInputs = {},
     now: Date = new Date(),
 ): Promise<RewardBonusBreakdown> {
-    const [tiers, streak, activity, levelRewards, hasServerTag, booster, activeInviteSlots, referralCodeBp] = await Promise.all([
+    const [tiers, streak, activity, levelRewards, hasServerTag, booster, activeInviteSlots] = await Promise.all([
         StaffTierRepository.getCached(guildId),
         StreakRepository.find(discordId, guildId),
         ActivityRepository.find(discordId, guildId),
@@ -79,7 +76,6 @@ export async function resolveRewardBonuses(
         resolveServerTagEligibility(guildId, discordId, unwired.primaryGuild ?? null, now),
         getBoosterProgress(guildId, discordId, now, unwired.premiumSince),
         getActiveInviteCount(guildId, discordId, now),
-        getReferralCodeBonusBp(guildId, discordId),
     ]);
 
     const inputs: RewardBonusInputs = {
@@ -92,7 +88,6 @@ export async function resolveRewardBonuses(
         boosterContinuousDays: booster.continuousDays,
         hasServerTag,
         activeInviteSlots,
-        referralCodeBp,
     };
 
     return calculateBonusBreakdown(inputs);
