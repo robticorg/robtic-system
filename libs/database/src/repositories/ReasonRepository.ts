@@ -1,4 +1,11 @@
 import { Reason, type IReason } from "@database/models/Reason";
+import { PunishConfig } from "@database/models/PunishConfig";
+
+/** Servers that edited their reasons on the dashboard use only their own (see PunishConfig.ownReasonsOnly). */
+async function ownOnly(guildId: string): Promise<boolean> {
+    return (await PunishConfig.exists({ guildId, ownReasonsOnly: true })) !== null;
+}
+const scope = async (guildId: string) => (await ownOnly(guildId) ? guildId : { $in: [guildId, null] });
 
 /** A server's reasons: its own, plus the shared ones it hasn't replaced with its own reason of the same key. */
 function merge(rows: IReason[], guildId: string): IReason[] {
@@ -13,7 +20,7 @@ export class ReasonRepository {
 
     /** The server's own reason with that key, otherwise the shared one. */
     static async findByKey(key: string, guildId: string): Promise<IReason | null> {
-        return (await Reason.findOne({ key, guildId })) ?? Reason.findOne({ key, guildId: null });
+        return (await Reason.findOne({ key, guildId })) ?? (await ownOnly(guildId) ? null : Reason.findOne({ key, guildId: null }));
     }
 
     /** Only the server's own reason (not a shared one), e.g. to check a key is free before creating. */
@@ -22,11 +29,11 @@ export class ReasonRepository {
     }
 
     static async findByType(type: IReason["type"], guildId: string): Promise<IReason[]> {
-        return merge(await Reason.find({ type, guildId: { $in: [guildId, null] } }).sort({ createdAt: -1 }), guildId);
+        return merge(await Reason.find({ type, guildId: await scope(guildId) }).sort({ createdAt: -1 }), guildId);
     }
 
     static async getAll(guildId: string): Promise<IReason[]> {
-        return merge(await Reason.find({ guildId: { $in: [guildId, null] } }).sort({ type: 1, createdAt: -1 }), guildId);
+        return merge(await Reason.find({ guildId: await scope(guildId) }).sort({ type: 1, createdAt: -1 }), guildId);
     }
 
     static async getAllKeys(guildId: string): Promise<string[]> {

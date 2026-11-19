@@ -6,6 +6,9 @@ export interface IPunishConfig extends Document {
     shortcutRoleIds: string[];
     pointsPerAction: number;
     proofChannelId: string | null;
+    /** Set once the server edits its reasons on the dashboard: only its own reasons count, the shared ones no longer
+     *  apply (so a shared reason it deleted doesn't come back). */
+    ownReasonsOnly: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -16,6 +19,7 @@ const punishConfigSchema = new Schema<IPunishConfig>(
         shortcutRoleIds: { type: [String], default: [] },
         pointsPerAction: { type: Number, default: 1 },
         proofChannelId: { type: String, default: null },
+        ownReasonsOnly: { type: Boolean, default: false },
     },
     { timestamps: true }
 );
