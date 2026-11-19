@@ -57,9 +57,7 @@ x-robtic-system-gateway: &robtic-system-gateway
 
 x-robtic-system-gateway-env: &robtic-system-gateway-env
   <<: *robtic-system-env
-  MainBotToken: ${ROBTIC_SYSTEM_DISCORD_TOKEN:-}  # optional: set in the admin console instead
-  BANK_TOKEN: ${ROBTIC_BANK_TOKEN:-}
-  MUSIC_TOKEN_KEY: ${ROBTIC_MUSIC_TOKEN_KEY:-}
+  # MainBotToken, BANK_TOKEN and MUSIC_TOKEN_KEY come from the admin console (Bot settings → Robtic System) only.
   INVITES_API_URL: http://robtic-invites-api:3005
 
 x-robtic-system-worker: &robtic-system-worker
@@ -190,8 +188,9 @@ services:
       MONGODB_DB: ${STAFF_MONGODB_DB:-robtic_staff}
       STAFF_TIMEZONE: ${STAFF_TIMEZONE:-UTC}
       LOG_LEVEL: ${STAFF_LOG_LEVEL:-info}
-      DISCORD_TOKEN: ${STAFF_DISCORD_TOKEN:-}  # optional: set in the admin console instead
-      DISCORD_APP_ID: ${STAFF_DISCORD_APP_ID:?STAFF_DISCORD_APP_ID is required}
+      # The token, app id, guild, database and prefixes come from the admin console (Bot settings → Robtic Staff);
+      # the values below are only defaults it overrides.
+      DISCORD_APP_ID: ${STAFF_DISCORD_APP_ID:-}
       DISCORD_GUILD_ID: ${STAFF_DISCORD_GUILD_ID:-}
       DISCORD_DEV_GUILD_ID: ${STAFF_DISCORD_DEV_GUILD_ID:-}
       PREFIX: ${STAFF_PREFIX:-!}
