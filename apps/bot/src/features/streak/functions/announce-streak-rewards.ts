@@ -18,7 +18,7 @@ const CTX = "main:streak";
 /**
  * Posts a claim button for every reward threshold the member has now reached.
  *
- * `<=` rather than `===` so a streak jumped forward by `/streak-config sync` or `/streak-return`
+ * `<=` rather than `===` so a streak jumped forward by `/streak-return`
  * still catches up on thresholds it skipped past; the unique index behind
  * `tryCreateNotification` is what stops that from announcing the same reward twice.
  */

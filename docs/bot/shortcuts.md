@@ -4,7 +4,7 @@ A shortcut maps a plain chat message to a command, so staff can type `red @user 
 `!warn @user spam`. Manage them with `/shortcut add | remove | list`.
 
 A target is a **whole command path**, not just a command name — `points balance`, `warn add`,
-`streak-config channel add`. Autocomplete on `/shortcut add` lists every runnable path, and a bare
+`partner channel`. Autocomplete on `/shortcut add` lists every runnable path, and a bare
 name that needs a subcommand is rejected rather than stored to fail later.
 
 ```

@@ -6,7 +6,7 @@ const isSub = (o: OptionJSON) => o.type === ApplicationCommandOptionType.Subcomm
 const isGroup = (o: OptionJSON) => o.type === ApplicationCommandOptionType.SubcommandGroup;
 
 /**
- * Every invocable path of a command: `warn`, or `warn add` / `streak-config channel add` when it
+ * Every invocable path of a command: `warn`, or `warn add` / `partner channel` when it
  * has subcommands.
  *
  * A shortcut used to store only the command name, which quietly made it useless for any command

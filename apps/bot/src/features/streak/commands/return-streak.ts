@@ -11,7 +11,7 @@ import { L } from "@utils";
  * Gives a member their expired streak back.
  *
  * Staff only — administrators, plus whatever roles the guild assigned with
- * `/streak-config return-role add`. It is deliberately not self-service: a streak a member can
+ * the dashboard (Streaks → Who can give streaks back). It is deliberately not self-service: a streak a member can
  * restore themselves is not really a streak, it is a button.
  */
 export const returnStreak: FeatureSubcommandHandler = async (interaction, _client) => {

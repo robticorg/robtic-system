@@ -31,9 +31,9 @@ claimable again at 00:00, which is what "daily" means to the person doing it.
 
 | | Default | Bounds | Set with |
 |---|---|---|---|
-| Claim every | 1 day | 1–30 | `/streak-config windows claim-days` |
-| Expires after | 2 days without a claim | 2–60 | `/streak-config windows expire-days` |
-| Return window | 24 hours | 1–168 | `/streak-config windows return-hours` |
+| Claim every | 1 day | 1–30 | Dashboard → Streaks |
+| Expires after | 2 days without a claim | 2–60 | Dashboard → Streaks |
+| Return window | 24 hours | 1–168 | Dashboard → Streaks |
 
 Expiry is always forced above the claim window. A streak that died before it could next be claimed
 could never be continued, so both the command and the admin panel raise it rather than rejecting the
@@ -64,7 +64,7 @@ used.
 ### Returning
 
 `/streak-return <user>` — **staff only**: administrators and the guild operator, plus any roles
-added with `/streak-config return-role add`.
+picked on Dashboard → Streaks (Who can give streaks back).
 
 The permission check lives in the handler rather than in the command's `access` field. Discord gates
 a whole command, and declaring `access: "admin"` would lock out the assigned roles before any of the
@@ -75,7 +75,7 @@ streak, it is a button.
 
 ## Punishments
 
-Off a per-guild switch, `/streak-config break-on`:
+Off a per-guild switch on Dashboard → Streaks:
 
 | Trigger | Default | |
 |---|---|---|
@@ -97,21 +97,9 @@ punishment-broken streaks — the ones most likely to be disputed — the only u
 | `/streak [user]` | anyone |
 | `/streak-top` | anyone |
 | `/streak-return <user>` | staff |
-| `/streak-reward add · remove · list` | admin |
-| `/streak-config channel add · remove · list · announce` | admin |
-| `/streak-config reminder default` | admin |
-| `/streak-config settings` | admin |
-| `/streak-config windows` | admin |
-| `/streak-config break-on` | admin |
-| `/streak-config return-role add · remove · list` | admin |
-| `/streak-config sync <source-guild-id>` | admin |
 
-`/streak-reward` and `/streak-config settings` still reply in Arabic. They were moved verbatim
-during the feature refactor rather than converted to `t()` inside a large diff, where a behaviour
-change would have been invisible.
-
-Everything except the reward table is also editable from the Activity admin panel's **Streaks**
-section.
+Settings, reward roles and rewards to claim are edited on the dashboard (Community → Streaks). `/streak-config` and
+`/streak-reward` were removed on 2026-11-20, including `/streak-config sync` (copying streaks from another server).
 
 ## Data
 
