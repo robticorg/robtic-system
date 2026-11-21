@@ -7,8 +7,6 @@ import { isClaimable, isStreakExpired } from "../lib";
 import { applyStreakRole } from "../utils/streak-role";
 import { isValidStreakMessage } from "./is-valid-streak-message";
 import { sendStreakReply } from "./send-streak-reply";
-import { sendStreakDM } from "./send-streak-dm";
-import { announceStreakRewards } from "./announce-streak-rewards";
 
 const CTX = "main:streak";
 
@@ -68,9 +66,8 @@ export async function processStreakMessage(message: Message): Promise<void> {
         value: updated.currentStreak,
     });
 
+    // As streaks.rrl says: a 🔥 on the message, or the milestone embed on a reward day. No DM.
     await sendStreakReply(message, updated, settings);
-    await sendStreakDM(message.author, updated);
-    await announceStreakRewards(message.guild, message.author, guildId, updated.currentStreak);
 
     try {
         const earned = await awardStreakPoint(guildId, message.author.id, message.author.username, updated.currentStreak);

@@ -1,6 +1,6 @@
 import { EmbedBuilder, type Client, type Guild } from "discord.js";
 import { StreakRepository, StreakSettingsRepository, StreakRecoveryRepository } from "@database/repositories";
-import { COLORS, STREAK_CONFIG, STREAK_DM_MESSAGES } from "@constants";
+import { STREAK_CONFIG, STREAK_DM_MESSAGES } from "@constants";
 import { Logger } from "@logger";
 import { isStreakExpired } from "@core/streak/is-streak-expired";
 import { streakExpiresAt } from "@core/streak/streak-expires-at";
@@ -27,8 +27,7 @@ export async function processGuildStreaks(client: Client, guild: Guild): Promise
             if (user) {
                 const embed = new EmbedBuilder()
                     .setDescription(STREAK_DM_MESSAGES.expired(streak.currentStreak))
-                    .setColor(COLORS.error)
-                    .setTimestamp();
+                    .setColor(0xef4444);
 
                 await user.send({ embeds: [embed] }).catch(() => null);
             }
@@ -44,12 +43,8 @@ export async function processGuildStreaks(client: Client, guild: Guild): Promise
 
         const user = await client.users.fetch(streak.discordId).catch(() => null);
         if (user) {
-            const embed = new EmbedBuilder()
-                .setDescription(STREAK_DM_MESSAGES.expiringSoon)
-                .setColor(COLORS.warning)
-                .setTimestamp();
-
-            await user.send({ embeds: [embed] }).catch(() => null);
+            // streaks.rrl "Reminder": a plain DM.
+            await user.send({ content: STREAK_DM_MESSAGES.expiringSoon(streak.currentStreak) }).catch(() => null);
         }
 
         await StreakRepository.markReminderSent(streak.discordId, guild.id);

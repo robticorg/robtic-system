@@ -1,27 +1,21 @@
 import { bilingual } from "@utils/lang-context";
 
+// The wording of the Streaks plugin's Robtic Rules (streaks.rrl), word for word.
+
 /** DM text sent by the streak scheduler. */
 export const STREAK_DM_MESSAGES = bilingual({
-    expired: (lostStreak: number) =>
-        `💔 Your streak has ended.\n\nStreak lost: ${lostStreak}\n\nA moderator can bring it back within 3 days.`,
-    expiringSoon: "⚠️ Your streak ends in less than two hours.\n\nSend one message in the streak channel to keep it.",
+    expired: (lostStreak: number) => `Your ${lostStreak}-day streak ended. Start a new one today!`,
+    expiringSoon: (current: number) => `⏳ Your ${current}-day streak ends in 2 hours. Send a message to keep it!`,
 }, {
-    expired: (lostStreak: number) =>
-        `💔 انتهى الستريك حقك.\n\nالستريك المفقود: ${lostStreak}\n\nيقدر أحد المشرفين يرجعه خلال 3 أيام.`,
-    expiringSoon: "⚠️ الستريك حقك بينتهي خلال أقل من ساعتين.\n\nأرسل رسالة وحدة في روم الستريك عشان تحافظ عليه.",
+    expired: (lostStreak: number) => `انتهت سلسلتك (${lostStreak} يوم). ابدأ سلسلة جديدة اليوم!`,
+    expiringSoon: (current: number) => `⏳ سلسلتك (${current} يوم) تنتهي خلال ساعتين. أرسل رسالة لتحافظ عليها!`,
 });
 
-/** Public streak announcements. */
+/** The milestone post on a reward day. */
 export const STREAK_MESSAGES = bilingual({
-    reached: (userId: string, current: number, best: number) =>
-        `🔥 <@${userId}> reached a **${current}**-day streak!` +
-        (current >= best ? " New record! 🏆" : ` (best: **${best}**)`) +
-        "\nCome back tomorrow to keep it going.",
+    reached: (userId: string, current: number) => `🔥 <@${userId}> reached a **${current}-day** streak!`,
 }, {
-    reached: (userId: string, current: number, best: number) =>
-        `🔥 <@${userId}> وصل إلى **${current}** يوم ستريك!` +
-        (current >= best ? " رقم قياسي جديد! 🏆" : ` (أفضل رقم: **${best}**)`) +
-        "\nارجع بكرة عشان تكمل الستريك.",
+    reached: (userId: string, current: number) => `🔥 <@${userId}> وصل إلى سلسلة **${current}** يوم!`,
 });
 
 /** Public level-up announcements from the XP system. */
