@@ -26,7 +26,7 @@ export const TOP_CATEGORIES: TopCategory[] = [
 export const TOP_OVERVIEW_BOARDS: readonly TopCategory[] = ["messages", "voice"];
 
 /** The `/top` accent (the bar down the side and the chart line) when a server hasn't picked one. */
-export const TOP_DEFAULT_ACCENT = "#e5212d";
+export const TOP_DEFAULT_ACCENT = "#3d7bff";
 
 /** Emoji shown in each leaderboard's title. */
 export const TOP_CATEGORY_EMOJI: Record<TopCategory, string> = {

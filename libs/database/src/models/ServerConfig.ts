@@ -40,7 +40,7 @@ export interface IServerConfig extends Document {
     /** Roles allowed to post the line with a shortcut word, besides Administrators (`/line role`). */
     lineRoleIds: string[];
     /** How `/top` looks here (dashboard → Leaderboards). Its background image is the BranchAsset `top-bg:<guildId>`. */
-    topStyle?: { accent?: string; chart?: boolean } | null;
+    topStyle?: { accent?: string; chart?: boolean; format?: "components" | "embed"; buttons?: "secondary" | "primary" | "success" | "danger" } | null;
     /** The language the bot answers in on this server (dashboard → General). Unset: Arabic, as before. */
     language?: "en" | "ar";
     /** This server's own emojis, slot -> emoji (dashboard → Emojis). Empty slots use the admin console's, then the bot's. */

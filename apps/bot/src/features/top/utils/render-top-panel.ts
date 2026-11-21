@@ -17,8 +17,8 @@ export async function renderTopPanel(
     await interaction.deferUpdate();
 
     const lang = await getUserLang(interaction.member as GuildMember | null);
-    const { components, files, allowedMentions } = await buildTopView(guild, scope, period, lang, { id: invokerId, name: interaction.user.username }, page);
+    const { components, embeds, files, allowedMentions } = await buildTopView(guild, scope, period, lang, { id: invokerId, name: interaction.user.username }, page);
 
     // The chart is a new file each time; `attachments: []` drops the old one so the message doesn't collect them.
-    await interaction.editReply({ components, files, attachments: [], allowedMentions });
+    await interaction.editReply({ components, ...(embeds ? { embeds } : {}), files, attachments: [], allowedMentions });
 }
