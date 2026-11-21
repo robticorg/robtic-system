@@ -6,9 +6,6 @@ export interface PointRates {
     comboPerPoint: number;
     voiceMinutesPerPoint: number;
     streakRewards: { streak: number; points: number }[];
-    pointsPerRc: number;
-    conversionEnabled: boolean;
-    minConversionPoints: number;
     staffMessagesPerPoint: number;
 }
 
@@ -21,9 +18,6 @@ export async function getPointRates(guildId: string): Promise<PointRates> {
         comboPerPoint: s.comboPerPoint,
         voiceMinutesPerPoint: s.voiceMinutesPerPoint,
         streakRewards: s.streakRewards.map(r => ({ streak: r.streak, points: r.points })),
-        pointsPerRc: s.pointsPerRc,
-        conversionEnabled: s.conversionEnabled,
-        minConversionPoints: s.minConversionPoints,
         // Rows saved before the field existed read it as the default.
         staffMessagesPerPoint: s.staffMessagesPerPoint ?? POINT_DEFAULTS.staffMessagesPerPoint,
     };

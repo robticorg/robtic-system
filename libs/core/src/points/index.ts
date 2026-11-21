@@ -4,4 +4,3 @@ export { awardMessagePoint } from "./award-message-point";
 export { awardComboPoint } from "./award-combo-point";
 export { awardVoicePoint } from "./award-voice-point";
 export { awardStreakPoint } from "./award-streak-point";
-export { convertPointsToRc, type ConversionResult, type ConversionFailure } from "./convert-points-to-rc";

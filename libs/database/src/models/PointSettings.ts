@@ -17,12 +17,6 @@ export interface IPointSettings extends Document {
     voiceMinutesPerPoint: number;
     /** Streak day-counts that pay out when reached. */
     streakRewards: IPointStreakReward[];
-    /** Points needed for one RC. */
-    pointsPerRc: number;
-    /** Whether members may convert at all. Lets a guild run Points without a premium currency. */
-    conversionEnabled: boolean;
-    /** Smallest conversion a member may make, so the ledger is not filled with 1-point rounding. */
-    minConversionPoints: number;
     /** Real messages a staff member writes per staff point sent to Robtic Staff (the `staff-points` feature). */
     staffMessagesPerPoint: number;
     createdAt: Date;
@@ -43,9 +37,6 @@ const pointSettingsSchema = new Schema<IPointSettings>(
             }],
             default: [],
         },
-        pointsPerRc: { type: Number, default: 100 },
-        conversionEnabled: { type: Boolean, default: true },
-        minConversionPoints: { type: Number, default: 100 },
         staffMessagesPerPoint: { type: Number, default: 100, min: 1, max: 10_000 },
     },
     { timestamps: true }

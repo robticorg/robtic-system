@@ -9,7 +9,7 @@ export const balance: FeatureSubcommandHandler = async (interaction, _client) =>
 
     await interaction.editReply({
         content: target.isSelf
-            ? POINT_MESSAGES.ownBalance(summary.points, summary.rc, summary.rank)
-            : POINT_MESSAGES.otherBalance(target.displayName, summary.points, summary.rc, summary.rank),
+            ? POINT_MESSAGES.ownBalance(summary.points, summary.rank)
+            : POINT_MESSAGES.otherBalance(target.displayName, summary.points, summary.rank),
     });
 };

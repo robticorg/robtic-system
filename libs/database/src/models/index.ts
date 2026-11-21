@@ -21,7 +21,6 @@ export { StreakRecovery, type IStreakRecovery } from "./StreakRecovery";
 export { Point, type IPoint } from "./Point";
 export { PointSettings, type IPointSettings, type IPointStreakReward } from "./PointSettings";
 export { PointHistory, type IPointHistory, type PointSource, POINT_SOURCES } from "./PointHistory";
-export { RcConversion, type IRcConversion } from "./RcConversion";
 export { Combo, type ICombo, type ComboStatus } from "./Combo";
 export { ComboHistory, type IComboHistory } from "./ComboHistory";
 export { ComboUserStats, type IComboUserStats, type IComboPartnerTally } from "./ComboUserStats";

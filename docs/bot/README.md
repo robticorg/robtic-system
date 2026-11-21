@@ -10,7 +10,7 @@ become a feature.
 
 | System | Location | Purpose |
 |---|---|---|
-| points | `features/points/` | Activity points + RC premium currency — on by default |
+| points | `features/points/` | Activity points — on by default |
 | combo | `features/combo/` | Two-user conversation scoring — on by default |
 | top | `features/top/` | Cross-category leaderboard panel — on by default |
 | logging | `features/logging/` | Log channel routing — on by default |
@@ -31,7 +31,7 @@ loader reports a collision rather than letting one silently overwrite the other.
 ## Feature Docs
 
 - [combo.md](./combo.md) — two-user conversation scoring
-- [economy.md](./economy.md) — points, RC, and every way activity pays out
+- [economy.md](./economy.md) — points, and every way activity pays out
 - [command-categories.md](./command-categories.md) — command categories and which are confined to the commands channel
 - [modal.md](./modal.md) — modal patterns
 - [partner.md](./partner.md) — partner servers, the banner and `/partner`

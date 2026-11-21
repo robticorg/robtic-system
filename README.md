@@ -21,7 +21,7 @@ structured and automated way.
 * **HR** – staff management, recruitment, and promotions
 * **ModMail** – private communication between users and staff
 * **Community** – XP, activity tracking, and progression roles
-* **Economy** – activity Points and RC
+* **Economy** – activity Points
 * **Dev** – project sharing and review
 
 ## Key Features

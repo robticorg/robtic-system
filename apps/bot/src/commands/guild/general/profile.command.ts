@@ -138,7 +138,7 @@ export default {
                 { name: t("profile.field_total_xp", lang), value: `${xpRecord.totalXP} · #${rank}`, inline: true },
                 { name: t("profile.field_streak", lang), value: t("profile.streak_value", lang, { current: `${streak.record.currentStreak}`, best: `${streak.record.bestStreak}` }), inline: true },
                 { name: t("profile.field_combo", lang), value: comboValue, inline: true },
-                { name: L("🎯 Points", "🎯 النقاط"), value: `${pointSummary.points}${pointSummary.rank > 0 ? ` (#${pointSummary.rank})` : ""}${pointSummary.rc > 0 ? ` · ${pointSummary.rc} RC` : ""}`, inline: true },
+                { name: L("🎯 Points", "🎯 النقاط"), value: `${pointSummary.points}${pointSummary.rank > 0 ? ` (#${pointSummary.rank})` : ""}`, inline: true },
                 {
                     name: "🎙️ Voice",
                     value: voiceStat

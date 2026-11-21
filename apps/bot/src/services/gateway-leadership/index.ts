@@ -18,7 +18,6 @@ import {
 } from "@queue";
 import { stopAllMusicBots } from "@core/music";
 import { stopAllCompetitionBots } from "@bot/features/competition/lib/runtime"; // TEMP competition bot
-import { client as bankClient } from "../bank";
 
 const CTX = "gateway";
 
@@ -53,7 +52,7 @@ function startHeartbeat(isHealthy: () => boolean): void {
 /** Logs every Discord session of this process out, with a deadline so a stuck close can't block a handover. */
 async function logOutEverywhere(): Promise<void> {
     await Promise.race([
-        Promise.allSettled([ClientManager.getInstance().stop(), stopAllMusicBots(), stopAllCompetitionBots(), Promise.resolve(bankClient.destroy())]),
+        Promise.allSettled([ClientManager.getInstance().stop(), stopAllMusicBots(), stopAllCompetitionBots()]),
         new Promise(resolve => setTimeout(resolve, 5_000)),
     ]);
 }

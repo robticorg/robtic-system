@@ -61,14 +61,12 @@
     "bullmq": "^6.3.11",
     "chalk": "^5.6.2",
     "discord.js": "^14.26.4",
-    "discord.js-selfbot-v13": "^3.7.1",
     "dotenv": "latest",
     "ioredis": "^5.11.1",
     "mongoose": "^9.7.2",
     "node-cron": "^4.5.0",
     "opusscript": "^0.1.0",
     "re2js": "2.10.0",
-    "tesseract.js": "^7.0.0",
     "yt-search": "^2.13.1"
   }
 }

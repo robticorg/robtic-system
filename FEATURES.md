@@ -30,7 +30,7 @@ on or off. Everything else is an ordinary command and is always available.
 
 | Feature | Activation | What it is |
 |---|---|---|
-| [points](#points) | default-on | Activity points and the RC premium currency |
+| [points](#points) | default-on | Activity points |
 | [combo](#combo) | default-on | Two-person conversation scoring |
 | [top](#top) | default-on | Every leaderboard, in one panel |
 | [invites](docs/bot/invites.md) | default-on | Invite tracking, join announcements, `/invites` and `/info` |
@@ -206,14 +206,13 @@ Arbitrary phrases mapped onto any command — see the [shortcuts feature](#short
 
 `default-on` · `/points` · category `Economy` · access `general`
 
-The activity currency, and the only source of RC.
+The activity currency.
 
 | Subcommand | Access | |
 |---|---|---|
-| `balance [user]` | anyone | Points, RC and rank |
-| `rates` | anyone | How points are earned here, and the RC rate |
+| `balance [user]` | anyone | Points and rank |
+| `rates` | anyone | How points are earned here |
 | `history` | anyone | Recent point activity from the ledger |
-| `convert <points>` | anyone | Points → RC |
 | `add <user> <amount> [reason]` | admin | Grant |
 | `remove <user> <amount> [reason]` | admin | Deduct |
 
@@ -231,10 +230,6 @@ message rather than losing it at the boundary.
 Streaks are the exception: a fixed payout rather than accumulated progress, because a streak climbs
 one day at a time so each threshold fires exactly once.
 
-**RC** exists only through `/points convert`. Points are deducted before RC is credited — if the
-process dies between the two the member is short-changed rather than able to mint RC from a balance
-they still hold. Every conversion records the rate that applied, plus a zeroed `fee` and `bonus`, so
-taxes and membership perks can arrive later without a migration.
 
 Every movement writes a `PointHistory` row with `balanceAfter`. `lifetimePoints` only climbs;
 spending reduces the balance alone, so "earned all-time" stays meaningful after a cash-out.
@@ -670,7 +665,6 @@ Repositories that sit on a hot path are cached with a 60-second TTL and invalida
 | Messages per point | 100 | 1–100,000 |
 | Combo score per point | 100 | 1–100,000 |
 | Voice minutes per point | 10 | 1–100,000 |
-| Points per RC | 100 | 1–1,000,000 |
 | Minimum conversion | 100 | 1–1,000,000 |
 | Streak reward rows | — | 15 |
 | Voice tick | 60s | |
@@ -711,7 +705,7 @@ Player-facing categories are confined to the commands channel when one is set.
 |---|---|
 | [docs/architecture.md](docs/architecture.md) | Loader rules, registration routes, the feature bar |
 | [docs/folder-structure.md](docs/folder-structure.md) | Where everything lives |
-| [docs/bot/economy.md](docs/bot/economy.md) | Points and RC in full |
+| [docs/bot/economy.md](docs/bot/economy.md) | Points in full |
 | [docs/bot/voice.md](docs/bot/voice.md) | Voice activity in full |
 | [docs/bot/streak.md](docs/bot/streak.md) | Streaks |
 | [docs/bot/combo.md](docs/bot/combo.md) | Combo scoring |

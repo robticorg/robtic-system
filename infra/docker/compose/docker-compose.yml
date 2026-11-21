@@ -30,10 +30,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 60s
-    # The bank API (apps/bot/src/services/bank/api). No authentication — anyone who can reach this
-    # port can start a transfer, so keep it closed to the internet at the firewall.
-    ports:
-      - "0.0.0.0:8790:8790"
     networks: [default, internal]
     # Started, not healthy: the Gateway must never be held back by an internal service. If Redis is
     # down it processes invite events inline; if the Invites API is down /invites says so.
@@ -44,8 +40,7 @@ services:
         condition: service_started
 
   # Standby Gateway: same image, waits (not logged in) while the primary leads, takes over when the
-  # primary's lock expires, and hands back once the primary is up again. No published ports: while
-  # it leads, the bank API (:8790) is unreachable from outside — it returns with the primary.
+  # primary's lock expires, and hands back once the primary is up again.
   robtic-system-standby:
     image: ghcr.io/robticorg/robtic-system:latest
     restart: unless-stopped

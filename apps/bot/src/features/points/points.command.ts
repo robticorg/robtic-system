@@ -7,14 +7,12 @@ import { pointsFeature } from "./points";
 import { balance } from "./commands/balance";
 import { rates } from "./commands/rates";
 import { history } from "./commands/history";
-import { convert } from "./commands/convert";
 import { add, remove } from "./commands/adjust";
 
 const handlers: Record<string, FeatureSubcommandHandler> = {
     balance,
     rates,
     history,
-    convert,
     add,
     remove,
 };

@@ -265,15 +265,6 @@ export class PointsRepository {
         return taken.modifiedCount > 0 ? earned : 0;
     }
 
-    /** Moves RC without touching Points — the conversion service handles both sides. */
-    static async addRc(guildId: string, discordId: string, amount: number): Promise<IPoint> {
-        return Point.findOneAndUpdate(
-            { guildId, discordId },
-            { $inc: { rc: amount } },
-            { upsert: true, returnDocument: "after" }
-        ) as Promise<IPoint>;
-    }
-
     static async getTop(guildId: string, limit = 10): Promise<IPoint[]> {
         return Point.find({ guildId }).sort({ points: -1 }).limit(limit);
     }

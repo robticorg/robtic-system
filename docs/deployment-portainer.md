@@ -39,16 +39,12 @@ No container publishes a host port.
 |---|---|---|---|---|
 | Minecraft API (`robtic-minecraft`, `apps/minecraft-api`) | 3002 | Minecraft game servers on other hosts (plugin `api.yml`) | **`proxy`**, `minecraft.api.robtic.org` | scheme `http`, host `robtic-minecraft-api`, port `3002` |
 | Staff points API (`robtic-staff`, `src/modules/internal-api`) | 8788 | `robtic-system` and the workers (`libs/core/src/staff-api`, `STAFF_POINTS_API_URL`) | `internal` only, `http://robtic-staff:8788` | none |
-| Bank API (`robtic-system`, `apps/bot/src/services/bank/api`) | 8790 | `robtic-staff` gift delivery (`AUTOCLAIM_API_URL`) | `internal` only, `http://robtic-system:8790` | none; it has **no authentication** and must never join `proxy` |
 | Invites API (`internal-api/invites`) | 3005 | `robtic-system` (`INVITES_API_URL`) | `internal` only | none |
 
 If a caller outside these four repositories ever needs the Staff points API, give it an NPM proxy
 host to `robtic-staff:8788`, add `proxy` to `robtic-staff`'s networks, and set
 `STAFF_INTERNAL_API_TOKEN` first. Without that token the API is open to anyone who can reach it.
 
-The bank API is served by whichever Gateway currently leads. During a failover to
-`robtic-system-standby`, `http://robtic-system:8790` refuses connections until the primary is back.
-The old deployment behaved the same way: the standby published no ports.
 
 #### Nginx Proxy Manager: `minecraft.api.robtic.org`
 
@@ -243,7 +239,6 @@ docker logs robtic-minecraft-api 2>&1 | grep "Listening on"
 
 # Service-to-service paths.
 docker exec robtic-system bun -e "console.log(await (await fetch('http://robtic-staff:8788/internal/health')).text())"
-docker exec robtic-staff  bun -e "console.log(await (await fetch('http://robtic-system:8790/health')).text())"
 docker exec robtic-system bun -e "console.log(await (await fetch('http://robtic-invites-api:3005/health')).status)"
 ```
 

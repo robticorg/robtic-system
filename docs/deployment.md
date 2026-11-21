@@ -101,7 +101,7 @@ Properties worth knowing:
 No container publishes a host port.
 
 ```
-robtic-system           internal, backend        bank API :8790 (internal only)
+robtic-system           internal, backend
 robtic-system-standby   internal, backend
 robtic-system-worker-1  internal, backend
 robtic-system-worker-2  internal, backend

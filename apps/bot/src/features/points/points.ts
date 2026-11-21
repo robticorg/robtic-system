@@ -1,7 +1,7 @@
 import { defineFeature } from "@typings/feature";
 
 /**
- * The activity economy: Points earned by participating, and RC converted from them.
+ * The activity economy: Points earned by participating.
  *
  * Points are the Discord-side currency every activity system pays into — messages, combo, streak,
  * voice, and whatever is added next.
@@ -11,28 +11,23 @@ import { defineFeature } from "@typings/feature";
  */
 export const pointsFeature = defineFeature({
     key: "points",
-    description: "Activity points and RC",
+    description: "Activity points",
     activation: "default-on",
     commands: [
         {
             name: "points",
-            description: "Points earned from activity, and converting them to RC",
+            description: "Points earned from activity",
             scope: "guild",
             access: "general",
             category: "Economy",
             subcommands: [
                 {
                     name: "balance",
-                    description: "See your points, RC and rank (or another member's)",
+                    description: "See your points and rank (or another member's)",
                     options: [{ name: "user", description: "Member to check (defaults to yourself)", type: "user" }],
                 },
-                { name: "rates", description: "How points are earned here, and the RC rate" },
+                { name: "rates", description: "How points are earned here" },
                 { name: "history", description: "Your recent point activity" },
-                {
-                    name: "convert",
-                    description: "Convert points into RC",
-                    options: [{ name: "points", description: "How many points to convert", type: "integer", required: true, minValue: 1 }],
-                },
                 {
                     name: "add",
                     description: "Grant points to a member (admins only)",

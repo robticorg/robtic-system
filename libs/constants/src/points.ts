@@ -4,8 +4,6 @@ export const POINT_DEFAULTS = {
     comboPerPoint: 100,
     /** Minutes of *active* voice per Point — voice is slower than chat by design. */
     voiceMinutesPerPoint: 10,
-    pointsPerRc: 100,
-    minConversionPoints: 100,
     /** Real messages per staff point sent to Robtic Staff. */
     staffMessagesPerPoint: 100,
 } as const;

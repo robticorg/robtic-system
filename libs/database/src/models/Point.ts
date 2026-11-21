@@ -1,13 +1,12 @@
 import { Schema, model, type Document } from "mongoose";
 
 /**
- * A member's activity wallet in one guild: Points earned from participating, and RC converted
- * from them.
+ * A member's activity wallet in one guild: Points earned from participating.
  *
  * Separate from Coin on purpose. Coin is the Minecraft in-game currency and is spoken over the
  * plugin API (`/api/economy/coins`), so it answers to a contract this repo does not own. Points
  * are the Discord-side activity currency — messages, combo, streak, voice, and whatever comes
- * next — and RC is the premium currency they convert into.
+ * next.
  */
 export interface IPoint extends Document {
     guildId: string;
@@ -18,7 +17,6 @@ export interface IPoint extends Document {
     /** Lifetime earned, never decremented — spending reduces `points` only. */
     lifetimePoints: number;
     /** Premium currency. Only ever produced by converting Points. */
-    rc: number;
     /** Rolling progress toward the next Point from each source. */
     messageProgress: number;
     /** Last message-counter flush batch added to `messageProgress`, and the last one converted into points. */
@@ -40,7 +38,6 @@ const pointSchema = new Schema<IPoint>(
         username: { type: String, required: true },
         points: { type: Number, default: 0 },
         lifetimePoints: { type: Number, default: 0 },
-        rc: { type: Number, default: 0 },
         messageProgress: { type: Number, default: 0 },
         msgFlushBatch: { type: String, default: null },
         msgConvertBatch: { type: String, default: null },
@@ -54,6 +51,5 @@ const pointSchema = new Schema<IPoint>(
 
 pointSchema.index({ guildId: 1, discordId: 1 }, { unique: true });
 pointSchema.index({ guildId: 1, points: -1 });
-pointSchema.index({ guildId: 1, rc: -1 });
 
 export const Point = model<IPoint>("Point", pointSchema);

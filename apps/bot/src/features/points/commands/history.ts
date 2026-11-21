@@ -10,14 +10,14 @@ const SOURCE_LABEL = bilingual<Record<string, string>>({
     streak: "🔥 streak",
     voice: "🎙️ voice",
     admin: "🛠️ admin",
-    conversion: "✨ converted to RC",
+    conversion: "✨ converted",
 }, {
     message: "💬 الرسائل",
     combo: "🔁 الكومبو",
     streak: "🔥 الستريك",
     voice: "🎙️ الصوت",
     admin: "🛠️ الإدارة",
-    conversion: "✨ تحويل إلى RC",
+    conversion: "✨ تحويل",
 });
 
 export const history: FeatureSubcommandHandler = async (interaction, _client) => {

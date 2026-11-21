@@ -4,7 +4,6 @@ import { getPointRates, type PointRates } from "./get-point-rates";
 export interface PointSummary {
     points: number;
     lifetimePoints: number;
-    rc: number;
     rank: number;
     /** Progress toward the next Point from each source. */
     messageProgress: number;
@@ -29,7 +28,6 @@ export async function getPointSummary(guildId: string, discordId: string): Promi
     return {
         points: record?.points ?? 0,
         lifetimePoints: record?.lifetimePoints ?? 0,
-        rc: record?.rc ?? 0,
         rank,
         messageProgress: record?.messageProgress ?? 0,
         comboProgress: record?.comboProgress ?? 0,

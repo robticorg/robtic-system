@@ -5,7 +5,6 @@ Two currencies, with different jobs and different sources.
 | | What it is | Scope | How it comes into existence |
 |---|---|---|---|
 | **Points** | The activity currency | **Per guild** | Earned from chat, combo, voice and streaks |
-| **RC** | The premium currency | **Per guild** | **Only** by converting Points |
 
 ## Earning Points
 
@@ -27,19 +26,6 @@ Every movement writes a `PointHistory` row with `balanceAfter` — an append-onl
 with `/points history`. `lifetimePoints` only ever climbs; spending reduces the balance alone, so
 "earned all-time" stays meaningful after a member cashes out.
 
-## RC
-
-`/points convert <points>` is the only source of RC anywhere in the system. That is deliberate:
-one place to reason about supply.
-
-- Rejected if conversion is disabled, below `minConversionPoints`, or not an exact multiple of
-  `pointsPerRc`.
-- Points are deducted **before** RC is credited. If the process dies between the two the member is
-  short-changed rather than able to mint RC from a balance they still hold — the safer failure.
-- Every conversion writes an `RcConversion` row carrying the rate that applied, because a guild can
-  change the rate and an old row still has to mean what it meant then. `fee` and `bonus` are
-  recorded as zero rather than omitted, so taxes and membership perks can arrive later without a
-  migration.
 
 ## How this relates to XP
 
@@ -56,7 +42,7 @@ number; Points are a balance you spend.
 
 ## Configuration
 
-Per guild, via `/points` or the Activity admin panel's **Points & RC** section:
+Per guild, via `/points` or the Activity admin panel's **Points** section:
 
 | Setting | Default | Bounds |
 |---|---|---|
