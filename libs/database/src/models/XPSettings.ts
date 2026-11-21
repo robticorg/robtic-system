@@ -25,7 +25,9 @@ export interface IXPSettings extends Document {
      * `card` positions are in the background's own pixels; a null background is the built-in images/level.png.
      */
     levelUpMessage?: {
-        mode: "image" | "text";
+        mode: "image" | "text" | "embed" | "components";
+        /** The embed's or container's colour, `#rrggbb`. */
+        color?: string;
         text: string;
         card?: LevelCardLayoutDoc;
     } | null;

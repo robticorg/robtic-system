@@ -55,6 +55,10 @@ export interface IServerConfig extends Document {
     inviteLeaveChannelId?: string;
     /** Each invite announcement's own text (dashboard → Invites); empty or unset = the bot's wording. */
     inviteMessages?: Partial<Record<"joinInvited" | "joinVanity" | "joinUnknown" | "leaveInvited" | "leaveVanity" | "leaveUnknown", string>> | null;
+    /** How each invite announcement is sent: "text", "embed" or "components" (dashboard → Invites). */
+    inviteFormats?: Partial<Record<string, string>> | null;
+    /** The embeds' and containers' colour, `#rrggbb`. */
+    inviteColor?: string | null;
     /** Where `/partner add` posts partner banners (`/partner channel`). */
     partnerChannelId?: string;
     /** Where the boost thank-you is posted (`/boost channel`). */
@@ -127,6 +131,8 @@ const serverConfigSchema = new Schema<IServerConfig>(
         inviteLogChannelId: { type: String },
         inviteLeaveChannelId: { type: String },
         inviteMessages: { type: Schema.Types.Mixed, default: null },
+        inviteFormats: { type: Schema.Types.Mixed, default: null },
+        inviteColor: { type: String, default: null },
         partnerChannelId: { type: String },
         boostChannelId: { type: String },
         boostMessage: { type: Schema.Types.Mixed, default: null },

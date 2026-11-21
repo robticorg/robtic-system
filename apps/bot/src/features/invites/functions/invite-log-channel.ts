@@ -7,11 +7,11 @@ import { ServerConfigRepository } from "@database/repositories";
  * `/invites-config channel`; leaves to their own channel, or the join one. `channel` is `null` when none is set, it's
  * gone, or the feature is disabled: tracking carries on regardless.
  */
-export async function inviteLogChannel(guild: Guild, kind: "join" | "leave" = "join"): Promise<{ channel: SendableChannels | null; messages: Record<string, string> }> {
+export async function inviteLogChannel(guild: Guild, kind: "join" | "leave" = "join"): Promise<{ channel: SendableChannels | null; messages: Record<string, string>; formats: Record<string, string>; color: string | null }> {
     const config = await ServerConfigRepository.getInviteConfig(guild.id);
     const channelId = kind === "join" ? config.joinChannelId : config.leaveChannelId;
-    if (!channelId || !(await isFeatureEnabled(guild.id, "invites"))) return { channel: null, messages: config.messages };
+    if (!channelId || !(await isFeatureEnabled(guild.id, "invites"))) return { channel: null, messages: config.messages, formats: config.formats, color: config.color };
 
     const channel = guild.channels.cache.get(channelId);
-    return { channel: channel?.isSendable() ? channel : null, messages: config.messages };
+    return { channel: channel?.isSendable() ? channel : null, messages: config.messages, formats: config.formats, color: config.color };
 }

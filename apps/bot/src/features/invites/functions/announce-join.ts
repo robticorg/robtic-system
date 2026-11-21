@@ -1,3 +1,4 @@
+import { announcePayload, isAnnounceFormat } from "@bot/utils/announce-format";
 import type { Guild } from "discord.js";
 import type { DetectedInviteUse } from "@core/invites";
 import { inviteLogChannel } from "./invite-log-channel";
@@ -13,20 +14,25 @@ import { fillInviteText, invitedJoinMessage, unknownJoinMessage, vanityJoinMessa
  * isn't configured). Throws if the inviter's count can't be read, so the queue retries it.
  */
 export async function announceJoin(guild: Guild, memberId: string, used: DetectedInviteUse | null, requestId?: string): Promise<void> {
-    const { channel, messages } = await inviteLogChannel(guild, "join");
+    const { channel, messages, formats, color } = await inviteLogChannel(guild, "join");
     if (!channel) return;
 
     const member = guild.members.cache.get(memberId);
     const base = { user: `<@${memberId}>`, username: member?.user.username ?? memberId, inviter: "", invites: 0, code: "", server: guild.name, members: guild.memberCount };
     let content: string;
+    let key: string;
     if (used?.vanity) {
+        key = "joinVanity";
         content = messages.joinVanity ? fillInviteText(messages.joinVanity, { ...base, code: used.code }) : vanityJoinMessage(memberId, used.code);
     } else if (used?.inviterId) {
+        key = "joinInvited";
         const [name, stats] = await Promise.all([inviterName(guild.client, used.inviterId), invitesBackend.stats(guild.id, used.inviterId, requestId)]);
         content = messages.joinInvited ? fillInviteText(messages.joinInvited, { ...base, inviter: name, invites: stats.total }) : invitedJoinMessage(memberId, name, stats.total);
     } else {
+        key = "joinUnknown";
         content = messages.joinUnknown ? fillInviteText(messages.joinUnknown, base) : unknownJoinMessage(memberId);
     }
 
-    await channel.send({ content, allowedMentions: { parse: [] } });
+    const format = formats[key];
+    await channel.send(announcePayload(content, isAnnounceFormat(format) ? format : "text", color));
 }
