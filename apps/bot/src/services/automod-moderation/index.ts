@@ -58,12 +58,12 @@ export async function processRecord(client: BotClient, guild: Guild | undefined,
     const reason = recordReason(r);
 
     if (r.type === "warn") {
-        await executeWarn(client, guild.id, r.userId, username, reason, reason, botId, member);
+        await executeWarn(client, guild.id, r.userId, username, reason, botId, member);
     } else if (r.type === "mute") {
         const ms = Math.min(Math.max(r.seconds ?? 600, 60), MUTE_MAX_HOURS * 3600) * 1000;
-        await executeMute(client, guild.id, r.userId, username, reason, reason, botId, member, ms);
+        await executeMute(client, guild.id, r.userId, username, reason, botId, member, ms);
     } else {
-        await executeBan(client, guild.id, r.userId, username, reason, reason, botId, member, false, JAIL_DAYS, guild);
+        await executeBan(client, guild.id, r.userId, username, reason, botId, member, false, JAIL_DAYS, guild);
     }
     return `recorded ${r.type}`;
 }

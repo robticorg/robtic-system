@@ -9,7 +9,7 @@ import {
 import type { BotClient } from "@core/bot-client";
 import { COLORS, MEMBER_PUNISHMENTS } from "@constants";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
-import { L, currentLang, errorText } from "@utils";
+import { L, errorText } from "@utils";
 import { getUserLang, t } from "@bot/utils/lang";
 import { canActOn } from "@bot/utils/moderation/hierarchy";
 import { needsProof, buildProofModal, openProofRequest, sendShortcutProofDM, awardPunishPoints } from "@bot/utils/moderation/punish-flow";
@@ -39,7 +39,6 @@ export async function executeWarn(
     targetId: string,
     _targetUsername: string,
     reason: string,
-    reasonAr: string,
     moderatorId: string,
     member: GuildMember | null | undefined,
 ) {
@@ -71,12 +70,12 @@ export async function executeWarn(
         const dmEmbed = new EmbedBuilder()
             .setTitle(t("moderation.warn_title", lang))
             .setColor(COLORS.warning)
-            .setDescription(t("moderation.warn_desc", lang, { reason: lang === "ar" ? reasonAr : reason }))
+            .setDescription(t("moderation.warn_desc", lang, { reason: reason }))
             .setTimestamp();
         await user.send({ embeds: [dmEmbed] }).catch(() => null);
     }
 
-    const shownReason = currentLang() === "ar" ? reasonAr : reason;
+    const shownReason = reason;
     const embed = new EmbedBuilder()
         .setTitle(L("⚠️ Warning given", "⚠️ تم التحذير"))
         .setColor(COLORS.warning)
@@ -156,9 +155,8 @@ export default {
             await interaction.deferReply();
             const reasonDoc = await ReasonRepository.findByKey(reasonKey, guildId);
             const reason = reasonDoc?.label ?? reasonKey;
-            const reasonAr = reasonDoc?.labelAr ?? reason;
 
-            const result = await executeWarn(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member);
+            const result = await executeWarn(client, guildId, target.id, target.username, reason, interaction.user.id, member);
             await interaction.editReply({ embeds: [result.embed] });
             return;
         }
@@ -231,9 +229,9 @@ export default {
 
         if (focused.name === "reason" && sub === "add") {
             const reasons = await ReasonRepository.findByType("warn", interaction.guildId!);
-            const label = (r: { label: string; labelAr?: string }) => (currentLang() === "ar" && r.labelAr ? r.labelAr : r.label);
+            const label = (r: { label: string }) => r.label;
             const filtered = reasons
-                .filter(r => r.key.includes(query) || r.label.toLowerCase().includes(query) || (r.labelAr ?? "").includes(focused.value))
+                .filter(r => r.key.includes(query) || r.label.toLowerCase().includes(query))
                 .slice(0, 25);
             await interaction.respond(filtered.map(r => ({ name: label(r).slice(0, 100), value: r.key })));
         }

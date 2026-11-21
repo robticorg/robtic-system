@@ -11,7 +11,7 @@ import {
 } from "discord.js";
 import { COLORS, PUNISH_TITLES } from "@constants";
 import { ReasonRepository } from "@database/repositories";
-import { L, currentLang, errorText } from "@utils";
+import { L, errorText } from "@utils";
 
 /** Discord's limit for one field's text. */
 const FIELD_MAX = 1024;
@@ -74,8 +74,7 @@ export default {
                             .setLabel(L("Key", "المفتاح"))
                             .setDescription(L("Short id: letters, numbers and dashes", "معرف قصير: حروف إنجليزية وأرقام وشرطات"))
                             .setTextInputComponent(text("reason_key", 30, "spam")),
-                        new LabelBuilder().setLabel(L("Reason in English", "السبب بالإنجليزي")).setTextInputComponent(text("reason_label", 200, "Spamming in channels")),
-                        new LabelBuilder().setLabel(L("Reason in Arabic", "السبب بالعربي")).setTextInputComponent(text("reason_label_ar", 200, "إرسال رسائل مزعجة")),
+                        new LabelBuilder().setLabel(L("Reason", "السبب")).setTextInputComponent(text("reason_label", 200, "Spamming in channels")),
                     ),
             );
             return;
@@ -110,8 +109,7 @@ export default {
                 return;
             }
 
-            const ar = currentLang() === "ar";
-            const line = (r: { key: string; label: string; labelAr: string }) => `\`${r.key}\` — ${ar ? r.labelAr || r.label : r.label}`;
+            const line = (r: { key: string; label: string }) => `\`${r.key}\` — ${r.label}`;
             const fields: { name: string; value: string }[] = [];
             for (const type of ["warn", "mute", "ban"] as const) {
                 const blocks = chunk(reasons.filter(r => r.type === type).map(line));

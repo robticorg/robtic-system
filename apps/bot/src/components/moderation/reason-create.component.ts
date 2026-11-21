@@ -17,13 +17,12 @@ export const reasonCreateHandler: ComponentHandler<ModalSubmitInteraction> = {
         const type = interaction.customId.split("_")[2] as "warn" | "mute" | "ban";
         const key = interaction.fields.getTextInputValue("reason_key").toLowerCase().trim().replace(/\s+/g, "-");
         const label = interaction.fields.getTextInputValue("reason_label").trim();
-        const labelAr = interaction.fields.getTextInputValue("reason_label_ar").trim();
 
         if (!KEY.test(key)) {
             await interaction.editReply({ content: errorText(L("The key must be one word: English letters, numbers and dashes (up to 30), like `spam` or `bad-words`.", "المفتاح لازم يكون كلمة وحدة: حروف إنجليزية وأرقام وشرطات (حتى 30)، مثل `spam` أو `bad-words`.")) });
             return;
         }
-        if (!label || !labelAr) {
+        if (!label) {
             await interaction.editReply({ content: errorText(L("Write the reason in both languages.", "اكتب السبب باللغتين.")) });
             return;
         }
@@ -32,7 +31,7 @@ export const reasonCreateHandler: ComponentHandler<ModalSubmitInteraction> = {
             return;
         }
 
-        await ReasonRepository.create({ guildId: interaction.guildId, key, label, labelAr, type, createdBy: interaction.user.id });
+        await ReasonRepository.create({ guildId: interaction.guildId, key, label, type, createdBy: interaction.user.id });
 
         await interaction.editReply({
             embeds: [
@@ -43,7 +42,6 @@ export const reasonCreateHandler: ComponentHandler<ModalSubmitInteraction> = {
                         { name: L("Key", "المفتاح"), value: `\`${key}\``, inline: true },
                         { name: L("Type", "النوع"), value: PUNISH_TITLES[type], inline: true },
                         { name: L("English", "الإنجليزي"), value: label },
-                        { name: L("Arabic", "العربي"), value: labelAr },
                     )
                     .setTimestamp(),
             ],

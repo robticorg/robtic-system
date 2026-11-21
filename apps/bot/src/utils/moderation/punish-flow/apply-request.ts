@@ -22,16 +22,15 @@ const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(mi
 export async function applyPunishment(client: BotClient, guild: Guild, p: PunishmentToApply): Promise<EmbedBuilder> {
     const reasonDoc = await ReasonRepository.findByKey(p.reasonKey, guild.id);
     const reason = reasonDoc?.label ?? p.reasonKey;
-    const reasonAr = reasonDoc?.labelAr ?? reason;
     const member = guild.members.cache.get(p.targetId) ?? await guild.members.fetch(p.targetId).catch(() => null);
     const username = (await client.users.fetch(p.targetId).catch(() => null))?.username ?? p.targetId;
 
-    if (p.type === "warn") return (await executeWarn(client, guild.id, p.targetId, username, reason, reasonAr, p.moderatorId, member)).embed;
+    if (p.type === "warn") return (await executeWarn(client, guild.id, p.targetId, username, reason, p.moderatorId, member)).embed;
     if (p.type === "mute") {
         const hours = clamp(parseInt(p.extra, 10) || 24, 1, MUTE_MAX_HOURS);
-        return (await executeMute(client, guild.id, p.targetId, username, reason, reasonAr, p.moderatorId, member, hours * 3_600_000)).embed;
+        return (await executeMute(client, guild.id, p.targetId, username, reason, p.moderatorId, member, hours * 3_600_000)).embed;
     }
     const permanent = p.extra === "perm";
     const days = permanent ? 0 : clamp(parseInt(p.extra, 10) || 7, 1, JAIL_MAX_DAYS);
-    return (await executeBan(client, guild.id, p.targetId, username, reason, reasonAr, p.moderatorId, member, permanent, days, guild)).embed;
+    return (await executeBan(client, guild.id, p.targetId, username, reason, p.moderatorId, member, permanent, days, guild)).embed;
 }

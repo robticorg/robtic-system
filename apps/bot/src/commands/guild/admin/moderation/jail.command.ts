@@ -10,7 +10,7 @@ import {
 import type { BotClient } from "@core/bot-client";
 import { COLORS, MEMBER_PUNISHMENTS } from "@constants";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
-import { L, currentLang, errorText } from "@utils";
+import { L, errorText } from "@utils";
 import { getUserLang, t } from "@bot/utils/lang";
 import { getLogChannel } from "@bot/utils/server-log";
 import { recordSecurityEvent } from "@bot/utils/moderation/security";
@@ -41,7 +41,6 @@ export async function executeBan(
     targetId: string,
     _targetUsername: string,
     reason: string,
-    reasonAr: string,
     moderatorId: string,
     member: GuildMember | null | undefined,
     permanent: boolean,
@@ -76,7 +75,7 @@ export async function executeBan(
     const user = await client.users.fetch(targetId).catch(() => null);
     if (user) {
         const lang = await getUserLang(member);
-        const localReason = lang === "ar" ? reasonAr : reason;
+        const localReason = reason;
         const dmEmbed = new EmbedBuilder()
             .setTitle(permanent ? t("moderation.ban_title_perm", lang) : t("moderation.ban_title_temp", lang))
             .setColor(COLORS.moderation)
@@ -96,7 +95,7 @@ export async function executeBan(
             { name: L("Member", "العضو"), value: `<@${targetId}>`, inline: true },
             { name: L("Moderator", "المشرف"), value: `<@${moderatorId}>`, inline: true },
             { name: L("Case", "الحالة"), value: `\`${caseId}\``, inline: true },
-            { name: L("Reason", "السبب"), value: currentLang() === "ar" ? reasonAr : reason },
+            { name: L("Reason", "السبب"), value: reason },
             { name: L("Type", "النوع"), value: permanent ? L("Permanent", "دائم") : L(`Temporary (${durationDays} day(s))`, `مؤقت (${durationDays} يوم)`), inline: true },
             ...(expiresAt ? [{ name: L("Ends", "ينتهي"), value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>`, inline: true }] : []),
             { name: L("Punishment level", "مستوى العقوبة"), value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
@@ -197,9 +196,8 @@ export default {
             await interaction.deferReply();
             const reasonDoc = await ReasonRepository.findByKey(reasonKey, guildId);
             const reason = reasonDoc?.label ?? reasonKey;
-            const reasonAr = reasonDoc?.labelAr ?? reason;
 
-            const result = await executeBan(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, permanent, durationDays, guild);
+            const result = await executeBan(client, guildId, target.id, target.username, reason, interaction.user.id, member, permanent, durationDays, guild);
             await interaction.editReply({ embeds: [result.embed] });
             return;
         }
@@ -302,9 +300,9 @@ export default {
 
         if (focused.name === "reason" && sub === "add") {
             const reasons = await ReasonRepository.findByType("ban", interaction.guildId!);
-            const label = (r: { label: string; labelAr?: string }) => (currentLang() === "ar" && r.labelAr ? r.labelAr : r.label);
+            const label = (r: { label: string }) => r.label;
             const filtered = reasons
-                .filter(r => r.key.includes(query) || r.label.toLowerCase().includes(query) || (r.labelAr ?? "").includes(focused.value))
+                .filter(r => r.key.includes(query) || r.label.toLowerCase().includes(query))
                 .slice(0, 25);
             await interaction.respond(filtered.map(r => ({ name: label(r).slice(0, 100), value: r.key })));
         }

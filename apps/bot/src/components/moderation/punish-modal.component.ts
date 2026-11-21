@@ -62,7 +62,6 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
         const reasonDoc = await ReasonRepository.findByKey(reasonRaw.toLowerCase(), guildId);
         const reasonKey = reasonDoc?.key ?? reasonRaw;
         const reason = reasonDoc?.label ?? reasonRaw;
-        const reasonAr = reasonDoc?.labelAr ?? reasonRaw;
 
         const proofUrl = getOptionalUploadedFileUrl(interaction.fields, "proof");
         if (proofUrl) {
@@ -89,10 +88,10 @@ export const punishModalHandler: ComponentHandler<ModalSubmitInteraction> = {
         }
 
         const result = type === "warn"
-            ? await executeWarn(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember)
+            ? await executeWarn(client, guildId, targetId, targetUser.username, reason, interaction.user.id, targetMember)
             : type === "mute"
-                ? await executeMute(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember, muteHours * 3_600_000)
-                : await executeBan(client, guildId, targetId, targetUser.username, reason, reasonAr, interaction.user.id, targetMember, jail.permanent, jail.days, guild);
+                ? await executeMute(client, guildId, targetId, targetUser.username, reason, interaction.user.id, targetMember, muteHours * 3_600_000)
+                : await executeBan(client, guildId, targetId, targetUser.username, reason, interaction.user.id, targetMember, jail.permanent, jail.days, guild);
         await interaction.editReply({ embeds: [result.embed] });
     },
 };

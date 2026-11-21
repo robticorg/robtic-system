@@ -10,7 +10,7 @@ import {
 import type { BotClient } from "@core/bot-client";
 import { COLORS, MEMBER_PUNISHMENTS } from "@constants";
 import { PunishmentRepository, ReasonRepository } from "@database/repositories";
-import { L, currentLang, errorText } from "@utils";
+import { L, errorText } from "@utils";
 import { getUserLang, t } from "@bot/utils/lang";
 import { getLogChannel } from "@bot/utils/server-log";
 import { needsProof, buildProofModal, openProofRequest, sendShortcutProofDM, awardPunishPoints } from "@bot/utils/moderation/punish-flow";
@@ -33,7 +33,6 @@ export async function executeMute(
     targetId: string,
     _targetUsername: string,
     reason: string,
-    reasonAr: string,
     moderatorId: string,
     member: GuildMember | null | undefined,
     durationMs: number,
@@ -68,7 +67,7 @@ export async function executeMute(
         const dmEmbed = new EmbedBuilder()
             .setTitle(t("moderation.mute_title", lang))
             .setColor(COLORS.moderation)
-            .setDescription(t("moderation.mute_desc", lang, { reason: lang === "ar" ? reasonAr : reason, duration: String(durationHours) }))
+            .setDescription(t("moderation.mute_desc", lang, { reason: reason, duration: String(durationHours) }))
             .setTimestamp();
         await user.send({ embeds: [dmEmbed] }).catch(() => null);
     }
@@ -80,7 +79,7 @@ export async function executeMute(
             { name: L("Member", "العضو"), value: `<@${targetId}>`, inline: true },
             { name: L("Moderator", "المشرف"), value: `<@${moderatorId}>`, inline: true },
             { name: L("Case", "الحالة"), value: `\`${caseId}\``, inline: true },
-            { name: L("Reason", "السبب"), value: currentLang() === "ar" ? reasonAr : reason },
+            { name: L("Reason", "السبب"), value: reason },
             { name: L("Duration", "المدة"), value: L(`${durationHours} hour(s)`, `${durationHours} ساعة`), inline: true },
             { name: L("Ends", "ينتهي"), value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:R>`, inline: true },
             { name: L("Punishment level", "مستوى العقوبة"), value: `\`${newLevel}/100\` — ${levelInfo.name}`, inline: true },
@@ -178,9 +177,8 @@ export default {
             await interaction.deferReply();
             const reasonDoc = await ReasonRepository.findByKey(reasonKey, guildId);
             const reason = reasonDoc?.label ?? reasonKey;
-            const reasonAr = reasonDoc?.labelAr ?? reason;
 
-            const result = await executeMute(client, guildId, target.id, target.username, reason, reasonAr, interaction.user.id, member, durationHours * 3_600_000);
+            const result = await executeMute(client, guildId, target.id, target.username, reason, interaction.user.id, member, durationHours * 3_600_000);
             await interaction.editReply({ embeds: [result.embed] });
             return;
         }
@@ -278,9 +276,9 @@ export default {
 
         if (focused.name === "reason" && sub === "add") {
             const reasons = await ReasonRepository.findByType("mute", interaction.guildId!);
-            const label = (r: { label: string; labelAr?: string }) => (currentLang() === "ar" && r.labelAr ? r.labelAr : r.label);
+            const label = (r: { label: string }) => r.label;
             const filtered = reasons
-                .filter(r => r.key.includes(query) || r.label.toLowerCase().includes(query) || (r.labelAr ?? "").includes(focused.value))
+                .filter(r => r.key.includes(query) || r.label.toLowerCase().includes(query))
                 .slice(0, 25);
             await interaction.respond(filtered.map(r => ({ name: label(r).slice(0, 100), value: r.key })));
         }

@@ -8,7 +8,8 @@ export interface IReason extends Document {
     key: string;
     guildId?: string | null;
     label: string;
-    labelAr: string;
+    /** Old reasons may still carry an Arabic label; nothing reads it now. */
+    labelAr?: string;
     type: "warn" | "mute" | "ban";
     createdBy: string;
     createdAt: Date;
@@ -20,7 +21,7 @@ const reasonSchema = new Schema<IReason>(
         key: { type: String, required: true, index: true },
         guildId: { type: String, default: null },
         label: { type: String, required: true },
-        labelAr: { type: String, required: true },
+        labelAr: { type: String, required: false },
         type: { type: String, enum: ["warn", "mute", "ban"], required: true },
         createdBy: { type: String, required: true },
     },
