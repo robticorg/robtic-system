@@ -28,6 +28,8 @@ export interface IXPSettings extends Document {
         mode: "image" | "text" | "embed" | "components";
         /** The embed's or container's colour, `#rrggbb`. */
         color?: string;
+        /** The embed or Components message from the dashboard's builder (mode embed / components). */
+        design?: Record<string, unknown> | null;
         text: string;
         card?: LevelCardLayoutDoc;
     } | null;

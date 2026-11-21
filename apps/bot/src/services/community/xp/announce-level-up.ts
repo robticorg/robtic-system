@@ -1,6 +1,7 @@
+import { designPayload, type AnnounceDesign } from "@bot/utils/announce-design";
 import { announcePayload, isAnnounceFormat } from "@bot/utils/announce-format";
 import { isBrandedGuild } from "@core/assets";
-import { AttachmentBuilder, type Guild, type TextChannel } from "discord.js";
+import { AttachmentBuilder, type Guild, type MessageCreateOptions, type TextChannel } from "discord.js";
 import { XPSettingsRepository } from "@database/repositories";
 import { LEVEL_UP_MESSAGES } from "@constants";
 import type { XpKind } from "@core/xp";
@@ -75,9 +76,13 @@ export async function announceLevelUp(guild: Guild, userId: string, kind: XpKind
 
     // Embed and Components (dashboard → Levels & XP) carry the text; a card goes with a plain message.
     const format = custom && isAnnounceFormat(custom.mode) && !card ? custom.mode : "text";
-    const payload = card
+    const design = custom && (custom.mode === "embed" || custom.mode === "components") && custom.design ? custom.design as unknown as AnnounceDesign : null;
+    const built = design && custom
+        ? designPayload({ ...design, format: custom.mode as "embed" | "components" }, (t) => fillLevelUpText(t, { userId, username: member?.displayName ?? "", level, kind, server: guild.name }), { users: [userId] })
+        : null;
+    const payload: MessageCreateOptions = built ?? (card
         ? { content: text ?? `<@${userId}>`, files: [card], allowedMentions: { users: [userId] } }
-        : announcePayload(text ?? LEVEL_UP_MESSAGES.reached(userId, kind, level), format, custom?.color, { users: [userId] });
+        : announcePayload(text ?? LEVEL_UP_MESSAGES.reached(userId, kind, level), format, custom?.color, { users: [userId] }) as MessageCreateOptions);
     await (channel as TextChannel).send(payload).catch(err => {
         Logger.warn(`Could not post level-up announcement in ${settings.levelUpChannelId}: ${err}`, CTX);
     });

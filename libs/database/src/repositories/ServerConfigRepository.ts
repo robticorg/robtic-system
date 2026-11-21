@@ -133,12 +133,12 @@ export class ServerConfigRepository {
     }
 
     /** Where joins and leaves go (leave falls back to the join channel) and the custom texts, from the dashboard. */
-    static async getInviteConfig(guildId: string): Promise<{ joinChannelId: string | null; leaveChannelId: string | null; messages: Record<string, string>; formats: Record<string, string>; color: string | null }> {
-        const config = await ServerConfig.findOne({ guildId }).select("inviteLogChannelId inviteLeaveChannelId inviteMessages inviteFormats inviteColor").lean();
+    static async getInviteConfig(guildId: string): Promise<{ joinChannelId: string | null; leaveChannelId: string | null; messages: Record<string, string>; formats: Record<string, string>; designs: Record<string, unknown>; color: string | null }> {
+        const config = await ServerConfig.findOne({ guildId }).select("inviteLogChannelId inviteLeaveChannelId inviteMessages inviteFormats inviteDesigns inviteColor").lean();
         const join = config?.inviteLogChannelId ?? null;
         const messages = Object.fromEntries(Object.entries(config?.inviteMessages ?? {}).filter(([, v]) => typeof v === "string" && v.trim())) as Record<string, string>;
         const formats = Object.fromEntries(Object.entries(config?.inviteFormats ?? {}).filter(([, v]) => typeof v === "string")) as Record<string, string>;
-        return { joinChannelId: join, leaveChannelId: config?.inviteLeaveChannelId ?? join, messages, formats, color: config?.inviteColor ?? null };
+        return { joinChannelId: join, leaveChannelId: config?.inviteLeaveChannelId ?? join, messages, formats, designs: (config?.inviteDesigns ?? {}) as Record<string, unknown>, color: config?.inviteColor ?? null };
     }
 
     static async setBoostChannel(guildId: string, channelId: string | null): Promise<void> {

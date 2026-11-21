@@ -1,5 +1,6 @@
 import { announcePayload, isAnnounceFormat } from "@bot/utils/announce-format";
-import type { Guild } from "discord.js";
+import { designPayload, type AnnounceDesign } from "@bot/utils/announce-design";
+import type { Guild, MessageCreateOptions } from "discord.js";
 import type { DetectedInviteUse } from "@core/invites";
 import { inviteLogChannel } from "./invite-log-channel";
 import { inviterName } from "./inviter-name";
@@ -14,25 +15,32 @@ import { fillInviteText, invitedJoinMessage, unknownJoinMessage, vanityJoinMessa
  * isn't configured). Throws if the inviter's count can't be read, so the queue retries it.
  */
 export async function announceJoin(guild: Guild, memberId: string, used: DetectedInviteUse | null, requestId?: string): Promise<void> {
-    const { channel, messages, formats, color } = await inviteLogChannel(guild, "join");
+    const { channel, messages, formats, designs, color } = await inviteLogChannel(guild, "join");
     if (!channel) return;
 
     const member = guild.members.cache.get(memberId);
     const base = { user: `<@${memberId}>`, username: member?.user.username ?? memberId, inviter: "", invites: 0, code: "", server: guild.name, members: guild.memberCount };
     let content: string;
     let key: string;
+    let values = base;
     if (used?.vanity) {
         key = "joinVanity";
+        values = { ...base, code: used.code };
         content = messages.joinVanity ? fillInviteText(messages.joinVanity, { ...base, code: used.code }) : vanityJoinMessage(memberId, used.code);
     } else if (used?.inviterId) {
         key = "joinInvited";
         const [name, stats] = await Promise.all([inviterName(guild.client, used.inviterId), invitesBackend.stats(guild.id, used.inviterId, requestId)]);
+        values = { ...base, inviter: name, invites: stats.total };
         content = messages.joinInvited ? fillInviteText(messages.joinInvited, { ...base, inviter: name, invites: stats.total }) : invitedJoinMessage(memberId, name, stats.total);
     } else {
         key = "joinUnknown";
         content = messages.joinUnknown ? fillInviteText(messages.joinUnknown, base) : unknownJoinMessage(memberId);
     }
 
+    const fill = (t: string) => fillInviteText(t, values);
     const format = formats[key];
-    await channel.send(announcePayload(content, isAnnounceFormat(format) ? format : "text", color));
+    // Embed or Components made in the dashboard's builder: the same variables, filled everywhere in it.
+    const design = format === "embed" || format === "components" ? designs[key] as AnnounceDesign | undefined : undefined;
+    const built = design ? designPayload({ ...design, format: format as "embed" | "components" }, fill) : null;
+    await channel.send(built ?? (announcePayload(content, isAnnounceFormat(format) ? format : "text", color) as MessageCreateOptions));
 }

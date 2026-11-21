@@ -57,6 +57,8 @@ export interface IServerConfig extends Document {
     inviteMessages?: Partial<Record<"joinInvited" | "joinVanity" | "joinUnknown" | "leaveInvited" | "leaveVanity" | "leaveUnknown", string>> | null;
     /** How each invite announcement is sent: "text", "embed" or "components" (dashboard → Invites). */
     inviteFormats?: Partial<Record<string, string>> | null;
+    /** Each invite announcement's embed or Components message, made in the dashboard's builder. */
+    inviteDesigns?: Record<string, unknown> | null;
     /** The embeds' and containers' colour, `#rrggbb`. */
     inviteColor?: string | null;
     /** Where `/partner add` posts partner banners (`/partner channel`). */
@@ -133,6 +135,7 @@ const serverConfigSchema = new Schema<IServerConfig>(
         inviteMessages: { type: Schema.Types.Mixed, default: null },
         inviteFormats: { type: Schema.Types.Mixed, default: null },
         inviteColor: { type: String, default: null },
+        inviteDesigns: { type: Schema.Types.Mixed, default: null },
         partnerChannelId: { type: String },
         boostChannelId: { type: String },
         boostMessage: { type: Schema.Types.Mixed, default: null },
