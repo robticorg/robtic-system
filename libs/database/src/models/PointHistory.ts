@@ -14,6 +14,8 @@ export const POINT_SOURCES = [
     "voice",
     "admin",
     "conversion",
+    /** A Robtic Rules plugin's `give points` (run by the Robtic Engine). */
+    "plugin",
 ] as const;
 
 export type PointSource = typeof POINT_SOURCES[number];
