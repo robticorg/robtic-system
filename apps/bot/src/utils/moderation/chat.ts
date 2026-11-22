@@ -24,7 +24,7 @@ export function parseSlowmode(input: string): number | null {
 }
 
 /**
- * The channel utilities behind `/chat` and their shortcuts. Each returns the line to show, or null when the channel
+ * The channel utilities behind /lock, /unlock, /hide, /unhide, /slowmode and /clear, and their shortcuts. Each returns the line to show, or null when the channel
  * can't take it (no permission overwrites, no bulk delete).
  */
 export const ChatUtils = {
@@ -49,11 +49,11 @@ export const ChatUtils = {
         return L("🙈 Channel hidden. Members can't see it.", "🙈 تم إخفاء الروم. الأعضاء ما يشوفونه.");
     },
 
-    show: async (channel: GuildTextBasedChannel, guild: Guild) => {
+    unhide: async (channel: GuildTextBasedChannel, guild: Guild) => {
         if (!("permissionOverwrites" in channel)) return null;
         if (everyoneHas(channel, "ViewChannel", true)) return L("This channel is already visible.", "هذا الروم ظاهر من قبل.");
         await channel.permissionOverwrites.edit(guild.id, { ViewChannel: null });
-        return L("👀 Channel shown. Members can see it again.", "👀 تم إظهار الروم. الأعضاء يشوفونه.");
+        return L("👀 Channel visible again. Members can see it.", "👀 تم إظهار الروم. الأعضاء يشوفونه.");
     },
 
     /** An unreadable duration is refused: it used to switch slowmode off silently. */

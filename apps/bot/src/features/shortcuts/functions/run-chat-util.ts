@@ -10,15 +10,13 @@ const CTX = "shortcuts";
 
 export const CHAT_UTIL_COMMANDS = new Set(Object.keys(ChatUtils));
 
-/** The slash command these utilities also live behind — so one /command-access grant covers both. */
-const CHAT_COMMAND_NAME = "chat";
 
 /**
  * Runs a channel-utility shortcut (lock/unlock/hide/show/slowmode/clear).
  *
- * These have no slash command behind them, so there is no command-level permission check to
- * inherit — hasModerationAccess stands in for it, on the same terms /chat is gated on, and on top
- * of whatever role restriction the shortcut itself carries.
+ * Each utility is also a slash command of the same name (/lock, /clear…), so the shortcut is gated on that command's
+ * access (hasModerationAccess): one /command-access grant or dashboard setting covers both, on top of whatever role
+ * restriction the shortcut itself carries.
  *
  * Arguments are parsed before anything is checked or done. Returning false means "this message was
  * not an invocation": the caller says nothing, because a member who wrote a sentence beginning with
@@ -37,7 +35,7 @@ export async function runChatUtilShortcut(
     const parsed = await parseChatUtilArgs(key, args, invokedIn, message.guild!);
     if (!parsed) return false;
 
-    if (!(await hasModerationAccess(member, CHAT_COMMAND_NAME, STAFF_TIER_THRESHOLDS.staff))) return false;
+    if (!(await hasModerationAccess(member, key, STAFF_TIER_THRESHOLDS.staff))) return false;
 
     try {
         const result = await execute(key, parsed, message);

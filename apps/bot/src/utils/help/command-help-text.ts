@@ -8,9 +8,8 @@ import { isFromDisabledFeature, type HelpContext } from "./help-context";
 /**
  * What `help <query>` can be about.
  *
- * A channel utility is its own kind because it is not a command: `clear` and `lock` run straight
- * from a message and exist only behind a shortcut, so there is no CommandConfig to describe them.
- * They are documented against `/chat`, which is the same code reached the other way.
+ * A channel utility (/clear, /lock…) is its own kind because its shortcut arguments are matched by shape, so its help
+ * shows concrete examples (`c 10 #general`) rather than the usage grammar.
  */
 export type HelpTarget =
     | {
@@ -25,7 +24,6 @@ export type HelpTarget =
     }
     | { kind: "chatUtil"; name: ChatUtilName; command: CommandConfig };
 
-const CHAT_COMMAND = "chat";
 
 /** Strips a leading `/`, `!` or `?` so `?help ?clear` works as well as `?help clear`. */
 const normalize = (input: string): string => input.trim().toLowerCase().replace(/^[/!?]/, "").replace(/\s+/g, " ");
@@ -53,8 +51,8 @@ export function findHelpTarget(client: BotClient, context: HelpContext, input: s
 
 /** `clear` → the channel utility; `warn add` → that one form; `warn` → the whole command. */
 function resolvePath(client: BotClient, path: string): HelpTarget | null {
-    const chat = client.commands.get(CHAT_COMMAND);
-    if (chat && isChatUtil(path)) return { kind: "chatUtil", name: path, command: chat };
+    const tool = isChatUtil(path) ? client.commands.get(path) : undefined;
+    if (tool && isChatUtil(path)) return { kind: "chatUtil", name: path, command: tool };
 
     const first = path.split(" ")[0] ?? "";
     const command = client.commands.get(first);
@@ -77,7 +75,7 @@ export function buildCommandHelpText(context: HelpContext, target: HelpTarget): 
     const { command } = target;
 
     const path = targetPath(target);
-    const invocation = target.kind === "chatUtil" ? `${prefix}${CHAT_COMMAND} ${target.name}` : `${prefix}${path}`;
+    const invocation = `${prefix}${path}`;
 
     const lines = [
         HELP.textCommandLine(invocation),
@@ -139,6 +137,6 @@ function chatUtilForms(context: HelpContext, name: ChatUtilName): string[] {
     const triggers = context.shortcutsByTarget.get(name) ?? [];
     const shortest = [...triggers].sort((a, b) => a.length - b.length)[0];
 
-    const heads = [shortest, `${context.prefix}${CHAT_COMMAND} ${name}`].filter(Boolean) as string[];
+    const heads = [shortest, `${context.prefix}${name}`].filter(Boolean) as string[];
     return heads.flatMap(head => examples.map(example => `\`${[head, example].filter(Boolean).join(" ")}\``));
 }

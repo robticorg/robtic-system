@@ -1,11 +1,10 @@
 import { EmbedBuilder } from "discord.js";
 import type { IShortcutDoc } from "@database/models";
 import { COLORS, SHORTCUT_DELETE_MODE_SHORT, type ShortcutDeleteMode } from "@constants";
-import { CHAT_UTIL_COMMANDS } from "../functions/run-chat-util";
 
 import { L } from "@utils";
 export const targetLabel = (command: string): string =>
-    CHAT_UTIL_COMMANDS.has(command) ? `/chat ${command}` : `/${command}`;
+    `/${command}`;
 
 /** One line per shortcut for `/shortcut list`. */
 export function buildShortcutListEmbed(shortcuts: IShortcutDoc[]): EmbedBuilder {

@@ -75,6 +75,12 @@ const cases: Case[] = [
     ["clear", "and other message not number", "ignore", "`c and other message…` is chat"],
     ["clear", "0", "ignore", "clearing zero messages is not a request"],
     ["clear", "10 20", "ignore", "two counts is a typo, not an invocation"],
+    ["clear", "١٠", "run", "`c ١٠` Arabic digits"],
+    ["clear", "۱۵", "run", "`c ۱۵` Persian digits"],
+    ["clear", "X", "run", "`c X` Roman ten"],
+    ["clear", "xii", "run", "`c xii` Roman, any case"],
+    ["clear", "mix", "ignore", "`c mix` is a word (Roman 1009, over the 100 cap)"],
+    ["clear", "ill", "ignore", "`c ill` is not a numeral"],
 
     ["lock", "", "run", "`l` alone locks"],
     ["lock", `<#${OTHER_ID}>`, "run", "`l #channel` locks that channel"],
@@ -85,8 +91,8 @@ const cases: Case[] = [
     ["unlock", "please", "ignore", "prose after unlock is chat"],
     ["hide", "", "run", "`h` alone hides"],
     ["hide", "this from them", "ignore", "prose after hide is chat"],
-    ["show", "", "run", "`s` alone shows"],
-    ["show", "me the logs", "ignore", "prose after show is chat"],
+    ["unhide", "", "run", "`uh` alone unhides"],
+    ["unhide", "me the logs", "ignore", "prose after unhide is chat"],
 
     ["slowmode", "5s", "run", "`sm 5s`"],
     ["slowmode", "30", "run", "`sm 30` bare seconds"],

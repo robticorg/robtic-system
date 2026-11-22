@@ -11,3 +11,4 @@ export * from "./utc-date-key";
 export * from "./utc-month-key";
 export * from "./utc-week-key";
 export * from "./lang-context";
+export * from "./parse-count";

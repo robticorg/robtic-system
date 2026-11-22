@@ -8,6 +8,7 @@ import {
     ROLE_MENTION_REGEX,
     CHANNEL_MENTION_REGEX,
 } from "@constants";
+import { parseCount, toAsciiDigits } from "@utils";
 
 export async function resolveOptionValue(message: Message, opt: OptionJSON, token: string): Promise<unknown> {
     switch (opt.type) {
@@ -16,8 +17,10 @@ export async function resolveOptionValue(message: Message, opt: OptionJSON, toke
 
         case ApplicationCommandOptionType.Integer:
         case ApplicationCommandOptionType.Number: {
-            const n = Number(token);
-            return Number.isFinite(n) ? n : undefined;
+            // `5`, Arabic `٥` / Persian `۵`, and for whole numbers a Roman numeral (`V`), as members type them.
+            const n = Number(toAsciiDigits(token));
+            if (Number.isFinite(n)) return n;
+            return opt.type === ApplicationCommandOptionType.Integer ? parseCount(token) ?? undefined : undefined;
         }
 
         case ApplicationCommandOptionType.Boolean: {

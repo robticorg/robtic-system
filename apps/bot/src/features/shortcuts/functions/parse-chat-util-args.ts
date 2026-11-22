@@ -1,5 +1,6 @@
 import type { Guild, GuildTextBasedChannel } from "discord.js";
 import { CHANNEL_MENTION_REGEX, SNOWFLAKE_REGEX } from "@constants";
+import { parseCount, toAsciiDigits } from "@utils";
 import type { ChatUtils } from "@bot/utils/moderation/chat";
 
 export type ChatUtilKey = keyof typeof ChatUtils;
@@ -15,7 +16,8 @@ export interface ChatUtilArgs {
 
 /** `5s`, `10m`, `2h`, or a bare count of seconds. Mirrors what ChatUtils.slowmode accepts. */
 const DURATION_TOKEN = /^\d+(s|m|h)?$/;
-const COUNT_TOKEN = /^\d+$/;
+/** A Roman numeral only counts up to this: higher ones are mostly English words ("mix" is 1009). */
+const MAX_ROMAN_COUNT = 100;
 
 /** What `clear` wipes when the member names no number. `bulkDelete` caps at 100 regardless. */
 const DEFAULT_CLEAR_AMOUNT = 100;
@@ -60,17 +62,19 @@ export async function parseChatUtilArgs(
         }
 
         if (key === "clear") {
-            if (namedAmount || !COUNT_TOKEN.test(token)) return null;
-            const count = Number.parseInt(token, 10);
-            if (count < 1) return null;
+            // 10, Arabic ١٠ / Persian ۱۰, or a Roman numeral (X) up to 100.
+            const count = namedAmount ? null : parseCount(token);
+            if (count === null || count < 1) return null;
+            if (!/^\d+$/.test(toAsciiDigits(token)) && count > MAX_ROMAN_COUNT) return null;
             amount = count;
             namedAmount = true;
             continue;
         }
 
         if (key === "slowmode") {
-            if (duration !== null || !DURATION_TOKEN.test(token)) return null;
-            duration = token;
+            const ascii = toAsciiDigits(token);
+            if (duration !== null || !DURATION_TOKEN.test(ascii)) return null;
+            duration = ascii;
             continue;
         }
 

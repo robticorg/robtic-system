@@ -1,6 +1,6 @@
 import { bilingual } from "@utils/lang-context";
 
-/** Replies from `/chat` and the channel-utility shortcuts behind it. */
+/** Replies from /lock, /unlock, /hide, /unhide, /slowmode, /clear and their shortcuts. */
 export const CHAT_MESSAGES = bilingual({
     guildChannelOnly: "This command can only be used in a server channel.",
     unknownSubcommand: "Unknown subcommand.",
