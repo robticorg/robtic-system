@@ -1,171 +1,121 @@
-import { Streak, type IStreak } from "@database/models/Streak";
+import mongoose from "mongoose";
+
+/**
+ * Streaks are the Streaks plugin's, run by the Robtic Engine (Documents/plugins.md): each member's values live in the
+ * plugin's storage (`pluginstore`, scope member: `streak`, `best`, `claimed` as a UTC day, `last_at`, `lost`,
+ * `lost_until`) and its settings in `plugininstalls`. The bot only reads them, for /profile, the profile badges,
+ * /top, the reward bonus and `!check streak`.
+ */
+
+const PLUGIN = "streaks";
+const DAY_MS = 86_400_000;
+
+/** One member's streak, as the bot's readers use it. */
+export interface StreakView {
+    discordId: string;
+    guildId: string;
+    currentStreak: number;
+    bestStreak: number;
+    active: boolean;
+    /** The day of the last claim (its start, UTC). */
+    lastIncrement: Date;
+    lastMessageAt: Date;
+    /** Until when staff can give a just-lost streak back; `null` when none is waiting. */
+    pendingReturnUntil: Date | null;
+    /** The streak waiting to be given back, 0 when none is. */
+    lostStreak: number;
+}
+
+interface StoreDoc {
+    memberId: string;
+    data?: Record<string, unknown>;
+}
+
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+const store = () => mongoose.connection.collection<StoreDoc>("pluginstore");
+const scope = (guildId: string) => ({ guildId, pluginId: PLUGIN, scope: "member" });
+
+function view(guildId: string, d: StoreDoc): StreakView {
+    const data = d.data ?? {};
+    const streak = num(data.streak);
+    const lostUntil = num(data.lost_until);
+    return {
+        discordId: d.memberId,
+        guildId,
+        currentStreak: streak,
+        bestStreak: num(data.best),
+        active: streak > 0,
+        lastIncrement: new Date(num(data.claimed) * DAY_MS),
+        lastMessageAt: new Date(num(data.last_at) * 1000),
+        pendingReturnUntil: lostUntil > 0 && num(data.lost) > 0 ? new Date(lostUntil * 1000) : null,
+        lostStreak: num(data.lost),
+    };
+}
+
+async function list(guildId: string, filter: Record<string, unknown>, sort: Record<string, 1 | -1>, limit = 0): Promise<StreakView[]> {
+    const cur = store().find({ ...scope(guildId), ...filter }).sort(sort);
+    if (limit) cur.limit(limit);
+    return (await cur.toArray()).map(d => view(guildId, d));
+}
 
 export class StreakRepository {
-    static async find(discordId: string, guildId: string): Promise<IStreak | null> {
-        return Streak.findOne({ discordId, guildId });
+    static async find(discordId: string, guildId: string): Promise<StreakView | null> {
+        const d = await store().findOne({ ...scope(guildId), memberId: discordId });
+        return d ? view(guildId, d) : null;
     }
 
-    static async findOrCreate(discordId: string, guildId: string, username: string): Promise<IStreak> {
-        let record = await Streak.findOne({ discordId, guildId });
-        if (!record) {
-            record = await Streak.create({ discordId, guildId, username });
-        }
-        return record;
+    /** The member's streak, or an empty one (nothing is created: the plugin writes). */
+    static async findOrCreate(discordId: string, guildId: string, _username: string): Promise<StreakView> {
+        return (await StreakRepository.find(discordId, guildId)) ?? view(guildId, { memberId: discordId });
     }
 
-    static async applyIncrement(
-        discordId: string,
-        guildId: string,
-        currentStreak: number,
-        bestStreak: number,
-        messageContent: string,
-    ): Promise<IStreak | null> {
-        const now = new Date();
-        return Streak.findOneAndUpdate(
-            { discordId, guildId },
-            {
-                currentStreak,
-                bestStreak,
-                lastIncrement: now,
-                lastMessageAt: now,
-                lastMessageContent: messageContent,
-                reminderSent: false,
-                active: true,
-                pendingReturnUntil: null,
-            },
-            { returnDocument: "after" }
-        );
+    static async getCurrentLeaderboard(guildId: string, limit = 5): Promise<StreakView[]> {
+        return list(guildId, { "data.streak": { $gt: 0 } }, { "data.streak": -1 }, limit);
     }
 
-    static async markReminderSent(discordId: string, guildId: string): Promise<void> {
-        await Streak.updateOne({ discordId, guildId }, { reminderSent: true });
+    static async getBestLeaderboard(guildId: string, limit = 5): Promise<StreakView[]> {
+        return list(guildId, { "data.best": { $gt: 0 } }, { "data.best": -1 }, limit);
     }
 
-    /**
-     * Ends a streak and opens the return window.
-     *
-     * `pendingReturnUntil` freezes the member until staff decide or the window lapses — without it,
-     * their next message would start a 1-day streak and the old one would look already replaced.
-     */
-    static async expire(discordId: string, guildId: string, returnWindowHours: number): Promise<void> {
-        await Streak.updateOne(
-            { discordId, guildId },
-            {
-                currentStreak: 0,
-                active: false,
-                reminderSent: false,
-                pendingReturnUntil: new Date(Date.now() + Math.max(0, returnWindowHours) * 3_600_000),
-            }
-        );
-    }
-
-    static async restore(discordId: string, guildId: string, currentStreak: number, bestStreak: number): Promise<IStreak | null> {
-        return Streak.findOneAndUpdate(
-            { discordId, guildId },
-            {
-                currentStreak,
-                bestStreak,
-                lastIncrement: new Date(),
-                reminderSent: false,
-                active: true,
-                pendingReturnUntil: null,
-            },
-            { upsert: true, returnDocument: "after" }
-        );
-    }
-
-    static async getCurrentLeaderboard(guildId: string, limit = 5): Promise<IStreak[]> {
-        return Streak.find({ guildId, active: true, currentStreak: { $gt: 0 } })
-            .sort({ currentStreak: -1 })
-            .limit(limit);
-    }
-
-    static async getBestLeaderboard(guildId: string, limit = 5): Promise<IStreak[]> {
-        return Streak.find({ guildId, bestStreak: { $gt: 0 } })
-            .sort({ bestStreak: -1 })
-            .limit(limit);
-    }
-
-    /** Best streak among users who incremented within `since` — backs /top's weekly/monthly streak periods. */
-    static async getBestLeaderboardSince(guildId: string, since: Date, limit = 5): Promise<IStreak[]> {
-        return Streak.find({ guildId, bestStreak: { $gt: 0 }, lastIncrement: { $gte: since } })
-            .sort({ bestStreak: -1 })
-            .limit(limit);
+    /** Best streak among members who claimed since `since` — backs /top's weekly/monthly streak periods. */
+    static async getBestLeaderboardSince(guildId: string, since: Date, limit = 5): Promise<StreakView[]> {
+        return list(guildId, { "data.best": { $gt: 0 }, "data.claimed": { $gte: Math.floor(since.getTime() / DAY_MS) } }, { "data.best": -1 }, limit);
     }
 
     static async getRank(discordId: string, guildId: string): Promise<number> {
-        const user = await Streak.findOne({ discordId, guildId });
-        if (!user || !user.active || user.currentStreak <= 0) return -1;
-        const above = await Streak.countDocuments({
-            guildId,
-            active: true,
-            currentStreak: { $gt: user.currentStreak },
-        });
-        return above + 1;
+        const user = await StreakRepository.find(discordId, guildId);
+        if (!user || user.currentStreak <= 0) return -1;
+        return (await store().countDocuments({ ...scope(guildId), "data.streak": { $gt: user.currentStreak } })) + 1;
     }
 
     static async getBestRank(discordId: string, guildId: string): Promise<number> {
-        const user = await Streak.findOne({ discordId, guildId });
+        const user = await StreakRepository.find(discordId, guildId);
         if (!user || user.bestStreak <= 0) return -1;
-        const above = await Streak.countDocuments({
-            guildId,
-            bestStreak: { $gt: user.bestStreak },
-        });
-        return above + 1;
+        return (await store().countDocuments({ ...scope(guildId), "data.best": { $gt: user.bestStreak } })) + 1;
     }
 
-    /** All active streaks for a guild; exact expiry/reminder timing is evaluated in-memory since it depends on calendar-day boundaries. */
-    static async findAllActive(guildId: string): Promise<IStreak[]> {
-        return Streak.find({ guildId, active: true });
+    static async findAllActive(guildId: string): Promise<StreakView[]> {
+        return list(guildId, { "data.streak": { $gt: 0 } }, { "data.streak": -1 });
     }
 
     static async countGuild(guildId: string): Promise<number> {
-        return Streak.countDocuments({ guildId });
+        return store().countDocuments(scope(guildId));
     }
 
     /** Every active streak whose current value equals `value` — backs the admin `!check streak <n>` lookup. */
-    static async findByCurrentStreak(guildId: string, value: number): Promise<IStreak[]> {
-        return Streak.find({ guildId, active: true, currentStreak: value })
-            .sort({ lastIncrement: -1 });
+    static async findByCurrentStreak(guildId: string, value: number): Promise<StreakView[]> {
+        return list(guildId, { "data.streak": value }, { "data.claimed": -1 });
     }
 
-    /**
-     * Copies every streak record from sourceGuildId into destGuildId. Where a destination record
-     * already exists, currentStreak/bestStreak are each kept at whichever side is higher, and the
-     * rest of the record (lastIncrement/active/etc.) is taken as a whole from whichever side "won"
-     * currentStreak, so the merged record's claim/expiry timing stays internally consistent.
-     */
-    static async bulkSyncFromGuild(
-        sourceGuildId: string,
-        destGuildId: string
-    ): Promise<Array<{ discordId: string; currentStreak: number; bestStreak: number }>> {
-        const sourceRecords = await Streak.find({ guildId: sourceGuildId });
-        const synced: Array<{ discordId: string; currentStreak: number; bestStreak: number }> = [];
-
-        for (const src of sourceRecords) {
-            const dest = await Streak.findOne({ discordId: src.discordId, guildId: destGuildId });
-            const base = !dest || src.currentStreak >= dest.currentStreak ? src : dest;
-            const currentStreak = Math.max(src.currentStreak, dest?.currentStreak ?? 0);
-            const bestStreak = Math.max(src.bestStreak, dest?.bestStreak ?? 0);
-
-            await Streak.findOneAndUpdate(
-                { discordId: src.discordId, guildId: destGuildId },
-                {
-                    username: base.username,
-                    currentStreak,
-                    bestStreak,
-                    lastIncrement: base.lastIncrement,
-                    lastMessageAt: base.lastMessageAt,
-                    lastMessageContent: base.lastMessageContent,
-                    reminderSent: base.reminderSent,
-                    active: base.active,
-                },
-                { upsert: true }
-            );
-
-            synced.push({ discordId: src.discordId, currentStreak, bestStreak });
-        }
-
-        return synced;
+    /** The plugin's windows on this server, in days and hours (its settings are in seconds). Defaults when unset. */
+    static async windows(guildId: string): Promise<{ claimDays: number | null; expireDays: number | null; returnWindowHours: number | null }> {
+        const install = await mongoose.connection.collection<{ settings?: Record<string, unknown> }>("plugininstalls").findOne({ guildId, pluginId: PLUGIN });
+        const s = install?.settings ?? {};
+        const days = (v: unknown) => (typeof v === "number" && v > 0 ? Math.round(v / 86_400) : null);
+        return {
+            claimDays: days(s.claim_every),
+            expireDays: days(s.lost_after),
+            returnWindowHours: typeof s.return_window === "number" ? Math.round(s.return_window / 3600) : null,
+        };
     }
 }

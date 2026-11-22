@@ -16,8 +16,6 @@ export * from "./LogConfigRepository";
 export * from "./GlobalConfigRepository";
 export * from "./SuperUserRepository";
 export * from "./StreakRepository";
-export * from "./StreakSettingsRepository";
-export * from "./StreakRecoveryRepository";
 export * from "./PointsRepository";
 export * from "./PointSettingsRepository";
 export * from "./PointHistoryRepository";
@@ -36,8 +34,6 @@ export * from "./PunishConfigRepository";
 export * from "./CommandAccessRepository";
 export * from "./GuildFeatureRepository";
 export * from "./FeatureCatalogRepository";
-export * from "./StreakRewardRepository";
-export * from "./StreakRewardClaimRepository";
 
 export * from "./AllowedGuildRepository";
 export * from "./RewardWalletRepository";

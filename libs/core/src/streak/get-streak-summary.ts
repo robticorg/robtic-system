@@ -1,11 +1,10 @@
-import { StreakRepository, StreakSettingsRepository, StreakRecoveryRepository } from "@database/repositories";
-import type { IStreak } from "@database/models";
+import { StreakRepository, type StreakView } from "@database/repositories";
 import { nextClaimAt } from "./next-claim-at";
 import { streakExpiresAt } from "./streak-expires-at";
 import { resolveStreakWindows } from "./resolve-streak-windows";
 
 export interface StreakSummary {
-    record: IStreak;
+    record: StreakView;
     rank: number;
     bestRank: number;
     /** Milliseconds remaining before the next streak claim is available. 0 if claimable now. */
@@ -34,7 +33,8 @@ export async function getStreakSummary(discordId: string, guildId: string, usern
     const record = await StreakRepository.findOrCreate(discordId, guildId, username);
     const rank = await StreakRepository.getRank(discordId, guildId);
     const bestRank = await StreakRepository.getBestRank(discordId, guildId);
-    const windows = resolveStreakWindows(await StreakSettingsRepository.get(guildId));
+    // The Streaks plugin's own settings.
+    const windows = resolveStreakWindows(await StreakRepository.windows(guildId));
 
     const nextClaimMs = record.active
         ? Math.max(0, nextClaimAt(record.lastIncrement, windows.claimDays).getTime() - Date.now())
@@ -46,9 +46,6 @@ export async function getStreakSummary(discordId: string, guildId: string, usern
     const pendingUntil = record.pendingReturnUntil?.getTime() ?? 0;
     const pendingReturnMs = pendingUntil > Date.now() ? pendingUntil - Date.now() : null;
 
-    const pending = pendingReturnMs !== null
-        ? await StreakRecoveryRepository.find(discordId, guildId)
-        : null;
 
     return {
         record,
@@ -57,6 +54,6 @@ export async function getStreakSummary(discordId: string, guildId: string, usern
         nextClaimMs,
         expiresInMs,
         pendingReturnMs,
-        pendingStreak: pending?.currentStreak ?? 0,
+        pendingStreak: pendingReturnMs !== null ? record.lostStreak : 0,
     };
 }

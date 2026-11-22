@@ -100,7 +100,6 @@ export const profileMenuHandler: ComponentHandler<StringSelectMenuInteraction> =
                     { name: t("profile.streak_best_rank_label", lang), value: bestRank > 0 ? `#${bestRank}` : unranked, inline: true },
                     { name: t("profile.streak_next_claim_label", lang), value: nextClaimMs > 0 ? `⏳ ${formatDuration(nextClaimMs)}` : t("profile.streak_available_now", lang), inline: true },
                     { name: t("profile.streak_expires_label", lang), value: expiresInMs !== null ? `💔 ${formatDuration(expiresInMs)}` : notAvailable, inline: true },
-                    { name: t("profile.streak_reminder_label", lang), value: record.active ? (record.reminderSent ? t("profile.streak_reminder_sent", lang) : t("profile.streak_reminder_pending", lang)) : notAvailable, inline: true },
                 )
                 .setColor(COLORS.activity)
                 .setTimestamp();
