@@ -23,7 +23,6 @@ export * from "./punishments";
 export * from "./regex";
 export * from "./invites";
 export * from "./partner";
-export * from "./boost";
 export * from "./music";
 export * from "./rewards";
 export * from "./server-log-channels";

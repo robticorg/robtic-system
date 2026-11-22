@@ -273,7 +273,7 @@ services:
       # 1 = only log what it would do. AutoMod is still off on every server until its admin turns it on.
       ENGINE_DRY_RUN: ${ENGINE_DRY_RUN:-0}
       # Robtic Rules plugins: off, dry (run them and only log what they would do) or on. Documents/plugins.md §5a.
-      ENGINE_PLUGINS: ${ENGINE_PLUGINS:-dry}
+      ENGINE_PLUGINS: ${ENGINE_PLUGINS:-on}
       RUST_LOG: ${ENGINE_LOG:-info}
     networks: [internal]
 
