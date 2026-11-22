@@ -5,7 +5,6 @@ import { Logger } from "@logger";
 import { isStreakExpired } from "@core/streak/is-streak-expired";
 import { streakExpiresAt } from "@core/streak/streak-expires-at";
 import { resolveStreakWindows } from "@core/streak/resolve-streak-windows";
-import { applyStreakRole } from "../../utils/streak-role";
 
 const CTX = "main:streak-scheduler";
 
@@ -21,7 +20,6 @@ export async function processGuildStreaks(client: Client, guild: Guild): Promise
             await StreakRepository.expire(streak.discordId, guild.id, windows.returnWindowHours);
 
             const member = await guild.members.fetch(streak.discordId).catch(() => null);
-            if (member) await applyStreakRole(member, 0);
 
             const user = member?.user ?? await client.users.fetch(streak.discordId).catch(() => null);
             if (user) {

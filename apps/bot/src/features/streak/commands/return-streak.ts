@@ -4,7 +4,6 @@ import { StreakRepository, StreakRecoveryRepository, StreakSettingsRepository } 
 import { COLORS } from "@constants";
 import { resolveStreakWindows } from "@core/streak";
 import { canReturnStreaks } from "../functions/can-return-streaks";
-import { applyStreakRole } from "../utils/streak-role";
 
 import { L } from "@utils";
 /**
@@ -54,9 +53,6 @@ export const returnStreak: FeatureSubcommandHandler = async (interaction, _clien
 
     await StreakRepository.restore(user.id, guildId, recovery.currentStreak, recovery.bestStreak);
     await StreakRecoveryRepository.delete(user.id, guildId);
-
-    const member = await interaction.guild?.members.fetch(user.id).catch(() => null);
-    if (member) await applyStreakRole(member, recovery.currentStreak).catch(() => null);
 
     await interaction.editReply({
         embeds: [new EmbedBuilder()

@@ -4,7 +4,6 @@ import { Logger } from "@logger";
 import { awardStreakPoint } from "@core/points";
 import { publishMetric } from "@core/metrics";
 import { isClaimable, isStreakExpired } from "../lib";
-import { applyStreakRole } from "../utils/streak-role";
 import { isValidStreakMessage } from "./is-valid-streak-message";
 import { sendStreakReply } from "./send-streak-reply";
 
@@ -50,13 +49,6 @@ export async function processStreakMessage(message: Message): Promise<void> {
     if (!updated) return;
 
     Logger.debug(`${message.author.username} (${message.author.id}) streak → ${newCurrent} (best ${newBest})`, CTX);
-
-    const member = message.member ?? await message.guild.members.fetch(message.author.id).catch(() => null);
-    if (member) {
-        await applyStreakRole(member, newCurrent).catch(err =>
-            Logger.warn(`Failed to apply streak role for ${message.author.id} in ${guildId}: ${err}`, CTX)
-        );
-    }
 
     publishMetric({
         guildId,
