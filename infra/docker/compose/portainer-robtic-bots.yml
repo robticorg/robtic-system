@@ -2,9 +2,11 @@
 # webhook after every image push. Images only: nothing is built here. Each repository's
 # .github/workflows/deploy*.yml pushes `:production` and an immutable `:sha-<commit>` tag.
 #
-# Every value comes from the Portainer stack's environment variables — the names are listed in
-# infra/docker/portainer-robtic-bots.env.example, the procedure in docs/deployment-portainer.md.
-# `${VAR:?…}` is required: the deploy fails instead of starting a bot with a missing setting.
+# Settings live in the admin console's Vault (admin.robtic.org → Vault): one app per bot (robtic-system,
+# robtic-staff, robtic-ticket, robtic-engine, robtic-guard, robtic-minecraft) holds its tokens, databases and tuning.
+# The Portainer stack keeps only each app's access key (ROBTIC_*_VAULT_KEY). Every container starts through
+# /vault/vault-run (installed on the host by robtic-admin's infra/vault), which loads its app's settings first; the
+# values written here are wiring that belongs to this file (roles, ports, internal addresses), not settings.
 #
 # Networks:
 #   proxy   — Nginx Proxy Manager, created outside this stack. Only HTTP APIs reached from outside
@@ -25,25 +27,25 @@ x-logging: &logging
 
 # What every robtic-system container shares. The image runs several roles: the Gateway (default
 # CMD), the queue workers and the Invites API — the same code with a different start command.
+# The Vault (robtic-system) holds MONGODB_URI, REDIS_URL (required, never empty: without it each Gateway skips the
+# leadership lock and the primary and standby would both log in), INTERNAL_API_TOKEN, BOT_OWNER_ID,
+# STAFF_POINTS_API_TOKEN and the admin console's bot-settings database (ROBTIC_CONFIG_MONGO_URI, ROBTIC_CONFIG_KEY).
+x-vault: &vault
+  entrypoint: ["/vault/vault-run", "/usr/local/bin/docker-entrypoint.sh"]
+  volumes:
+    - /opt/robtic/vault/vault-run:/vault/vault-run:ro
+
 x-robtic-system-env: &robtic-system-env
   NODE_ENV: production
-  # Settings from the admin console (admin.robtic.org → Discord → Bot settings): with both values set, the bot reads
-  # its token, database and other variables from there at start-up and they win over this file. Empty: unchanged.
   ROBTIC_BOT: system
-  ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
-  ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
-  MONGODB_URI: ${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}
-  # Required, never empty: an unset REDIS_URL makes each Gateway skip the leadership lock, and the
-  # primary and the standby would then both log in to Discord.
-  REDIS_URL: ${ROBTIC_REDIS_URL:?ROBTIC_REDIS_URL is required}
-  INTERNAL_API_TOKEN: ${ROBTIC_INTERNAL_API_TOKEN:?ROBTIC_INTERNAL_API_TOKEN is required}
-  BOT_OWNER_ID: ${ROBTIC_BOT_OWNER_ID:-}
+  ROBTIC_VAULT_KEY: ${ROBTIC_SYSTEM_VAULT_KEY:?ROBTIC_SYSTEM_VAULT_KEY is required (admin.robtic.org → Vault → robtic-system)}
   # Staff points API (robtic-staff), by container name over `internal`.
   STAFF_POINTS_API_URL: http://robtic-staff:8788
-  STAFF_POINTS_API_TOKEN: ${STAFF_INTERNAL_API_TOKEN:-}
 
 x-robtic-system-gateway: &robtic-system-gateway
+  <<: *vault
   image: ghcr.io/robticorg/robtic-system:${ROBTIC_SYSTEM_IMAGE_TAG:-production}
+  command: ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/bot/src/index.ts"]
   restart: unless-stopped
   stop_grace_period: 30s
   logging: *logging
@@ -61,6 +63,7 @@ x-robtic-system-gateway-env: &robtic-system-gateway-env
   INVITES_API_URL: http://robtic-invites-api:3005
 
 x-robtic-system-worker: &robtic-system-worker
+  <<: *vault
   image: ghcr.io/robticorg/robtic-system:${ROBTIC_SYSTEM_IMAGE_TAG:-production}
   command: ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/worker/src/index.ts"]
   restart: unless-stopped
@@ -114,6 +117,7 @@ services:
 
   # Invites internal API (internal-api/invites) for the Gateway. `internal` only.
   robtic-invites-api:
+    <<: *vault
     image: ghcr.io/robticorg/robtic-system:${ROBTIC_SYSTEM_IMAGE_TAG:-production}
     container_name: robtic-invites-api
     command: ["bun", "--preload", "./libs/shared/src/preload.ts", "internal-api/invites/src/index.ts"]
@@ -135,24 +139,20 @@ services:
   # http://robtic-minecraft-api:3002. Also runs the Minecraft Discord bot (token stored encrypted
   # in MongoDB, enabled with /bot create), so it counts as a bot during cutover.
   robtic-minecraft-api:
+    <<: *vault
     image: ghcr.io/robticorg/robtic-minecraft-api:${MINECRAFT_API_IMAGE_TAG:-production}
     container_name: robtic-minecraft-api
+    command: ["bun", "--preload", "./libs/shared/src/preload.ts", "apps/minecraft-api/src/index.ts"]
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *logging
+    # The Vault (robtic-minecraft): MONGODB_URI, MainBotToken (Discord REST only: role sync, logs; it never logs in),
+    # BOT_OWNER_ID, MINECRAFT_BOT_SECRET, BOT_TOKEN_KEY, ROBTIC_WEBSITE_URL, ROBTIC_DISCORD_INVITE, MINECRAFT_API_PUBLIC_URL.
     environment:
       NODE_ENV: production
-      MONGODB_URI: ${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}
-      # Discord REST only (role sync, logs) — the main Robtic bot's token; it never logs in with it.
-      MainBotToken: ${ROBTIC_SYSTEM_DISCORD_TOKEN:?ROBTIC_SYSTEM_DISCORD_TOKEN is required}
-      BOT_OWNER_ID: ${ROBTIC_BOT_OWNER_ID:-}
-      MINECRAFT_BOT_SECRET: ${MINECRAFT_BOT_SECRET:-}
-      BOT_TOKEN_KEY: ${MINECRAFT_BOT_TOKEN_KEY:-}
-      ROBTIC_WEBSITE_URL: ${MINECRAFT_WEBSITE_URL:-}
-      ROBTIC_DISCORD_INVITE: ${MINECRAFT_DISCORD_INVITE:-}
+      ROBTIC_VAULT_KEY: ${ROBTIC_MINECRAFT_VAULT_KEY:?ROBTIC_MINECRAFT_VAULT_KEY is required (admin.robtic.org → Vault → robtic-minecraft)}
       MINECRAFT_API_HOST: 0.0.0.0
       MINECRAFT_API_PORT: "3002"
-      MINECRAFT_API_PUBLIC_URL: ${MINECRAFT_API_PUBLIC_URL:-https://minecraft.api.robtic.org}
     ports:
       - "3002:3002"
     networks: [internal, proxy]
@@ -166,36 +166,24 @@ services:
   # Staff bot (robtic-staff). Its points API (:8788) is called only by robtic-system and the
   # workers, so it stays on `internal`.
   robtic-staff:
+    <<: *vault
     image: ghcr.io/robticorg/robtic-staff:${STAFF_IMAGE_TAG:-production}
     container_name: robtic-staff
+    command: ["bun", "--preload", "./src/remote-config.ts", "src/index.ts"]
     restart: unless-stopped
     # Shutdown destroys the gateway client and closes Mongo — more than the 10s default.
     stop_grace_period: 30s
     logging: *logging
-    # The app reads several of these with `??`, where an empty string is a value, not a default:
-    # an empty STAFF_TIMEZONE fails startup and an empty AUTOCLAIM_API_URL disables gift credits.
+    # The Vault (robtic-staff): MONGODB_URI, MONGODB_DB, STAFF_TIMEZONE, LOG_LEVEL, DISCORD_APP_ID, DISCORD_GUILD_ID,
+    # DISCORD_DEV_GUILD_ID, PREFIX, FAST_ACCESS_PREFIX, MODMAIL_CASE_PREFIX, BOT_OWNER_ID, INTERNAL_API_TOKEN and the
+    # admin console's bot-settings database. The app reads several with `??`, where an empty string is a value: an
+    # empty STAFF_TIMEZONE fails startup.
     environment:
       NODE_ENV: production
-      # Admin console settings, as for robtic-system above.
       ROBTIC_BOT: staff
-      ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
-      ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
-      MONGODB_URI: ${STAFF_MONGODB_URI:-${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}}
-      MONGODB_DB: ${STAFF_MONGODB_DB:-robtic_staff}
-      STAFF_TIMEZONE: ${STAFF_TIMEZONE:-UTC}
-      LOG_LEVEL: ${STAFF_LOG_LEVEL:-info}
-      # The token, app id, guild, database and prefixes come from the admin console (Bot settings → Robtic Staff);
-      # the values below are only defaults it overrides.
-      DISCORD_APP_ID: ${STAFF_DISCORD_APP_ID:-}
-      DISCORD_GUILD_ID: ${STAFF_DISCORD_GUILD_ID:-}
-      DISCORD_DEV_GUILD_ID: ${STAFF_DISCORD_DEV_GUILD_ID:-}
-      PREFIX: ${STAFF_PREFIX:-!}
-      FAST_ACCESS_PREFIX: ${STAFF_FAST_ACCESS_PREFIX:-$$}
-      MODMAIL_CASE_PREFIX: ${STAFF_MODMAIL_CASE_PREFIX:-RPT-}
-      BOT_OWNER_ID: ${ROBTIC_BOT_OWNER_ID:-}
+      ROBTIC_VAULT_KEY: ${ROBTIC_STAFF_VAULT_KEY:?ROBTIC_STAFF_VAULT_KEY is required (admin.robtic.org → Vault → robtic-staff)}
       INTERNAL_API_HOST: 0.0.0.0
       INTERNAL_API_PORT: "8788"
-      INTERNAL_API_TOKEN: ${STAFF_INTERNAL_API_TOKEN:-}
     ports:
       - "8788:8788"
     networks: [internal]
@@ -210,29 +198,27 @@ services:
   # its database, TRANSCRIPT_BASE_URL) is set in the admin console (Discord → Bot settings → Robtic Ticket); until a
   # token is saved there it waits quietly. Values here are only defaults the console overrides.
   robtic-ticket:
+    <<: *vault
     image: ghcr.io/robticorg/robtic-ticket:${TICKET_IMAGE_TAG:-production}
     container_name: robtic-ticket
+    command: ["bun", "apps/bot/src/bot.ts"]
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *logging
-    # Cloudflare R2 for transcript pictures (R2_*): compose/3/r2.env on the host, beside the stack's version folders.
-    env_file:
-      - path: ../../../../r2.env
-        required: false
+    # The Vault (robtic-ticket): R2 for transcript pictures, TRANSCRIPT_BASE_URL, STAFF_POINTS_API_TOKEN and the admin
+    # console's bot-settings database.
     environment:
       NODE_ENV: production
       ROBTIC_BOT: ticket
-      ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
-      ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
-      TRANSCRIPT_BASE_URL: ${TICKET_TRANSCRIPT_BASE_URL:-https://robtic.org/discord/transcripts}
+      ROBTIC_VAULT_KEY: ${ROBTIC_TICKET_VAULT_KEY:?ROBTIC_TICKET_VAULT_KEY is required (admin.robtic.org → Vault → robtic-ticket)}
       # Robtic Staff link: points for claimed tickets (Robtic Ticket → Settings → Robtic Staff), as robtic-system does.
       STAFF_POINTS_API_URL: http://robtic-staff:8788/internal/staff/points
-      STAFF_POINTS_API_TOKEN: ${STAFF_INTERNAL_API_TOKEN:-}
     networks: [internal]
 
   # The ticket transcript page and its API (same image), public as robtic.org/discord/transcripts/<id>: Nginx Proxy
   # Manager forwards that path, unchanged, to http://robtic-ticket-transcripts:5180. Reads the ticket bot's database.
   robtic-ticket-transcripts:
+    <<: *vault
     image: ghcr.io/robticorg/robtic-ticket:${TICKET_IMAGE_TAG:-production}
     container_name: robtic-ticket-transcripts
     command: ["bun", "apps/transcript/server.ts"]
@@ -242,8 +228,7 @@ services:
       NODE_ENV: production
       ROBTIC_BOT: ticket
       ROBTIC_LOG_SOURCE: transcripts
-      ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
-      ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
+      ROBTIC_VAULT_KEY: ${ROBTIC_TICKET_VAULT_KEY:?ROBTIC_TICKET_VAULT_KEY is required (admin.robtic.org → Vault → robtic-ticket)}
       TRANSCRIPT_PORT: "5180"
     networks: [internal, proxy]
     healthcheck:
@@ -261,47 +246,35 @@ services:
   robtic-engine:
     image: ghcr.io/robticorg/robtic-engine:${ENGINE_IMAGE_TAG:-production}
     container_name: robtic-engine
+    entrypoint: ["/vault/vault-run", "robtic-engine"]
+    volumes:
+      - /opt/robtic/vault/vault-run:/vault/vault-run:ro
     restart: unless-stopped
     stop_grace_period: 15s
     logging: *logging
+    # The Vault (robtic-engine): ENGINE_MONGODB_URI, ENGINE_REDIS_URL, ENGINE_INTERNAL_TOKEN, ENGINE_DRY_RUN (1 = only
+    # log what it would do), ENGINE_PLUGINS (off | dry | on; Documents/plugins.md §5a), RUST_LOG and the admin
+    # console's bot-settings database.
     environment:
-      ROBTIC_CONFIG_MONGO_URI: ${ROBTIC_CONFIG_MONGO_URI:-}
-      ROBTIC_CONFIG_KEY: ${ROBTIC_CONFIG_KEY:-}
-      ENGINE_MONGODB_URI: ${ROBTIC_MONGODB_URI:?ROBTIC_MONGODB_URI is required}
-      ENGINE_REDIS_URL: ${ROBTIC_REDIS_URL:?ROBTIC_REDIS_URL is required}
-      ENGINE_INTERNAL_TOKEN: ${ROBTIC_INTERNAL_API_TOKEN:?ROBTIC_INTERNAL_API_TOKEN is required}
-      # 1 = only log what it would do. AutoMod is still off on every server until its admin turns it on.
-      ENGINE_DRY_RUN: ${ENGINE_DRY_RUN:-0}
-      # Robtic Rules plugins: off, dry (run them and only log what they would do) or on. Documents/plugins.md §5a.
-      ENGINE_PLUGINS: ${ENGINE_PLUGINS:-on}
-      RUST_LOG: ${ENGINE_LOG:-info}
+      ROBTIC_VAULT_KEY: ${ROBTIC_ENGINE_VAULT_KEY:?ROBTIC_ENGINE_VAULT_KEY is required (admin.robtic.org → Vault → robtic-engine)}
     networks: [internal]
 
   # Scam guard bot (robticorg/robtic-guard-). MongoDB only (database `scamguard`). The app reads its
   # tuning with `??`, so an empty value would become 0: every default here is the production value.
   robtic-guard:
+    <<: *vault
     image: ghcr.io/robticorg/robtic-guard:${GUARD_IMAGE_TAG:-production}
     container_name: robtic-guard
+    command: ["bun", "--preload", "./src/preload.ts", "src/index.ts"]
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *logging
+    # The Vault (robtic-guard): TOKEN, MONGODB_URI, RoBo (the owner's id), the RISK_* thresholds, image and OCR limits,
+    # HASH_CACHE_TTL_MS, FUZZY_HASH_MAX_DISTANCE, DETECTION_MAX_CONCURRENCY and API_ENABLED (0 disables the public
+    # HTTP API). The app reads its tuning with `??`, so an empty value would become 0: keep every one set there.
     environment:
       NODE_ENV: production
-      TOKEN: ${GUARD_DISCORD_TOKEN:?GUARD_DISCORD_TOKEN is required}
-      MONGODB_URI: ${GUARD_MONGODB_URI:?GUARD_MONGODB_URI is required}
-      RoBo: ${ROBTIC_BOT_OWNER_ID:-}
-      RISK_DELETE_THRESHOLD: ${GUARD_RISK_DELETE_THRESHOLD:-85}
-      RISK_WARN_THRESHOLD: ${GUARD_RISK_WARN_THRESHOLD:-60}
-      RISK_LOG_THRESHOLD: ${GUARD_RISK_LOG_THRESHOLD:-30}
-      MAX_IMAGE_BYTES: ${GUARD_MAX_IMAGE_BYTES:-8388608}
-      IMAGE_FETCH_TIMEOUT_MS: ${GUARD_IMAGE_FETCH_TIMEOUT_MS:-8000}
-      OCR_TIMEOUT_MS: ${GUARD_OCR_TIMEOUT_MS:-10000}
-      OCR_LANG: ${GUARD_OCR_LANG:-eng}
-      HASH_CACHE_TTL_MS: ${GUARD_HASH_CACHE_TTL_MS:-300000}
-      FUZZY_HASH_MAX_DISTANCE: ${GUARD_FUZZY_HASH_MAX_DISTANCE:-8}
-      DETECTION_MAX_CONCURRENCY: ${GUARD_DETECTION_MAX_CONCURRENCY:-4}
-      # 0 disables the public HTTP API; the bot still runs.
-      API_ENABLED: ${GUARD_API_ENABLED:-0}
+      ROBTIC_VAULT_KEY: ${ROBTIC_GUARD_VAULT_KEY:?ROBTIC_GUARD_VAULT_KEY is required (admin.robtic.org → Vault → robtic-guard)}
       API_PORT: "8787"
     ports:
       - "8787:8787"
