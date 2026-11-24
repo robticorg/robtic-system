@@ -57,6 +57,8 @@ jobs:
 
       - uses: docker/build-push-action@v6
         with:
+          secrets: |
+            npm_token=${{ secrets.GITHUB_TOKEN }}
           context: .
           file: infra/docker/dockerfiles/bot.Dockerfile
           push: true

@@ -1,8 +1,9 @@
+# syntax=docker/dockerfile:1
 # Context: repository root.  docker build -f infra/docker/dockerfiles/bot.Dockerfile .
 FROM oven/bun:1.3.14 AS deps
 WORKDIR /app
 
-COPY package.json bun.lock ./
+COPY package.json bun.lock bunfig.toml ./
 COPY apps/bot/package.json ./apps/bot/
 COPY libs/core/package.json ./libs/core/
 COPY libs/database/package.json ./libs/database/
@@ -20,7 +21,8 @@ COPY libs/internal-api/package.json ./libs/internal-api/
 COPY libs/internal-client/package.json ./libs/internal-client/
 COPY apps/worker/package.json ./apps/worker/
 COPY internal-api/invites/package.json ./internal-api/invites/
-RUN bun install --frozen-lockfile
+# The workflow passes its GITHUB_TOKEN as the npm_token secret: @robticorg/* packages come from GitHub Packages.
+RUN --mount=type=secret,id=npm_token NPM_TOKEN="$(cat /run/secrets/npm_token)" bun install --frozen-lockfile
 
 FROM oven/bun:1.3.14
 WORKDIR /app

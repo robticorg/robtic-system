@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# The shared CI installs @robticorg/* from GitHub Packages with this workflow's token.
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   ci:
     uses: robticorg/robtic-actions/.github/workflows/bun-ci.yml@main
