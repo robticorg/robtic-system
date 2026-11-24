@@ -59,3 +59,4 @@ export {
 export { GuildPanel, type IGuildPanel } from "./GuildPanel";
 export { GuildHourlyStat, type IGuildHourlyStat } from "./GuildHourlyStat";
 export { PunishRequest, type IPunishRequest } from "./PunishRequest";
+export { WelcomeSettings, type IWelcomeSettings, type WelcomeMessageDoc, type WelcomeCardDoc } from "./WelcomeSettings";

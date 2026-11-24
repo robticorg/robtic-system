@@ -50,3 +50,4 @@ export * from "./MusicSettingsRepository";
 export * from "./GuildPanelRepository";
 export * from "./GuildHourlyStatRepository";
 export * from "./PunishRequestRepository";
+export * from "./WelcomeSettingsRepository";

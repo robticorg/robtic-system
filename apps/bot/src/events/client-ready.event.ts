@@ -1,7 +1,7 @@
 import { Events } from "discord.js";
 import type { BotClient } from "@core/bot-client";
 import { Logger } from "@logger";
-import { BRANCH_CONFIG } from "@config";
+import { PUBLIC_PRESENCE } from "@constants";
 import { setPresence } from "../utils/set-presence";
 import { setupGuildGuard } from "../guards/setup-guild-guard";
 import { publishFeatureCatalog } from "../guards/publish-feature-catalog";
@@ -17,7 +17,7 @@ export default {
         Logger.debug(`Bot ID: ${client.user?.id}`, client.botName);
         Logger.debug(`Serving ${client.guilds.cache.size} guild(s)`, client.botName);
 
-        setPresence(client, "dnd", "Playing", [...BRANCH_CONFIG.presence]);
+        setPresence(client, "dnd", "Custom", [...PUBLIC_PRESENCE]);
         await setupGuildGuard(client);
         await publishFeatureCatalog();
 

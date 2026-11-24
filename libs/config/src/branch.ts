@@ -43,18 +43,4 @@ export const BRANCH_CONFIG = {
         membersPanelButton: "1480426683570983014",
     },
 
-    presence: [
-        "Developer support system 🔥",
-        "Debugging code with devs ⚙️",
-        "Learning resources hub 📚",
-        "Helping with dev projects 🚀",
-        "Tracking community activity 📊",
-        "Leveling up members ⬆️",
-        "Monitoring staff performance 🏆",
-        "Moderation automation active 🛡️",
-        "DM for moderation help 📨",
-        "Processing staff applications ⚙️",
-        "Code review and sharing 🧪",
-    ],
-
 };
