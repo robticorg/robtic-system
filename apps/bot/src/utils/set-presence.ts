@@ -23,6 +23,8 @@ export function setPresence(
                     {
                         name: activity,
                         type: ActivityType[activityType],
+                        // A custom status shows its `state`, with no "Playing" in front.
+                        ...(activityType === "Custom" ? { state: activity } : {}),
                     },
                 ],
             });

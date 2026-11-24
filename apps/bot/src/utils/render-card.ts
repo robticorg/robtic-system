@@ -2,12 +2,15 @@ import { createCanvas, loadImage, type Image, type SKRSContext2D } from "@napi-r
 
 /**
  * A card a server designed on the dashboard: its uploaded image (a transparent PNG works) with round pictures and lines
- * of text placed in the image's own pixels. No uploaded image → no card (there is no built-in background).
+ * of text placed in the image's own pixels. No uploaded image → no card (there is no built-in background), unless the
+ * card has a plain colour (`fill`, the welcome card). `texts` are the server's own lines (the welcome card).
  */
 export interface CardLayoutDoc {
     background: string | null;
+    fill?: string | null;
     width: number;
     height: number;
+    texts?: unknown;
     [piece: string]: unknown;
 }
 
@@ -34,19 +37,28 @@ function drawText(ctx: SKRSContext2D, text: string, x: number, y: number, size: 
     ctx.fillText(text, x, y, maxWidth);
 }
 
-/** Draws the card, or returns null when the server hasn't uploaded an image for it. */
+/**
+ * Draws the card, or returns null when it has neither an uploaded image nor a colour. `fill` fills the variables in
+ * the server's own lines (`layout.texts`).
+ */
 export async function renderCard(
     layout: CardLayoutDoc | null | undefined,
     content: { pictures: Record<string, Buffer | null>; texts: Record<string, string> },
+    fill: (text: string) => string = t => t,
 ): Promise<Buffer | null> {
-    const base = await decode(layout?.background);
-    if (!layout || !base) return null;
+    if (!layout) return null;
+    const image = await decode(layout.background);
+    const colour = typeof layout.fill === "string" && COLOR.test(layout.fill) ? layout.fill : null;
+    const plainWidth = num(layout.width, 16, 4000), plainHeight = num(layout.height, 16, 4000);
+    if (!image && !(colour && plainWidth && plainHeight)) return null;
+    const base = image ?? { width: plainWidth!, height: plainHeight! };
     const scale = Math.min(1, 1800 / base.width);
     const k = base.width / (num(layout.width, 1, 100_000) ?? base.width);
     const canvas = createCanvas(Math.round(base.width * scale), Math.round(base.height * scale));
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(base, 0, 0, canvas.width, canvas.height);
+    if (image) ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    else { ctx.fillStyle = colour!; ctx.fillRect(0, 0, canvas.width, canvas.height); }
 
     for (const [key, buffer] of Object.entries(content.pictures)) {
         const p = layout[key] as { x?: unknown; y?: unknown; r?: unknown } | undefined;
@@ -68,6 +80,14 @@ export async function renderCard(
         const x = num(p?.x, 0, layout.width), y = num(p?.y, 0, layout.height), size = num(p?.size, 4, layout.height);
         if (x === null || y === null || size === null || !text) continue;
         const color = typeof p?.color === "string" && COLOR.test(p.color) ? p.color : "#ffffff";
+        drawText(ctx, text, x * k * scale, y * k * scale, size * k * scale, color, canvas.width * 0.8);
+    }
+    for (const line of Array.isArray(layout.texts) ? layout.texts.slice(0, 6) : []) {
+        const t = line as { text?: unknown; x?: unknown; y?: unknown; size?: unknown; color?: unknown };
+        const text = typeof t.text === "string" ? fill(t.text).trim().slice(0, 200) : "";
+        const x = num(t.x, 0, layout.width), y = num(t.y, 0, layout.height), size = num(t.size, 4, layout.height);
+        if (!text || x === null || y === null || size === null) continue;
+        const color = typeof t.color === "string" && COLOR.test(t.color) ? t.color : "#ffffff";
         drawText(ctx, text, x * k * scale, y * k * scale, size * k * scale, color, canvas.width * 0.8);
     }
     return canvas.toBuffer("image/png");
