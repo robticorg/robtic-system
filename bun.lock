@@ -8,6 +8,7 @@
         "@discordjs/voice": "^0.19.2",
         "@napi-rs/canvas": "^1.0.9",
         "@node-rs/argon2": "^2.1.0",
+        "@robticorg/bot-log": "^1.0.0",
         "bullmq": "^6.3.11",
         "chalk": "^5.6.2",
         "discord.js": "^14.26.4",
@@ -239,6 +240,8 @@
     "@robtic/utils": ["@robtic/utils@workspace:libs/utils"],
 
     "@robtic/worker": ["@robtic/worker@workspace:apps/worker"],
+
+    "@robticorg/bot-log": ["@robticorg/bot-log@1.0.0", "https://npm.pkg.github.com/download/@robticorg/bot-log/1.0.0/b4cdf6aeb1b6762f028ff828ee5233637c85432e", {}, "sha512-i8nosVgWowqVADbslED88JG5jdZpOk2K4EPNuAm3NpEUQzaHfyLpY8jV3h7hW3XP/k2MPm0cJb5zRffyziJt8g=="],
 
     "@sapphire/async-queue": ["@sapphire/async-queue@1.5.5", "", {}, "sha512-cvGzxbba6sav2zZkH8GPf2oGk9yYoD5qrNWdu9fRehifgnFZJMV+nuy2nON2roRO4yQQ+v7MK/Pktl/HgfsUXg=="],
 
