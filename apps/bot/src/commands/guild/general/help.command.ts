@@ -1,4 +1,7 @@
 import {
+    ActionRowBuilder as Row,
+    ButtonBuilder as Button,
+    ButtonStyle,
     SlashCommandBuilder,
     MessageFlags,
     type ChatInputCommandInteraction,
@@ -22,8 +25,14 @@ import {
 } from "@bot/utils/help/build-help";
 import { buildHelpContext, type HelpContext } from "@bot/utils/help/help-context";
 import { findHelpTarget, buildCommandHelpText } from "@bot/utils/help/command-help-text";
+import { L } from "@utils";
 
 const COLLECTOR_IDLE_MS = 120_000;
+
+/** Every Robtic bot's /help ends with this: all the commands on robtic.org/discord/commands. */
+const websiteRow = () => new Row<Button>().addComponents(
+    new Button().setStyle(ButtonStyle.Link).setURL("https://robtic.org/discord/commands#bot-system").setLabel(L("See all commands", "كل الأوامر")),
+);
 
 /** Resolves a free-text category argument to a real category name (case-insensitive), or null. */
 function resolveCategory(client: BotClient, context: HelpContext, input: string | null): string | null {
@@ -98,6 +107,7 @@ export default {
             const rows: Rows = [buildCategoryRow(client, context, view)];
             const pager = view === HELP.overviewSelectValue ? null : buildPagerRow(client, context, view, page);
             if (pager) rows.push(pager);
+            rows.push(websiteRow());
 
             return { embeds: [embed], components: rows };
         };
@@ -135,7 +145,7 @@ export default {
         });
 
         collector.on("end", async () => {
-            await message.edit({ components: [] }).catch(() => null);
+            await message.edit({ components: [websiteRow()] }).catch(() => null);
         });
     },
 };
