@@ -7,12 +7,31 @@ import { L } from "@utils";
 /**
  * Buttons and menu options of a dashboard-built panel. Custom ids: `gp:<panelId>:<itemId>` for a button, and
  * `gp:<panelId>:<selectId>` for a menu (the chosen value is the option's id). Each item either replies (only the
- * clicker sees it), gives or takes a role, or does nothing; and may be limited to some roles.
+ * clicker sees it), gives or takes a role, opens another panel (only the clicker sees it), or does nothing; and may be
+ * limited to some roles.
  */
 
 export const GUILD_PANEL_ID = /^gp:[\w-]{1,40}:[\w-]{1,40}$/;
 
-interface Action { kind: "reply" | "role" | "none"; reply?: string; roleId?: string | null }
+interface Action { kind: "reply" | "role" | "panel" | "none"; reply?: string; roleId?: string | null; panelId?: string | null }
+
+const EPHEMERAL = 1 << 6;
+
+/** Shows another of the server's panels to the clicker only, as the dashboard rendered it. */
+async function openPanel(interaction: ButtonInteraction | StringSelectMenuInteraction, panelId: string): Promise<void> {
+    const target = interaction.guildId ? await GuildPanelRepository.get(interaction.guildId, panelId) : null;
+    const r = target?.rendered as { embeds?: unknown[]; components?: unknown[]; flags?: number } | null | undefined;
+    if (!r) {
+        await interaction.reply({ content: L("That panel isn't available any more.", "هذي اللوحة ما عادت موجودة."), flags: MessageFlags.Ephemeral });
+        return;
+    }
+    await interaction.reply({
+        ...(r.embeds?.length ? { embeds: r.embeds } : {}),
+        components: r.components ?? [],
+        flags: (r.flags ?? 0) | EPHEMERAL,
+        allowedMentions: { parse: [] },
+    } as never);
+}
 interface Item { id: string; action?: Action; allowedRoleIds?: string[]; options?: Item[]; style?: string }
 
 /** Every button, menu and option in a panel definition, wherever it sits (rows, sections, containers). */
@@ -43,6 +62,15 @@ async function act(interaction: ButtonInteraction | StringSelectMenuInteraction,
     const action = item.action ?? { kind: "none" };
     if (action.kind === "reply" && action.reply?.trim()) {
         await interaction.reply({ content: action.reply.slice(0, 2000), flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
+        return;
+    }
+    if (action.kind === "panel" && action.panelId) {
+        try {
+            await openPanel(interaction, action.panelId);
+        } catch (err) {
+            Logger.warn(`Panel open failed in ${interaction.guildId}: ${err}`, "panels");
+            if (!interaction.replied) await interaction.reply({ content: L("I couldn't open that panel.", "ما قدرت أفتح هذي اللوحة."), flags: MessageFlags.Ephemeral }).catch(() => null);
+        }
         return;
     }
     if (action.kind === "role" && action.roleId) {

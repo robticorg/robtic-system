@@ -11,6 +11,9 @@ export interface IGuildPanel extends Document {
     definition: Record<string, unknown>;
     channelId: string | null;
     messageId: string | null;
+    /** The message as Discord takes it (embeds/components/flags), written by the dashboard; sent when a menu option
+     *  or button opens this panel. */
+    rendered?: Record<string, unknown> | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -22,6 +25,7 @@ const guildPanelSchema = new Schema<IGuildPanel>(
         definition: { type: Schema.Types.Mixed, required: true },
         channelId: { type: String, default: null },
         messageId: { type: String, default: null },
+        rendered: { type: Schema.Types.Mixed, default: null },
     },
     { timestamps: true, minimize: false }
 );
