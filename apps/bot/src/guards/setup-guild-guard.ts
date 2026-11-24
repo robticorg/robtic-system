@@ -3,6 +3,7 @@ import { Logger } from "@logger";
 import type { BotClient } from "@core/bot-client";
 import { isAllowedGuild } from "./allowed-guilds";
 import { sendGuardLog } from "./send-guard-log";
+import { botLog } from "../services/bot-log";
 import { isGuildAllowed, isGuildBlocked, onAccessChange, onBlockedChange } from "../../../../libs/shared/src/remote-config";
 
 async function leaveIfUnauthorized(client: BotClient, guild: Guild, reason: "left" | "blocked"): Promise<void> {
@@ -21,12 +22,16 @@ async function leaveIfUnauthorized(client: BotClient, guild: Guild, reason: "lef
 
     await sendGuardLog(client, guild, reason);
 
+    botLog.leaving(guild.id, isGuildBlocked(guild.id) ? "blocked" : "not-allowed");
     await guild.leave().catch((err) => {
         Logger.error(`Failed to leave guild ${guild.name} (${guild.id}): ${err}`, client.botName);
     });
 }
 
 export async function setupGuildGuard(client: BotClient): Promise<void> {
+    // Before the start-up sweep, so servers left now are logged too.
+    botLog.attach(client);
+
     for (const guild of client.guilds.cache.values()) {
         await leaveIfUnauthorized(client, guild, "left");
     }

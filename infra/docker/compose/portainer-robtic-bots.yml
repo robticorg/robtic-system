@@ -41,6 +41,8 @@ x-robtic-system-env: &robtic-system-env
   ROBTIC_VAULT_KEY: ${ROBTIC_SYSTEM_VAULT_KEY:?ROBTIC_SYSTEM_VAULT_KEY is required (admin.robtic.org → Vault → robtic-system)}
   # Staff points API (robtic-staff), by container name over `internal`.
   STAFF_POINTS_API_URL: http://robtic-staff:8788
+  # Robtic Bot Log (robticorg/robtic-bot-log): joins/leaves; the key is ROBTIC_BOT_LOG_KEY in this bot's Vault app.
+  ROBTIC_BOT_LOG_URL: http://robtic-bot-log:3400
 
 x-robtic-system-gateway: &robtic-system-gateway
   <<: *vault
@@ -184,6 +186,8 @@ services:
       ROBTIC_VAULT_KEY: ${ROBTIC_STAFF_VAULT_KEY:?ROBTIC_STAFF_VAULT_KEY is required (admin.robtic.org → Vault → robtic-staff)}
       INTERNAL_API_HOST: 0.0.0.0
       INTERNAL_API_PORT: "8788"
+      # Robtic Bot Log (robticorg/robtic-bot-log): joins/leaves; the key is ROBTIC_BOT_LOG_KEY in this bot's Vault app.
+      ROBTIC_BOT_LOG_URL: http://robtic-bot-log:3400
     ports:
       - "8788:8788"
     networks: [internal]
@@ -276,9 +280,36 @@ services:
       NODE_ENV: production
       ROBTIC_VAULT_KEY: ${ROBTIC_GUARD_VAULT_KEY:?ROBTIC_GUARD_VAULT_KEY is required (admin.robtic.org → Vault → robtic-guard)}
       API_PORT: "8787"
+      # Robtic Bot Log (robticorg/robtic-bot-log): joins/leaves; the key is ROBTIC_BOT_LOG_KEY in this bot's Vault app.
+      ROBTIC_BOT_LOG_URL: http://robtic-bot-log:3400
     ports:
       - "8787:8787"
     networks: [internal]
+
+  # Robtic Bot Log (robticorg/robtic-bot-log): one log channel for every Robtic bot. The bots send joins and leaves
+  # over `internal` (POST /internal/events, ROBTIC_BOT_LOG_KEY); Discord's Webhook Events (who added a bot) reach
+  # POST /discord/events/<bot> through Nginx Proxy Manager — the only path forwarded there, hence `proxy`.
+  # The Vault (robtic-bot-log): BOT_LOG_KEY, LOG_WEBHOOK_URL, optional LOG_WEBHOOK_URL_<BOT>, LOG_EVENTS, and per app
+  # APP_<BOT>_PUBLIC_KEY / APP_<BOT>_ID / APP_<BOT>_NAME. Without its key it restarts until one is set; the bots carry on.
+  robtic-bot-log:
+    <<: *vault
+    image: ghcr.io/robticorg/robtic-bot-log:${BOT_LOG_IMAGE_TAG:-production}
+    container_name: robtic-bot-log
+    command: ["bun", "apps/service/src/server.ts"]
+    restart: unless-stopped
+    stop_grace_period: 15s
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      ROBTIC_VAULT_KEY: ${ROBTIC_BOT_LOG_VAULT_KEY:-}
+      PORT: "3400"
+    networks: [internal, proxy]
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://127.0.0.1:3400/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
 networks:
   internal:

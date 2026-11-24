@@ -1,0 +1,5 @@
+
+# @robticorg/* (e.g. @robticorg/bot-log) comes from GitHub Packages, which always needs a token with read:packages.
+# Locally: export NPM_TOKEN=$(gh auth token). CI and the Docker build pass the workflow's GITHUB_TOKEN.
+[install.scopes]
+"@robticorg" = { token = "$NPM_TOKEN", url = "https://npm.pkg.github.com/" }
