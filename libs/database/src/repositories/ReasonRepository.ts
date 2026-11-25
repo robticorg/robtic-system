@@ -1,51 +1,36 @@
 import { Reason, type IReason } from "@database/models/Reason";
-import { PunishConfig } from "@database/models/PunishConfig";
 
-/** Servers that edited their reasons on the dashboard use only their own (see PunishConfig.ownReasonsOnly). */
-async function ownOnly(guildId: string): Promise<boolean> {
-    return (await PunishConfig.exists({ guildId, ownReasonsOnly: true })) !== null;
-}
-const scope = async (guildId: string) => (await ownOnly(guildId) ? guildId : { $in: [guildId, null] });
-
-/** A server's reasons: its own, plus the shared ones it hasn't replaced with its own reason of the same key. */
-function merge(rows: IReason[], guildId: string): IReason[] {
-    const own = new Set(rows.filter(r => r.guildId === guildId).map(r => r.key));
-    return rows.filter(r => r.guildId === guildId || !own.has(r.key));
-}
-
+/**
+ * A server's punishment reasons: only the ones it made (dashboard or /reason). The old shared defaults (guildId null)
+ * are no longer handed to every server the bot joins.
+ */
 export class ReasonRepository {
     static async create(data: Partial<IReason> & { guildId: string }): Promise<IReason> {
         return Reason.create(data);
     }
 
-    /** The server's own reason with that key, otherwise the shared one. */
     static async findByKey(key: string, guildId: string): Promise<IReason | null> {
-        return (await Reason.findOne({ key, guildId })) ?? (await ownOnly(guildId) ? null : Reason.findOne({ key, guildId: null }));
+        return Reason.findOne({ key, guildId });
     }
 
-    /** Only the server's own reason (not a shared one), e.g. to check a key is free before creating. */
+    /** Same as findByKey; kept for callers that check a key is free before creating. */
     static async findOwn(key: string, guildId: string): Promise<IReason | null> {
         return Reason.findOne({ key, guildId });
     }
 
     static async findByType(type: IReason["type"], guildId: string): Promise<IReason[]> {
-        return merge(await Reason.find({ type, guildId: await scope(guildId) }).sort({ createdAt: -1 }), guildId);
+        return Reason.find({ type, guildId }).sort({ createdAt: -1 });
     }
 
     static async getAll(guildId: string): Promise<IReason[]> {
-        return merge(await Reason.find({ guildId: await scope(guildId) }).sort({ type: 1, createdAt: -1 }), guildId);
+        return Reason.find({ guildId }).sort({ type: 1, createdAt: -1 });
     }
 
     static async getAllKeys(guildId: string): Promise<string[]> {
         return (await ReasonRepository.getAll(guildId)).map(r => r.key);
     }
 
-    /** Deletes the server's own reason. Shared reasons are left alone: other servers use them too. */
     static async delete(key: string, guildId: string): Promise<IReason | null> {
         return Reason.findOneAndDelete({ key, guildId });
-    }
-
-    static async isShared(key: string): Promise<boolean> {
-        return (await Reason.exists({ key, guildId: null })) !== null;
     }
 }
