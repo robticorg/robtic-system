@@ -86,12 +86,7 @@ export default {
 
             const deleted = await ReasonRepository.delete(key, interaction.guildId);
             if (!deleted) {
-                const shared = await ReasonRepository.isShared(key);
-                await interaction.editReply({
-                    content: errorText(shared
-                        ? L(`\`${key}\` is a shared default, so it can't be removed here. Add your own reason with the same key to replace it.`, `\`${key}\` سبب افتراضي مشترك، ما ينحذف من هنا. أضف سبب بنفس المفتاح عشان يستبدله.`)
-                        : L(`There's no reason \`${key}\`.`, `ما في سبب اسمه \`${key}\`.`)),
-                });
+                await interaction.editReply({ content: errorText(L(`There's no reason \`${key}\`.`, `ما في سبب اسمه \`${key}\`.`)) });
                 return;
             }
 
