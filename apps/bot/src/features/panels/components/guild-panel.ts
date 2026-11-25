@@ -20,9 +20,16 @@ const EPHEMERAL = 1 << 6;
 /** Shows another of the server's panels to the clicker only, as the dashboard rendered it. */
 async function openPanel(interaction: ButtonInteraction | StringSelectMenuInteraction, panelId: string): Promise<void> {
     const target = interaction.guildId ? await GuildPanelRepository.get(interaction.guildId, panelId) : null;
-    const r = target?.rendered as { embeds?: unknown[]; components?: unknown[]; flags?: number } | null | undefined;
-    if (!r) {
-        await interaction.reply({ content: L("That panel isn't available any more.", "هذي اللوحة ما عادت موجودة."), flags: MessageFlags.Ephemeral });
+    if (!target) {
+        await interaction.reply({ content: L("That panel was removed.", "هذي اللوحة انحذفت."), flags: MessageFlags.Ephemeral });
+        return;
+    }
+    const r = target.rendered as { embeds?: unknown[]; components?: unknown[]; flags?: number } | null | undefined;
+    if (!r?.components?.length && !r?.embeds?.length) {
+        // Saved by an older dashboard: it renders the message on its next start or save.
+        Logger.warn(`Panel ${panelId} in ${interaction.guildId} has no rendered message yet`, "panels");
+        GuildPanelRepository.invalidate(interaction.guildId!, panelId);
+        await interaction.reply({ content: L("That panel isn't ready yet. Try again in a minute.", "هذي اللوحة مو جاهزة بعد. جرّب بعد دقيقة."), flags: MessageFlags.Ephemeral });
         return;
     }
     await interaction.reply({
